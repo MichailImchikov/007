@@ -1,0 +1,17 @@
+* text=auto
+
+# Unity YAML
+*.unity      text eol=lf merge=unityyamlmerge
+*.prefab     text eol=lf merge=unityyamlmerge
+*.asset      text eol=lf merge=unityyamlmerge
+*.mat        text eol=lf merge=unityyamlmerge
+*.meta       text eol=lf
+*.cs         text diff=csharp
+
+# Binaries
+*.png binary
+*.jpg binary
+*.fbx binary
+*.wav binary
+*.mp3 binary
+*.ogg binary

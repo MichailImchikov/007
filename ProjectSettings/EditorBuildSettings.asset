@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1045 &1
+EditorBuildSettings:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Scenes:
+  - enabled: 1
+    path: Assets/Scenes/MainMenu.unity
+    guid: 1540fd0f8dd2be940a3b2e71f3dabb79
+  - enabled: 1
+    path: Assets/Scenes/ShootingRange.unity
+    guid: e3d1b26ad4bace54c861ee7dc9be6e0c
+  - enabled: 1
+    path: Assets/Scenes/Map_Port.unity
+    guid: 50ca6cd9de5e67447a74c22896f54e20
+  - enabled: 1
+    path: Assets/Scenes/Map_Town.unity
+    guid: b6c341c660f5d0a42b53f9d1eff29b9a
+  - enabled: 1
+    path: Assets/Scenes/Map_Warehouse.unity
+    guid: 17883fe4357d9764eb7a80ecd4a2b0d2
+  - enabled: 1
+    path: Assets/Scenes/Map_Plant.unity
+    guid: 9bbad69d12873754fab0d330a261d63f
+  - enabled: 1
+    path: Assets/Scenes/Map_Village.unity
+    guid: 1273d66872291dd419617bf95117e905
+  - enabled: 1
+    path: Assets/Scenes/SampleScene.unity
+    guid: 99c9720ab356a0642a771bea13969a05
+  m_configObjects:
+    com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
