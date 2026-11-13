@@ -224,7 +224,8 @@ namespace FPS
         {
             if (!plate) return;
             var cam = Camera.main;
-            bool want = alive && cam && !s.Has(CharState.Invisible) && !s.Has(CharState.Chicken);
+            // disco: no nameplates — players hide in the crowd of mannequins
+            bool want = alive && cam && !s.Has(CharState.Invisible) && !s.Has(CharState.Chicken) && !DiscoClub.HideNameplates;
             if (want)
             {
                 Vector3 top = combatant.Head + Vector3.up * 0.42f * Mathf.Max(1f, s.headScale);

@@ -4,20 +4,17 @@ namespace FPS
 {
     /// <summary>
     /// The disco map's rules: fills the dance floors with a crowd of dancing mannequins (the same character models
-    /// the players wear), hides everybody's nickname while the match runs (kill feed, scoreboard, death screen —
-    /// you only know who you are) and hosts the head in the sky (DiscoHead).
+    /// the players wear) and hides the nameplates over other players (NetProxy), so a player in the crowd looks
+    /// exactly like a mannequin. Kill feed and scoreboard keep the names. The head in the sky is DiscoHead.
     /// </summary>
     [DefaultExecutionOrder(-40)]
     public class DiscoClub : MonoBehaviour
     {
         public const string RocketWeapon = "Ракета Головы";
-        public const string HiddenName = "???";
 
         public static DiscoClub Instance { get; private set; }
-        /// <summary>Other people's nicknames are hidden until the match ends.</summary>
-        public static bool HideNames => Instance && !(MatchManager.Instance && MatchManager.Instance.Ended);
-
-        public static string NameOf(Combatant c) => !c ? "?" : HideNames && !c.isPlayer ? HiddenName : c.displayName;
+        /// <summary>No nameplates over characters on this map.</summary>
+        public static bool HideNameplates => Instance;
 
         [Tooltip("Humanoid idle clips the mannequins play (directly, via Playables); the dance is added on top.")]
         public AnimationClip[] idleClips = new AnimationClip[0];

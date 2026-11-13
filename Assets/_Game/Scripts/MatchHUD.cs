@@ -196,7 +196,7 @@ namespace FPS
 
         void OnKill(KillEvent e)
         {
-            string Col(Combatant c) => c ? (c.isPlayer ? "<color=#ffd84a>" + c.displayName + "</color>" : DiscoClub.HideNames ? "<color=#bbbbbb>" + DiscoClub.HiddenName + "</color>" : c.human ? "<color=#9fd3ff>" + c.displayName + "</color>" : c.displayName) : "?";
+            string Col(Combatant c) => c ? (c.isPlayer ? "<color=#ffd84a>" + c.displayName + "</color>" : c.human ? "<color=#9fd3ff>" + c.displayName + "</color>" : c.displayName) : "?";
             string line;
             if (!e.killer && e.weapon == DiscoClub.RocketWeapon) line = "<color=#ff4a3a>ГОЛОВА</color>  <color=#aaaaaa>[ракета]</color>  " + Col(e.victim);
             else if (!e.killer || e.killer == e.victim) line = Col(e.victim) + "  <color=#aaaaaa>[" + e.weapon + "]</color>  самоубийство";
@@ -245,7 +245,7 @@ namespace FPS
                 if (ph.IsDead)
                 {
                     var k = ph.LastKiller;
-                    string by = !k ? (ph.LastKillerWeapon == DiscoClub.RocketWeapon ? "Вас накрыла ракета Головы" : "") : k.isPlayer ? "Вы подорвались сами" : $"Убийца: <b>{DiscoClub.NameOf(k)}</b>  [{ph.LastKillerWeapon}]";
+                    string by = !k ? (ph.LastKillerWeapon == DiscoClub.RocketWeapon ? "Вас накрыла ракета Головы" : "") : k.isPlayer ? "Вы подорвались сами" : $"Убийца: <b>{k.displayName}</b>  [{ph.LastKillerWeapon}]";
                     string resp = mm && mm.Ended ? "" : $"\nВозрождение через {Mathf.CeilToInt(ph.RespawnIn)}";
                     string kit = mm && mm.Ended ? "" : ph.loadout && ph.loadout.ChoicePending
                         ? $"\n<size=20><color=#FFBD42>Следующая жизнь: {PlayerLoadout.Primary} · {PlayerLoadout.Secondary} · {PlayerLoadout.Melee}</color></size>"
@@ -293,7 +293,7 @@ namespace FPS
                 timerText.color = mm.TimeLeft < 30f ? new Color(1f, 0.4f, 0.3f) : Color.white;
                 var me = ph ? ph.GetComponent<Combatant>() : null;
                 var lead = mm.Leader;
-                scoreText.text = $"{mm.mapName}  ·  Вы: <b>{(me ? me.kills : 0)}</b>  ·  Лидер: {(lead ? DiscoClub.NameOf(lead) : "-")} ({(lead ? lead.kills : 0)})  ·  до {MatchSettings.killLimit}";
+                scoreText.text = $"{mm.mapName}  ·  Вы: <b>{(me ? me.kills : 0)}</b>  ·  Лидер: {(lead ? lead.displayName : "-")} ({(lead ? lead.kills : 0)})  ·  до {MatchSettings.killLimit}";
             }
 
             // scoreboard (Tab) and end screen
@@ -313,7 +313,7 @@ namespace FPS
                 {
                     string pre = r.isPlayer ? "<color=#ffd84a><b>" : !r.alive ? "<color=#888888>" : "";
                     string post = r.isPlayer ? "</b></color>" : !r.alive ? "</color>" : "";
-                    sn.Append(pre).Append(n).Append(".  ").Append(DiscoClub.NameOf(r)).Append(post).Append('\n');
+                    sn.Append(pre).Append(n).Append(".  ").Append(r.displayName).Append(post).Append('\n');
                     sk.Append(pre).Append(r.kills).Append(post).Append('\n');
                     sd.Append(pre).Append(r.deaths).Append(post).Append('\n');
                     n++;
