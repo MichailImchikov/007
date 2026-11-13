@@ -25,9 +25,13 @@ namespace FPS
 
         [Header("Bunny hop / air strafe")]
         public bool autoBhop = true;
-        public float airAccelerate = 45f;
-        public float airSpeedCap = 0.9f;
-        public float maxBhopSpeed = 14f;
+        public float airAccelerate = 12f;
+        public float airSpeedCap = 0.6f;
+        public float maxBhopSpeed = 8.2f;
+        [Tooltip("Horizontal speed kept when jumping faster than the run speed (chained hops bleed speed).")]
+        public float bhopJumpKeep = 0.88f;
+        [Tooltip("A jump this soon after landing from a previous jump counts as a bunny hop (BunnyHopped).")]
+        public float bhopWindow = 0.2f;
 
         [Header("Stances")]
         public float standHeight = 1.8f;
@@ -145,6 +149,8 @@ namespace FPS
 
         public event Action<float> Landed;
         public event Action Jumped;
+        /// <summary>A jump chained right after landing from another jump (bunny hop attempt).</summary>
+        public event Action BunnyHopped;
         public event Action<bool> VaultStarted;
         public event Action Footstep;
         public event Action SlideStarted;
@@ -161,6 +167,8 @@ namespace FPS
         float stepAccum; int lastStepIndex;
         float airTime, lastVy;
         bool wasGrounded = true;
+        bool airFromJump, landedFromJump;
+        float lastLandTime = -10f;
 
         bool noclip, pulling;
         Func<Vector3> pullTarget;
@@ -182,6 +190,7 @@ namespace FPS
             IsSliding = false;
             IsVaulting = false;
             proneToggled = crouchToggled = false;
+            airFromJump = landedFromJump = false;
             cc.enabled = was && !locked;
         }
 
@@ -309,12 +318,19 @@ namespace FPS
 
             if (jumpNow)
             {
+                // chained hops lose speed instead of gaining it
+                float hs = hv.magnitude;
+                if (hs > target) hv = hv.normalized * Mathf.Max(target, hs * bhopJumpKeep);
                 crouchToggled = false;
                 IsSliding = false;
                 velocity.y = Mathf.Sqrt(2f * jumpHeight * -gravity);
                 lastGroundedTime = -10f;
                 lastJumpPressTime = -10f;
+                bool bhop = landedFromJump && Time.time - lastLandTime <= bhopWindow;
+                landedFromJump = false;
+                airFromJump = true;
                 Jumped?.Invoke();
+                if (bhop) BunnyHopped?.Invoke();
             }
 
             if (IsGrounded && !jumpNow && velocity.y < 0f) velocity.y = -3f;
@@ -327,6 +343,12 @@ namespace FPS
             if ((flags & CollisionFlags.Above) != 0 && velocity.y > 0f) velocity.y = 0f;
 
             bool groundedNow = cc.isGrounded;
+            if (groundedNow && !wasGrounded)
+            {
+                lastLandTime = Time.time;
+                landedFromJump = airFromJump;
+                airFromJump = false;
+            }
             if (groundedNow && !wasGrounded && airTime > 0.08f) Landed?.Invoke(-lastVy);
             airTime = groundedNow ? 0f : airTime + dt;
             wasGrounded = groundedNow;

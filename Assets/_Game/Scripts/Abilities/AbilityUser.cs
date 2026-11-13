@@ -39,7 +39,7 @@ namespace FPS
         public bool Phasing => phaseT > 0f || yankT >= 0f;
         public bool Blinded => blindT > 0f;
         public float BlindAmount => blindT <= 0f ? 0f : Mathf.Clamp01(blindT / Mathf.Max(0.01f, blindTotal * 0.5f));
-        public bool Morphed => IsChicken || IsSnowman;
+        public bool Morphed => IsChicken;
         public bool BlocksShooting => Morphed || Parrying || rocketT >= 0f || slipT > 0f || ExtraBlocksShooting;
         public bool Busy => Morphed || Parrying || Phasing || hookState != 0 || rocketT >= 0f || Building || Minesweeping || rocketAim;
         /// <summary>Player holds V with the launcher: zoomed in, bent over, charge sticking out of the butt.</summary>
@@ -193,7 +193,6 @@ namespace FPS
                 case AbilityType.FartBlind: Fart(true, 0f); return true;
                 case AbilityType.FartSmoke: Fart(false, info.duration); return true;
                 case AbilityType.Swap: return StartSwap();
-                case AbilityType.Banana: return ThrowBanana();
             }
             return ExecuteExtra(t, info);
         }
@@ -318,7 +317,6 @@ namespace FPS
             GameInput.Frozen = bsodT > 0f;
             motor.InputBlocked = slipT > 0f || Minesweeping;
             if (IsChicken) motor.SpeedMultiplier *= 1.25f;
-            if (IsSnowman) motor.SpeedMultiplier *= 0.4f;
             if (Shrunk) motor.SpeedMultiplier *= 1.1f;
             tpBlend = Mathf.MoveTowards(tpBlend, Morphed ? 1f : 0f, dt * 3f);
             pcam.ThirdPerson = tpBlend;
@@ -904,31 +902,6 @@ namespace FPS
             }
         }
 
-        // ------------------------------------------------------------------ banana
-
-        bool ThrowBanana()
-        {
-            if (isPlayer)
-            {
-                var ct = Cam;
-                Vector3 bp = ct.position + ct.forward * 0.5f - ct.up * 0.1f, bv = ct.forward * 10f + Vector3.up * 2.5f + motor.Velocity * 0.5f;
-                int bid = NetGame.NewId();
-                BananaPeel.Throw(bp, bv, self, bid);
-                SendEvent(AbilityNetEvent.Banana, w => { w.Write(bid); W(w, bp); W(w, bv); });
-                pcam.Punch(new Vector3(-4f, 3f, 0f));
-                return true;
-            }
-            if (!bot || !bot.Target) return false;
-            Vector3 to = bot.Target.transform.position - transform.position; to.y = 0f;
-            float d = to.magnitude;
-            Vector3 vel = to.normalized * Mathf.Clamp(d * 1.05f, 3f, 13f) + Vector3.up * 4f;
-            Vector3 bpos = AimOrigin + transform.forward * 0.4f;
-            int id = NetGame.NewId();
-            BananaPeel.Throw(bpos, vel, self, id);
-            SendEvent(AbilityNetEvent.Banana, w => { w.Write(id); W(w, bpos); W(w, vel); });
-            return true;
-        }
-
         // ------------------------------------------------------------------ grappling hook
 
         bool StartGrapple()
@@ -1124,12 +1097,12 @@ namespace FPS
         {
             if (!bot) return false;
             var ag = bot.Agent;
-            if (IsChicken || IsSnowman || Confused)
+            if (IsChicken || Confused)
             {
                 if (ag.enabled)
                 {
                     ag.isStopped = false;
-                    ag.speed = IsSnowman ? 1.3f : Confused ? 4.5f : 6.5f;
+                    ag.speed = Confused ? 4.5f : 6.5f;
                     if (!ag.pathPending && (!ag.hasPath || ag.remainingDistance < 1f))
                     {
                         Vector2 r = Random.insideUnitCircle * 9f;
@@ -1169,7 +1142,6 @@ namespace FPS
                 case AbilityType.FartBlind:
                 case AbilityType.FartSmoke: use = vis && (dist < 6.5f || (bot.Health01 < 0.4f && Random.value < 0.3f)); break;
                 case AbilityType.Swap: use = vis && dist > 12f && Random.value < 0.25f; break;
-                case AbilityType.Banana: use = vis && dist > 3f && dist < 14f && Random.value < 0.4f; break;
             }
             if (logic == AbilityType.ChickenTrap) use = vis && Random.value < 0.3f;
             if (!use) use = BotWantsExtra(logic, t, vis, dist);

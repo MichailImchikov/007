@@ -137,7 +137,7 @@ namespace FPS
         readonly Spring3 bumpPos = new Spring3(130f, 11f);
         readonly Spring3 bumpRot = new Spring3(120f, 10f);
 
-        Vector3 magRest, chRest, boltRest, handRest, reticleRest;
+        Vector3 magRest, chRest, boltRest, handRest, reticleRest, reticleCenter;
         bool reloading, reloadEmpty, magHidden;
         float reloadT, reloadDuration;
         int evtIndex;
@@ -169,6 +169,7 @@ namespace FPS
             if (initialized) return;
             initialized = true;
             if (!model && transform.childCount > 0) model = transform.GetChild(0);
+            ImportedWeapons.Apply(this); // imported gun mesh over the procedural one (if the pack is present)
             ammo = magSize;
             reserve = reserveAmmo;
             recoilSeed = Random.value * 100f;
@@ -176,7 +177,13 @@ namespace FPS
             if (chargingHandle) chRest = chargingHandle.localPosition;
             if (bolt) boltRest = bolt.localPosition;
             if (leftHand) handRest = leftHand.localPosition;
-            if (reticle) reticleRest = reticle.localPosition;
+            if (reticle)
+            {
+                reticleRest = reticle.localPosition;
+                // the visible mark's center (imported reticles have their pivot far from the mesh)
+                var rmf = reticle.GetComponent<MeshFilter>();
+                reticleCenter = rmf && rmf.sharedMesh ? rmf.sharedMesh.bounds.center : Vector3.zero;
+            }
 
             // place the holder so the sight sits exactly in screen center when aiming
             transform.localPosition = Vector3.zero;
@@ -197,6 +204,9 @@ namespace FPS
                 shellH0 = shellPort + new Vector3(-0.04f, -0.09f, -0.02f);
             }
             renderers = model.GetComponentsInChildren<Renderer>(true);
+            // the builder bakes the flash enabled; only a shot may show it (weapons never held before stayed lit)
+            if (muzzleFlash) muzzleFlash.SetActive(false);
+            if (muzzleLight) muzzleLight.enabled = false;
             if (reloadStyle == ReloadStyle.PerShell && magazine) magazine.gameObject.SetActive(false);
         }
 
@@ -327,6 +337,8 @@ namespace FPS
                     bumpRot.Kick(new Vector3(-10f, 0f, 35f));
                 }
                 if (GameInput.ReloadPressed) TryReload();
+                // auto reload: the magazine ran dry (after the last shot's cycle) or an empty gun was drawn
+                else if (ammo == 0 && reserve > 0 && !reloading && !pumping && equipT >= 1f && Time.time >= nextFire) TryReload();
             }
             if (reloading)
             {
@@ -867,10 +879,11 @@ namespace FPS
             if (reticle)
             {
                 Vector3 rest = reticle.parent.TransformPoint(reticleRest);
+                Vector3 mark = rest + (reticle.TransformPoint(reticleCenter) - reticle.position);
                 Transform ct = cam.transform;
-                float d = Vector3.Dot(rest - ct.position, ct.forward);
+                float d = Vector3.Dot(mark - ct.position, ct.forward);
                 Vector3 onAxis = ct.position + ct.forward * d;
-                Vector3 off = Vector3.ClampMagnitude(onAxis - rest, 0.012f);
+                Vector3 off = Vector3.ClampMagnitude(onAxis - mark, 0.012f);
                 reticle.position = rest + off * aimEased;
             }
         }

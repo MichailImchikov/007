@@ -6,14 +6,13 @@ namespace FPS
 {
     /// <summary>
     /// Second batch of abilities: shrink, Fortnite-style building, and area effects on nearby enemies
-    /// (big heads, screamer, snowman, confusion, launch, minesweeper, blue screen of death).
+    /// (big heads, screamer, confusion, launch, minesweeper, blue screen of death, camera spin).
     /// </summary>
     public partial class AbilityUser
     {
         // ------------------------------------------------------------------ status
         public bool Shrunk => shrinkT > 0f;
         public bool BigHead => bigHeadT > 0f;
-        public bool IsSnowman => snowmanT > 0f;
         public bool Confused => confuseT > 0f;
         public bool Building => building;
         public bool Minesweeping => mineActive || mineBotT > 0f;
@@ -32,8 +31,6 @@ namespace FPS
         float baseStand, baseCrouch, baseProne, baseEyeStand, baseEyeCrouch, baseEyeProne, baseRadius;
         float bigHeadT, headScale = 1f;
         float screamT;
-        float snowmanT, snowmanDur = 1f;
-        SnowmanModel snowman;
         float confuseT, confuseDur = 1f;
         bool launched;
         float launchT;
@@ -48,14 +45,17 @@ namespace FPS
         Transform ghost;
         static Material ghostOk, ghostBad;
         float bsodT, bsodDur = 1f;
+        float spinT, spinDur = 1f;
+        const float SpinSpeed = 360f; // degrees per second: one full turn every second
+        public bool Spinning => spinT > 0f;
 
         float ExtraFraction(out Color c)
         {
             c = Color.white;
             if (building) { c = AbilityDB.Get(AbilityType.Build).color; return buildT / buildDur; }
-            if (IsSnowman) { c = AbilityDB.Get(AbilityType.Snowman).color; return snowmanT / snowmanDur; }
             if (Shrunk) { c = AbilityDB.Get(AbilityType.Shrink).color; return shrinkT / shrinkDur; }
             if (Confused) { c = AbilityDB.Get(AbilityType.Confuse).color; return confuseT / confuseDur; }
+            if (Spinning) { c = AbilityDB.Get(AbilityType.Spin).color; return spinT / spinDur; }
             return -1f;
         }
 
@@ -67,11 +67,11 @@ namespace FPS
                 case AbilityType.Build: return StartBuild(info.duration);
                 case AbilityType.BigHeads:
                 case AbilityType.Screamer:
-                case AbilityType.Snowman:
                 case AbilityType.Confuse:
                 case AbilityType.Launch:
                 case AbilityType.Minesweeper:
                 case AbilityType.BSOD:
+                case AbilityType.Spin:
                     return AreaBlast(t, info);
             }
             return false;
@@ -100,6 +100,8 @@ namespace FPS
             ProcAudio.PlayAt(Sfx.Warp, c, 0.8f, 0.1f);
             SendEvent(AbilityNetEvent.Area, w => w.Write((byte)t));
             if (isPlayer) Say(info.name, n == 1 ? "Задет 1 враг" : $"Задето врагов: {n}", info.color);
+            // the minesweeper is a double-edged sword: the caster has to defuse one too
+            if (t == AbilityType.Minesweeper) ReceiveArea(t, self, info);
             return true;
         }
 
@@ -130,9 +132,6 @@ namespace FPS
                         if (puppet != null) puppet.Stun(1.4f);
                         ProcAudio.PlayAt(Sfx.Scream, transform.position + Vector3.up * 1.6f, 0.5f, 0.1f);
                     }
-                    break;
-                case AbilityType.Snowman:
-                    StartSnowman(info.duration);
                     break;
                 case AbilityType.Confuse:
                     confuseT = confuseDur = info.duration;
@@ -176,6 +175,12 @@ namespace FPS
                         mineBotBoom = Random.value < 0.3f;
                         if (puppet != null) puppet.Stun(mineBotT);
                     }
+                    break;
+                case AbilityType.Spin:
+                    spinT = spinDur = info.duration;
+                    ProcAudio.PlayAt(Sfx.Warp, transform.position + Vector3.up, 0.6f, 0.3f);
+                    if (isPlayer) { Say("Карусель!", "Вас крутит на 360°", col); pcam.Shake(0.3f); }
+                    else if (puppet != null) puppet.Stun(info.duration);
                     break;
                 case AbilityType.BSOD:
                     bsodT = bsodDur = info.duration;
@@ -249,32 +254,6 @@ namespace FPS
             rig.transform.localScale = Vector3.one * bodyScale;
             if (rig.weaponSocket) rig.weaponSocket.localScale = Vector3.one / Mathf.Max(0.05f, bodyScale); // the gun keeps its size
             if (rig.head) rig.head.localScale = Vector3.one * headScale;
-        }
-
-        // ------------------------------------------------------------------ snowman
-
-        void StartSnowman(float dur)
-        {
-            if (IsChicken) EndChicken();
-            snowmanT = snowmanDur = dur;
-            if (!snowman) snowman = SnowmanModel.Build(transform, !isPlayer);
-            snowman.gameObject.SetActive(true);
-            if (!isPlayer && rig) rig.SetCollidersEnabled(false);
-            if (isPlayer && motor.IsPulled) motor.StopPull();
-            Vector3 c = transform.position + Vector3.up;
-            FX.Ensure().Puff(c, Vector3.up, 16, 1f, new Vector2(0.5f, 3f), new Vector2(0.6f, 1.3f), new Vector2(0.6f, 1.4f), new Color(0.95f, 0.97f, 1f, 0.7f), new Color(0.85f, 0.9f, 1f, 0.6f));
-            ProcAudio.PlayAt(Sfx.SandBreak, c, 0.8f, 0.1f);
-            if (isPlayer) Say("Вы — снеговик!", "Еле ползёте и не можете стрелять", AbilityDB.Get(AbilityType.Snowman).color);
-        }
-
-        void EndSnowman()
-        {
-            snowmanT = 0f;
-            if (snowman) snowman.gameObject.SetActive(false);
-            if (!isPlayer && rig && self.alive && !IsChicken) rig.SetCollidersEnabled(true);
-            FX.Ensure().Puff(transform.position + Vector3.up, Vector3.up, 12, 1f, new Vector2(0.5f, 2.5f), new Vector2(0.5f, 1.1f), new Vector2(0.5f, 1f),
-                             new Color(0.95f, 0.97f, 1f, 0.6f), new Color(0.85f, 0.9f, 1f, 0.5f));
-            visKey = -1;
         }
 
         // ------------------------------------------------------------------ building
@@ -419,12 +398,6 @@ namespace FPS
             if (screamT > 0f) screamT -= dt;
             if (bsodT > 0f) bsodT -= dt;
 
-            if (snowmanT > 0f)
-            {
-                snowmanT -= dt;
-                if (snowmanT <= 0f) EndSnowman();
-            }
-
             if (confuseT > 0f)
             {
                 confuseT -= dt;
@@ -432,6 +405,8 @@ namespace FPS
             }
 
             if (launched) UpdateLaunch(dt);
+
+            if (spinT > 0f) UpdateSpin(dt);
 
             if (mineBotT > 0f)
             {
@@ -441,6 +416,22 @@ namespace FPS
             }
 
             UpdateBuild(dt);
+        }
+
+        /// <summary>Camera spin: the view keeps turning a full 360° every second (eases in and out).</summary>
+        void UpdateSpin(float dt)
+        {
+            float elapsed = spinDur - spinT;
+            spinT -= dt;
+            if (!self.alive) { spinT = 0f; return; }
+            float ease = Mathf.Clamp01(elapsed / 0.25f) * Mathf.Clamp01((spinT + dt) / 0.35f);
+            float deg = SpinSpeed * ease * dt;
+            if (isPlayer)
+            {
+                if (pcam) pcam.SetLook(pcam.Yaw + deg, pcam.Pitch);
+            }
+            else if (puppet != null && !puppet.ExternalControl)
+                transform.rotation = Quaternion.Euler(0f, transform.eulerAngles.y + deg, 0f);
         }
 
         void UpdateLaunch(float dt)
@@ -476,7 +467,6 @@ namespace FPS
             bodyScale = 1f; headScale = 1f;
             ApplyBodyScale();
             screamT = 0f;
-            if (snowmanT > 0f) EndSnowman();
             confuseT = 0f;
             if (anim && !isPlayer) anim.lookYaw = 0f;
             if (launched) { launched = false; if (puppet != null) puppet.ExternalControl = false; }
@@ -489,6 +479,7 @@ namespace FPS
             mineBotT = 0f;
             if (building) EndBuild();
             bsodT = 0f;
+            spinT = 0f;
             if (isPlayer) GameInput.Frozen = false;
         }
 
@@ -503,11 +494,11 @@ namespace FPS
                 case AbilityType.Build: return vis && dist > 6f && (bot.Health01 < 0.6f || Random.value < 0.15f);
                 case AbilityType.BigHeads:
                 case AbilityType.Screamer:
-                case AbilityType.Snowman:
                 case AbilityType.Confuse:
                 case AbilityType.Launch:
                 case AbilityType.Minesweeper:
                 case AbilityType.BSOD:
+                case AbilityType.Spin:
                     return t && dist < info.radius * 0.8f && (vis || dist < info.radius * 0.4f) && Random.value < 0.5f;
             }
             return false;
@@ -617,53 +608,4 @@ namespace FPS
         }
     }
 
-    /// <summary>Snowman model (snowman area ability victims). Wobbles while moving.</summary>
-    public class SnowmanModel : MonoBehaviour
-    {
-        Transform body;
-        Vector3 lastPos;
-        float wob;
-
-        public static SnowmanModel Build(Transform parent, bool hitbox)
-        {
-            var root = AbilityProps.Root("Snowman", parent);
-            var m = root.gameObject.AddComponent<SnowmanModel>();
-            var snow = AbilityProps.Mat(new Color(0.95f, 0.97f, 1f), 0.15f, 0.15f);
-            var coal = AbilityProps.Mat(new Color(0.05f, 0.05f, 0.05f), 0f, 0.6f);
-            var carrot = AbilityProps.Mat(new Color(1f, 0.5f, 0.1f), 0f, 0.4f);
-            var wood = AbilityProps.Mat(new Color(0.35f, 0.22f, 0.12f), 0f, 0.3f);
-            var bucket = AbilityProps.Mat(new Color(0.55f, 0.15f, 0.12f), 0f, 0.5f, 0.6f);
-            m.body = AbilityProps.Root("Body", root);
-            AbilityProps.Part(PrimitiveType.Sphere, m.body, new Vector3(0f, 0.38f, 0f), Vector3.one * 0.8f, snow);
-            AbilityProps.Part(PrimitiveType.Sphere, m.body, new Vector3(0f, 0.98f, 0f), Vector3.one * 0.58f, snow);
-            AbilityProps.Part(PrimitiveType.Sphere, m.body, new Vector3(0f, 1.42f, 0f), Vector3.one * 0.42f, snow);
-            AbilityProps.Part(PrimitiveType.Cylinder, m.body, new Vector3(0f, 1.47f, 0.27f), new Vector3(0.05f, 0.11f, 0.05f), carrot, new Vector3(90f, 0f, 0f));
-            AbilityProps.Part(PrimitiveType.Sphere, m.body, new Vector3(0.08f, 1.52f, 0.18f), Vector3.one * 0.05f, coal);
-            AbilityProps.Part(PrimitiveType.Sphere, m.body, new Vector3(-0.08f, 1.52f, 0.18f), Vector3.one * 0.05f, coal);
-            for (int i = 0; i < 3; i++) AbilityProps.Part(PrimitiveType.Sphere, m.body, new Vector3(0f, 0.85f + i * 0.13f, 0.28f), Vector3.one * 0.05f, coal);
-            AbilityProps.Part(PrimitiveType.Cylinder, m.body, new Vector3(0f, 1.7f, 0f), new Vector3(0.3f, 0.12f, 0.3f), bucket, new Vector3(-8f, 0f, 0f));
-            AbilityProps.Part(PrimitiveType.Cube, m.body, new Vector3(0.45f, 1.05f, 0f), new Vector3(0.45f, 0.03f, 0.03f), wood, new Vector3(0f, 0f, 25f));
-            AbilityProps.Part(PrimitiveType.Cube, m.body, new Vector3(-0.45f, 1.05f, 0f), new Vector3(0.45f, 0.03f, 0.03f), wood, new Vector3(0f, 0f, -25f));
-            if (hitbox)
-            {
-                var cap = root.gameObject.AddComponent<CapsuleCollider>();
-                cap.center = new Vector3(0f, 0.85f, 0f); cap.radius = 0.38f; cap.height = 1.7f;
-                root.gameObject.AddComponent<Hitbox>().multiplier = 1f;
-            }
-            m.lastPos = root.position;
-            return m;
-        }
-
-        void LateUpdate()
-        {
-            float dt = Time.deltaTime;
-            if (dt <= 0f) return;
-            Vector3 v = (transform.position - lastPos) / dt;
-            lastPos = transform.position;
-            wob = Anim.Damp(wob, Mathf.Clamp01(new Vector2(v.x, v.z).magnitude / 1.5f), 6f, dt);
-            float s = Mathf.Sin(Time.time * 9f);
-            body.localRotation = Quaternion.Euler(4f * wob, 0f, s * 9f * wob);
-            body.localPosition = new Vector3(0f, Mathf.Abs(s) * 0.05f * wob, 0f);
-        }
-    }
 }

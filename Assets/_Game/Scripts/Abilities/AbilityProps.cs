@@ -100,22 +100,6 @@ namespace FPS
             return root;
         }
 
-        public static Transform BuildBanana(Transform parent, float scale = 1f)
-        {
-            var root = Root("Banana", parent);
-            var yellow = Mat(new Color(1f, 0.85f, 0.15f), 0.4f, 0.45f);
-            var brown = Mat(new Color(0.35f, 0.25f, 0.1f), 0f, 0.3f);
-            Part(PrimitiveType.Sphere, root, new Vector3(0f, 0.02f, 0f), new Vector3(0.09f, 0.04f, 0.09f) * scale, yellow);
-            for (int i = 0; i < 4; i++)
-            {
-                var petal = Root("Peel", root);
-                petal.localRotation = Quaternion.Euler(0f, i * 90f + 20f, 0f);
-                Part(PrimitiveType.Sphere, petal, new Vector3(0f, 0.015f, 0.09f) * scale, new Vector3(0.05f, 0.015f, 0.14f) * scale, yellow, new Vector3(-8f, 0f, 0f));
-            }
-            Part(PrimitiveType.Cylinder, root, new Vector3(0f, 0.06f, 0f) * scale, new Vector3(0.018f, 0.03f, 0.018f) * scale, brown);
-            return root;
-        }
-
         // ------------------------------------------------------------------ pickup icons (≈0.45 m)
 
         /// <summary>Floating icon for a pickup. The two farts and the trap's disguise look exactly like the real thing.</summary>
@@ -190,12 +174,6 @@ namespace FPS
                     Part(PrimitiveType.Cube, root, new Vector3(-0.14f, -0.1f, 0f), new Vector3(0.1f, 0.04f, 0.05f), glow, new Vector3(0f, 0f, -40f));
                     break;
                 }
-                case AbilityType.Banana:
-                {
-                    var b = BuildBanana(root, 1.8f);
-                    b.localRotation = Quaternion.Euler(-60f, 0f, 0f);
-                    break;
-                }
                 case AbilityType.Shrink:
                     Part(PrimitiveType.Capsule, root, new Vector3(-0.1f, -0.12f, 0f), new Vector3(0.07f, 0.08f, 0.07f), glow);
                     Part(PrimitiveType.Cube, root, new Vector3(0.1f, 0f, 0f), new Vector3(0.05f, 0.08f, 0.32f), dark, new Vector3(0f, 0f, 0f));
@@ -212,15 +190,6 @@ namespace FPS
                     Part(PrimitiveType.Sphere, root, new Vector3(0.06f, 0.05f, 0.11f), new Vector3(0.07f, 0.09f, 0.05f), dark);
                     Part(PrimitiveType.Sphere, root, new Vector3(-0.06f, 0.05f, 0.11f), new Vector3(0.07f, 0.09f, 0.05f), dark);
                     Part(PrimitiveType.Sphere, root, new Vector3(0f, -0.08f, 0.11f), new Vector3(0.09f, 0.13f, 0.05f), Mat(new Color(0.3f, 0f, 0f), 1f));
-                    break;
-                }
-                case AbilityType.Snowman:
-                {
-                    var snow = Mat(new Color(0.95f, 0.97f, 1f), 0.8f, 0.2f);
-                    Part(PrimitiveType.Sphere, root, new Vector3(0f, -0.15f, 0f), Vector3.one * 0.22f, snow);
-                    Part(PrimitiveType.Sphere, root, new Vector3(0f, 0.02f, 0f), Vector3.one * 0.16f, snow);
-                    Part(PrimitiveType.Sphere, root, new Vector3(0f, 0.15f, 0f), Vector3.one * 0.11f, snow);
-                    Part(PrimitiveType.Cube, root, new Vector3(0f, 0.15f, 0.07f), new Vector3(0.02f, 0.02f, 0.07f), Mat(new Color(1f, 0.5f, 0.1f), 1f));
                     break;
                 }
                 case AbilityType.Confuse:
@@ -256,6 +225,16 @@ namespace FPS
                     Part(PrimitiveType.Cube, root, new Vector3(0f, 0.04f, -0.015f), new Vector3(0.4f, 0.26f, 0.02f), dark);
                     Part(PrimitiveType.Cube, root, new Vector3(0f, -0.13f, 0f), new Vector3(0.04f, 0.1f, 0.04f), dark);
                     Part(PrimitiveType.Cube, root, new Vector3(0f, -0.18f, 0f), new Vector3(0.16f, 0.015f, 0.08f), dark);
+                    break;
+                case AbilityType.Spin:
+                    for (int i = 0; i < 3; i++)
+                    {
+                        var arm = Root("Arm", root);
+                        arm.localRotation = Quaternion.Euler(0f, 0f, i * 120f);
+                        Part(PrimitiveType.Cube, arm, new Vector3(0.12f, 0f, 0f), new Vector3(0.2f, 0.05f, 0.04f), glow);
+                        Part(PrimitiveType.Cube, arm, new Vector3(0.2f, 0.05f, 0f), new Vector3(0.05f, 0.12f, 0.04f), glow);
+                    }
+                    Part(PrimitiveType.Sphere, root, Vector3.zero, Vector3.one * 0.1f, dark);
                     break;
                 default:
                     Part(PrimitiveType.Cube, root, Vector3.zero, Vector3.one * 0.25f, glow, new Vector3(45f, 0f, 45f));

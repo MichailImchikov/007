@@ -97,8 +97,8 @@ namespace FPS
             if (!loadoutNote) return;
             var lo = PlayerHealth.Local ? PlayerHealth.Local.loadout : null;
             loadoutNote.text = lo && lo.ChoicePending
-                ? "<color=#FFBD42>" + PlayerLoadout.Primary + "</color> будет выдан при следующем возрождении."
-                : "Оружие: " + PlayerLoadout.Primary + " · " + PlayerLoadout.Secondary;
+                ? "<color=#FFBD42>" + PlayerLoadout.Primary + " · " + PlayerLoadout.Secondary + " · " + PlayerLoadout.Melee + "</color> — при следующем возрождении."
+                : "Оружие: " + PlayerLoadout.Primary + " · " + PlayerLoadout.Secondary + " · " + PlayerLoadout.Melee;
         }
 
         /// <summary>Legacy helper (old menus): a styled button at a position.</summary>

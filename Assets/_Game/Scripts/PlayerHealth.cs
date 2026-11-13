@@ -66,6 +66,27 @@ namespace FPS
             PauseMenu.Ensure();
             AbilitySpawner.Ensure();
             GameInput.Blocked = false;
+            if (motor) motor.BunnyHopped += OnBunnyHop;
+        }
+
+        void OnDestroy()
+        {
+            if (motor) motor.BunnyHopped -= OnBunnyHop;
+        }
+
+        /// <summary>Bunny hop penalty: a fart and 20% of max health per chained hop.</summary>
+        void OnBunnyHop()
+        {
+            if (IsDead) return;
+            ProcAudio.Play(Sfx.Fart, 1f, 0.15f);
+            TakeDamage(new DamageInfo
+            {
+                amount = maxHealth * 0.2f,
+                attacker = null,
+                weapon = "Бхоп",
+                point = transform.position,
+                direction = Vector3.down,
+            });
         }
 
         public DamageResult TakeDamage(DamageInfo info)

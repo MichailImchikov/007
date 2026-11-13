@@ -82,7 +82,7 @@ namespace FPS.EditorTools
             AssetDatabase.CreateFolder(parent, Path.GetFileName(path));
         }
 
-        static readonly string[] SceneOrder = { "MainMenu", "ShootingRange", "Map_Port", "Map_Town", "Map_Warehouse", "Map_Plant", "Map_Village" };
+        static readonly string[] SceneOrder = { "MainMenu", "ShootingRange", "Map_Port", "Map_Town", "Map_Warehouse", "Map_Plant", "Map_Village", "Map_Flooded" };
 
         static void SetBuildScenes()
         {
@@ -605,43 +605,20 @@ namespace FPS.EditorTools
             // ---- weapons
             var weaponsRoot = new GameObject("Weapons").transform;
             weaponsRoot.SetParent(camGO.transform, false);
-            var list = new List<WeaponController>
+            var list = new List<WeaponController>();
+            foreach (var def in WeaponCatalog.All)
             {
-                MakeWeapon("M4A1", weaponsRoot, motor, pc, cam, BuildAR, w => { }),
-                MakeWeapon("SMG-9", weaponsRoot, motor, pc, cam, BuildSMG, w =>
+                System.Action<Transform, WeaponController> build = def.archetype switch
                 {
-                    w.damage = 19f; w.rpm = 920f; w.magSize = 32; w.reserveAmmo = 256; w.hipSpread = 1.5f; w.moveSpreadAdd = 1.2f;
-                    w.recoilUp = 0.5f; w.recoilSide = 0.45f; w.adsFov = 50f; w.moveSpeedMul = 1.06f; w.falloffStart = 18f; w.falloffEnd = 60f; w.falloffMin = 0.55f;
-                    w.hipPosition = new Vector3(0.15f, -0.165f, 0.31f); w.aimDistance = 0.2f; w.aimTime = 0.16f; w.reloadTime = 1.8f; w.emptyReloadTime = 2.2f;
-                    w.magGripOffset = new Vector3(0f, -0.13f, 0f); w.chTravel = 0.06f; w.shotVolume = 0.65f; w.kickScale = 0.75f; w.punchScale = 0.7f;
-                }),
-                MakeWeapon("M870", weaponsRoot, motor, pc, cam, BuildShotgun, w =>
-                {
-                    w.damage = 13f; w.pellets = 9; w.pelletSpread = 3.2f; w.rpm = 80f; w.fullAuto = false; w.allowFireModeSwitch = false;
-                    w.magSize = 7; w.reserveAmmo = 35; w.hipSpread = 0.8f; w.adsSpread = 0.2f; w.recoilUp = 4.2f; w.recoilSide = 0.8f;
-                    w.falloffStart = 10f; w.falloffEnd = 35f; w.falloffMin = 0.3f; w.adsFov = 54f; w.moveSpeedMul = 0.96f;
-                    w.hipPosition = new Vector3(0.15f, -0.18f, 0.3f); w.aimDistance = 0.17f; w.reloadStyle = ReloadStyle.PerShell; w.shellInsertTime = 0.46f;
-                    w.pumpAction = true; w.pumpTime = 0.52f; w.chTravel = 0.09f; w.shellScale = 1.8f; w.shotSfx = Sfx.ShotShotgun; w.shotVolume = 0.95f;
-                    w.kickScale = 2f; w.punchScale = 2.2f; w.bloomPerShot = 0f; w.impactForce = 10f;
-                }),
-                MakeWeapon("DMR-7", weaponsRoot, motor, pc, cam, BuildDMR, w =>
-                {
-                    w.damage = 58f; w.rpm = 300f; w.fullAuto = false; w.allowFireModeSwitch = false; w.magSize = 10; w.reserveAmmo = 60;
-                    w.hipSpread = 2.6f; w.adsSpread = 0f; w.recoilUp = 2.4f; w.recoilSide = 0.5f; w.adsRecoilMul = 0.7f; w.adsFov = 16f; w.scoped = true;
-                    w.aimDistance = 0.07f; w.aimTime = 0.26f; w.moveSpeedMul = 0.92f; w.falloffStart = 80f; w.falloffEnd = 250f; w.falloffMin = 0.85f;
-                    w.reloadTime = 2.4f; w.emptyReloadTime = 2.9f; w.magGripOffset = new Vector3(0f, -0.07f, 0.01f);
-                    w.shotSfx = Sfx.ShotSniper; w.shotVolume = 0.95f; w.kickScale = 1.6f; w.punchScale = 1.8f; w.bloomPerShot = 1f; w.impactForce = 8f;
-                }),
-                MakeWeapon("P-17", weaponsRoot, motor, pc, cam, BuildPistol, w =>
-                {
-                    w.slot = WeaponSlot.Secondary; w.damage = 24f; w.rpm = 450f; w.fullAuto = false; w.allowFireModeSwitch = false;
-                    w.magSize = 15; w.reserveAmmo = 90; w.hipSpread = 1.1f; w.adsSpread = 0.15f; w.recoilUp = 1.3f; w.recoilSide = 0.4f; w.adsFov = 52f;
-                    w.hipPosition = new Vector3(0.13f, -0.15f, 0.34f); w.aimDistance = 0.3f; w.aimTime = 0.14f; w.moveSpeedMul = 1.08f;
-                    w.sprintPos = new Vector3(-0.02f, -0.07f, -0.06f); w.sprintRot = new Vector3(45f, -15f, 10f);
-                    w.reloadTime = 1.5f; w.emptyReloadTime = 1.9f; w.magGripOffset = new Vector3(0f, -0.11f, -0.025f); w.chTravel = 0.03f;
-                    w.shotSfx = Sfx.ShotPistol; w.shotVolume = 0.75f; w.equipTime = 0.28f; w.kickScale = 1.3f; w.shellScale = 0.85f;
-                }),
-            };
+                    WeaponArchetype.SMG => BuildSMG,
+                    WeaponArchetype.Shotgun => BuildShotgun,
+                    WeaponArchetype.DMR => BuildDMR,
+                    WeaponArchetype.Pistol => BuildPistol,
+                    _ => BuildAR,
+                };
+                var d = def;
+                list.Add(MakeWeapon(d.name, weaponsRoot, motor, pc, cam, build, w => d.Apply(w)));
+            }
             foreach (var w in list) w.gameObject.SetActive(w.weaponName == "M4A1");
 
             // ---- melee & grenade viewmodels
@@ -1077,12 +1054,13 @@ namespace FPS.EditorTools
             armory.SetParent(env, false);
             Block("ArmoryTable", armory, -4.2f, -3.2f, new Vector3(0.9f, 0.85f, 4.4f), wood).AddComponent<SurfaceTag>().kind = SurfaceKind.Wood;
             Block("ArmoryRack", armory, -4.9f, -3.2f, new Vector3(0.15f, 2f, 4.6f), metal);
-            string[] names = { "M4A1", "SMG-9", "M870", "DMR-7" };
-            for (int i = 0; i < names.Length; i++)
+            var names = new List<string>();
+            foreach (var d in WeaponCatalog.All) if (!d.Secondary) names.Add(d.name);
+            for (int i = 0; i < names.Count; i++)
             {
                 var p = new GameObject("Pickup_" + names[i]);
                 p.transform.SetParent(armory, false);
-                p.transform.position = new Vector3(-4.2f, 0.9f, -4.8f + i * 1.05f);
+                p.transform.position = new Vector3(-4.2f, 0.9f, -3.2f + (i - (names.Count - 1) * 0.5f) * Mathf.Min(1.05f, 4.2f / names.Count));
                 p.transform.rotation = Quaternion.Euler(0f, 90f, 0f);
                 var wp = p.AddComponent<WeaponPickup>();
                 wp.kind = WeaponPickup.Kind.Weapon;

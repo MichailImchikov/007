@@ -247,7 +247,7 @@ namespace FPS
                     string by = !k ? "" : k.isPlayer ? "Вы подорвались сами" : $"Убийца: <b>{k.displayName}</b>  [{ph.LastKillerWeapon}]";
                     string resp = mm && mm.Ended ? "" : $"\nВозрождение через {Mathf.CeilToInt(ph.RespawnIn)}";
                     string kit = mm && mm.Ended ? "" : ph.loadout && ph.loadout.ChoicePending
-                        ? $"\n<size=20><color=#FFBD42>Следующая жизнь: {PlayerLoadout.Primary}</color></size>"
+                        ? $"\n<size=20><color=#FFBD42>Следующая жизнь: {PlayerLoadout.Primary} · {PlayerLoadout.Secondary} · {PlayerLoadout.Melee}</color></size>"
                         : "\n<size=20><color=#FFFFFF90>Esc → Снаряжение — сменить оружие</color></size>";
                     deathSub.text = by + resp + kit;
                 }

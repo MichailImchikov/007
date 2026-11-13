@@ -20,6 +20,11 @@ namespace FPS
         public byte face;       // see FaceNames
         public byte backpack;   // 0 yes, 1 no
         public byte build;      // see BuildNames
+        /// <summary>0 = procedural soldier, i = imported model CharacterModelDB.entries[i - 1].</summary>
+        public byte model = DefaultModel;
+
+        /// <summary>Default for new / old saves: the first imported model if the pack is present.</summary>
+        public const byte DefaultModel = 1;
 
         public const int MaxNick = 16;
 
@@ -52,6 +57,17 @@ namespace FPS
         public static readonly string[] FaceNames = { "Очки и маска", "Очки", "Маска", "Ничего" };
         public static readonly string[] BackpackNames = { "Есть", "Нет" };
         public static readonly string[] BuildNames = { "Обычное", "Худощавое", "Крепкое" };
+
+        /// <summary>Number of model choices (procedural + imported).</summary>
+        public static int ModelCount => 1 + CharacterModelDB.Count;
+        public static string ModelName(int i)
+        {
+            if (i <= 0) return "Классический (настраиваемый)";
+            var e = CharacterModelDB.Get(i);
+            return e != null ? e.name : "?";
+        }
+        /// <summary>True when the procedural options (colors, headwear, vest...) are visible on this look.</summary>
+        public bool Procedural => CharacterModelDB.Get(model) == null;
 
         // ------------------------------------------------------------------ persistence
 
@@ -95,15 +111,17 @@ namespace FPS
 
         // ------------------------------------------------------------------ serialization (without nick)
 
-        public byte[] GetBytes() => new[] { (byte)1, skin, shirt, pants, vest, helmet, gear, headwear, vestType, face, backpack, build };
+        public byte[] GetBytes() => new[] { (byte)2, skin, shirt, pants, vest, helmet, gear, headwear, vestType, face, backpack, build, model };
 
         public void SetBytes(byte[] b)
         {
-            if (b == null || b.Length < 12 || b[0] != 1) return;
+            if (b == null || b.Length < 12 || (b[0] != 1 && b[0] != 2)) return;
             skin = Clamp(b[1], SkinTones.Length); shirt = Clamp(b[2], Colors.Length); pants = Clamp(b[3], Colors.Length);
             vest = Clamp(b[4], Colors.Length); helmet = Clamp(b[5], Colors.Length); gear = Clamp(b[6], Colors.Length);
             headwear = Clamp(b[7], HeadwearNames.Length); vestType = Clamp(b[8], VestNames.Length); face = Clamp(b[9], FaceNames.Length);
             backpack = Clamp(b[10], BackpackNames.Length); build = Clamp(b[11], BuildNames.Length);
+            model = b[0] >= 2 && b.Length >= 13 ? b[12] : DefaultModel;
+            if (model >= ModelCount) model = (byte)(ModelCount > 1 ? DefaultModel : 0);
         }
 
         static byte Clamp(byte v, int n) => (byte)(v < n ? v : 0);
@@ -130,6 +148,8 @@ namespace FPS
                 face = (byte)r.Next(FaceNames.Length),
                 backpack = (byte)(r.NextDouble() < 0.7 ? 0 : 1),
                 build = (byte)r.Next(BuildNames.Length),
+                // mostly imported soldiers, sometimes the classic procedural one
+                model = (byte)(ModelCount > 1 && r.NextDouble() < 0.85 ? r.Next(1, ModelCount) : 0),
             };
             return l;
         }
@@ -280,7 +300,25 @@ namespace FPS
             }
 
             // keep the renderer list in sync (visibility toggles iterate it); hidden parts are inactive objects
-            rig.renderers = rig.GetComponentsInChildren<Renderer>(true);
+            ApplyModel(rig);
+        }
+
+        /// <summary>Imported model: wear it over the rig and hide the procedural meshes (their colliders stay as hitboxes).</summary>
+        void ApplyModel(HumanoidRig rig)
+        {
+            var e = CharacterModelDB.Get(model);
+            var sb = rig.GetComponentInChildren<SkinnedBody>(true);
+            if (sb && (e == null || sb.ModelIndex != model)) { sb.gameObject.SetActive(false); UnityEngine.Object.Destroy(sb.gameObject); sb = null; }
+            if (e != null && !sb) sb = SkinnedBody.Attach(rig, model, e);
+
+            var all = rig.GetComponentsInChildren<Renderer>(true);
+            if (!sb) { foreach (var r in all) r.forceRenderingOff = false; rig.renderers = all; return; }
+            var own = new HashSet<Renderer>(sb.Renderers);
+            foreach (var r in all) r.forceRenderingOff = !own.Contains(r);
+            // keep the current shadows-only state (first person) on the fresh model
+            bool shadowsOnly = rig.renderers != null && rig.renderers.Length > 0 && rig.renderers[0] && rig.renderers[0].shadowCastingMode == UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly;
+            rig.renderers = sb.Renderers;
+            if (shadowsOnly) rig.SetShadowsOnly(true);
         }
 
         static void Extra(LookState st, Transform parent, PrimitiveType type, Vector3 pos, Vector3 scale, Vector3 euler, Material m)

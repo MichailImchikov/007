@@ -23,7 +23,14 @@ namespace FPS
 
         public bool Has(ushort f) => (flags & f) != 0;
 
-        public static readonly string[] Weapons = { "M4A1", "SMG-9", "M870", "DMR-7", "P-17" };
+        public static readonly string[] Weapons = WeaponNames();
+
+        static string[] WeaponNames()
+        {
+            var n = new string[WeaponCatalog.All.Length];
+            for (int i = 0; i < n.Length; i++) n[i] = WeaponCatalog.All[i].name;
+            return n;
+        }
 
         public static byte WeaponIndex(string n)
         {
@@ -93,7 +100,6 @@ namespace FPS
                 if (u.Parrying) s.flags |= Sword;
                 if (u.Invisible) s.flags |= Invisible;
                 if (u.IsChicken) s.flags |= Chicken;
-                if (u.IsSnowman) s.flags |= Snowman;
                 if (u.PhaseActive) s.flags |= Phasing;
                 if (u.ButtRocketShown) s.flags |= ButtRocket;
                 if (u.BigHead) s.flags |= BigHead;

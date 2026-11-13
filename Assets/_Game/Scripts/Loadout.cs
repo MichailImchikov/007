@@ -55,18 +55,23 @@ namespace FPS
             return null;
         }
 
-        /// <summary>The primary chosen in the loadout menu differs from what we carry (applied on respawn).</summary>
-        public bool ChoicePending => Find(PlayerLoadout.Primary) && primaryName != PlayerLoadout.Primary;
+        /// <summary>The weapons chosen in the loadout menu differ from what we carry (applied on respawn).</summary>
+        public bool ChoicePending =>
+            (Find(PlayerLoadout.Primary) && primaryName != PlayerLoadout.Primary) ||
+            (Find(PlayerLoadout.Secondary) && secondaryName != PlayerLoadout.Secondary) ||
+            (melee && melee.VariantName.Length > 0 && melee.VariantName != PlayerLoadout.Melee);
 
         /// <summary>Takes the weapons chosen in the loadout menu (start of the match, respawn).</summary>
         public void ApplyPlayerChoice()
         {
             if (!GetComponent<PlayerHealth>() && !GetComponent<PlayerMotor>()) return;
-            string old = primaryName, p = PlayerLoadout.Primary;
+            string p = PlayerLoadout.Primary, s = PlayerLoadout.Secondary;
             if (Find(p) && Find(p).slot == WeaponSlot.Primary) primaryName = p;
-            if (Find(PlayerLoadout.Secondary)) secondaryName = PlayerLoadout.Secondary;
+            if (Find(s) && Find(s).slot == WeaponSlot.Secondary) secondaryName = s;
+            if (melee) melee.SetVariant(PlayerLoadout.Melee);
             var want = Primary ?? Secondary;
-            if (Active && want && Active != want && (Active.weaponName == old || Active.slot == WeaponSlot.Primary))
+            bool stale = Active && Active.weaponName != primaryName && Active.weaponName != secondaryName;
+            if (Active && want && Active != want && (stale || Active.slot == WeaponSlot.Primary))
             {
                 Active.gameObject.SetActive(false);
                 switching = false;
@@ -233,6 +238,7 @@ namespace FPS
             if (!templates.TryGetValue(weaponName, out var t)) return null;
             var go = Instantiate(t, parent);
             go.name = weaponName + "_World";
+            ImportHidden.Refresh(go);
             go.transform.localPosition = Vector3.zero;
             go.transform.localRotation = Quaternion.identity;
             go.SetActive(true);

@@ -224,7 +224,6 @@ namespace FPS
 
             Color tint = new Color(1f, 1f, 1f, 0f);
             if (user.IsChicken) tint = new Color(1f, 0.85f, 0.3f, 0.45f);
-            else if (user.IsSnowman) tint = new Color(0.8f, 0.92f, 1f, 0.6f);
             else if (user.Confused) tint = new Color(1f, 0.55f, 0.1f, 0.35f + Mathf.Sin(Time.unscaledTime * 8f) * 0.1f);
             else if (user.Shrunk) tint = new Color(0.45f, 0.95f, 0.4f, 0.25f);
             else if (user.Building) tint = new Color(0.85f, 0.6f, 0.3f, 0.2f);

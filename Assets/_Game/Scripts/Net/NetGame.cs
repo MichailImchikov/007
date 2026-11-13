@@ -23,7 +23,7 @@ namespace FPS
     {
         Welcome, Ready, Roster, State, Shot, Damage, Kill, KillFeed, Score, MatchEnd, LoadMap,
         Grenade, Explosion, Exec, Ability, Effect, PickupSpawn, PickupGone, PickupTake, PickupGrant,
-        CoverDamage, CoverState, CoverBreak, BananaGone,
+        CoverDamage, CoverState, CoverBreak,
     }
 
     /// <summary>
@@ -127,6 +127,12 @@ namespace FPS
         public bool StartHost(string scene)
         {
             Shutdown();
+            if (Busy) { StartAfterShutdown(() => BeginHost(scene)); return true; }
+            return BeginHost(scene);
+        }
+
+        bool BeginHost(string scene)
+        {
             utp.SetConnectionData("127.0.0.1", GamePort, "0.0.0.0");
             nm.NetworkConfig.ConnectionData = JoinPayload();
             nm.ConnectionApprovalCallback = Approve;
@@ -157,6 +163,33 @@ namespace FPS
             if (colon > 0 && ushort.TryParse(address.Substring(colon + 1), out var p)) { port = p; address = address.Substring(0, colon); }
             if (address == "localhost") address = "127.0.0.1";
             if (!System.Net.IPAddress.TryParse(address, out _)) { SetStatus("Неверный IP-адрес: " + address); return; }
+            if (Busy) { StartAfterShutdown(() => BeginJoin(address, port)); return; }
+            BeginJoin(address, port);
+        }
+
+        // NetworkManager.Shutdown() finishes on the next frame: starting again before that fails with
+        // "Can't start while listening" (reconnecting, joining right after a failed attempt, host → join).
+        bool Busy => nm && (nm.IsListening || nm.ShutdownInProgress);
+        Coroutine startRoutine;
+
+        void StartAfterShutdown(Action start)
+        {
+            if (startRoutine != null) StopCoroutine(startRoutine);
+            SetStatus("Завершение прошлого подключения...");
+            startRoutine = StartCoroutine(WaitIdleThen(start));
+        }
+
+        IEnumerator WaitIdleThen(Action start)
+        {
+            float until = Time.unscaledTime + 3f;
+            while (Busy && Time.unscaledTime < until) yield return null;
+            startRoutine = null;
+            if (Busy) { SetStatus("Прошлое подключение не закрылось, попробуйте ещё раз"); yield break; }
+            start();
+        }
+
+        void BeginJoin(string address, ushort port)
+        {
             utp.SetConnectionData(address, port);
             nm.NetworkConfig.ConnectionData = JoinPayload();
             Hosting = false;
@@ -185,6 +218,7 @@ namespace FPS
 
         void Shutdown()
         {
+            if (startRoutine != null) { StopCoroutine(startRoutine); startRoutine = null; }
             if (nm)
             {
                 nm.OnClientConnectedCallback -= OnConnected;
@@ -468,7 +502,7 @@ namespace FPS
             else SendRaw(NetworkManager.ServerClientId, data, true);
         }
 
-        static bool Relayed(Msg m) => m == Msg.Shot || m == Msg.Grenade || m == Msg.Explosion || m == Msg.Ability || m == Msg.BananaGone;
+        static bool Relayed(Msg m) => m == Msg.Shot || m == Msg.Grenade || m == Msg.Explosion || m == Msg.Ability;
         static bool Targeted(Msg m) => m == Msg.Damage || m == Msg.Exec || m == Msg.Effect;
 
         void OnNamed(ulong sender, FastBufferReader reader)
@@ -739,8 +773,6 @@ namespace FPS
                     if (covers.TryGetValue(id, out var d) && d && !d.Broken) d.Break(dir, point);
                     break;
                 }
-                case Msg.BananaGone:
-                    BananaPeel.RemoteGone(r.ReadInt32());
                     break;
             }
         }
@@ -1042,14 +1074,6 @@ namespace FPS
             w.Write((short)target.netId); w.Write((short)IdOf(caster)); w.Write((byte)e);
             body?.Invoke(w);
             I.Route(target.netId, I.End());
-        }
-
-        public static void SendBananaGone(int id)
-        {
-            if (!Ok || id == 0) return;
-            var w = I.Begin(Msg.BananaGone);
-            w.Write(id);
-            I.Publish(I.End());
         }
 
         // cover

@@ -48,7 +48,20 @@ namespace FPS
 
         readonly List<SpawnPoint> spawns = new List<SpawnPoint>();
         static readonly string[] Names = { "Ворон", "Сокол", "Гром", "Призрак", "Кобра", "Шторм", "Тень", "Волк", "Лис", "Рысь", "Барс", "Беркут", "Кедр", "Удав" };
-        static readonly string[] BotWeapons = { "M4A1", "M4A1", "SMG-9", "SMG-9", "DMR-7" };
+        /// <summary>Any primary from the catalog; assault rifles and SMGs more often, shotguns rarely (bots fight at range).</summary>
+        static string RandomBotWeapon()
+        {
+            float total = 0f;
+            foreach (var d in WeaponCatalog.All) total += BotWeight(d);
+            float r = Random.value * total;
+            foreach (var d in WeaponCatalog.All) { r -= BotWeight(d); if (r <= 0f && BotWeight(d) > 0f) return d.name; }
+            return "M4A1";
+        }
+
+        static float BotWeight(WeaponDef d) => d.category switch
+        {
+            WeaponCategory.Assault => 2f, WeaponCategory.SMG => 1.5f, WeaponCategory.Marksman => 1f, WeaponCategory.Shotgun => 0.5f, _ => 0f,
+        };
 
         public static void Report(Combatant killer, Combatant victim, string weapon, bool headshot)
         {
@@ -66,8 +79,8 @@ namespace FPS
             TimeLeft = MatchSettings.timeLimit;
             spawns.AddRange(FindObjectsByType<SpawnPoint>());
 
-            // bake navigation from colliders (players' capsules excluded)
-            if (navSurface)
+            // bake navigation from colliders (players' capsules excluded); big imported maps ship a pre-baked NavMesh
+            if (navSurface && !navSurface.navMeshData)
             {
                 var ccs = FindObjectsByType<CharacterController>();
                 foreach (var c in ccs) c.enabled = false;
@@ -100,7 +113,7 @@ namespace FPS
             go.name = "Bot_" + Names[i % Names.Length];
             var bot = go.GetComponent<CombatBot>();
             bot.difficulty = MatchSettings.difficulty;
-            bot.weaponName = BotWeapons[Random.Range(0, BotWeapons.Length)];
+            bot.weaponName = RandomBotWeapon();
             var c = go.GetComponent<Combatant>();
             c.displayName = Names[i % Names.Length];
             c.isPlayer = false;

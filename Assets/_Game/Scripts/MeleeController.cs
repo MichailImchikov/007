@@ -69,9 +69,57 @@ namespace FPS
             new KeyFrame(0.75f, -20f, 10f, 70f), new KeyFrame(0.86f, 10f, 15f, 40f), new KeyFrame(1f, 30f, 20f, 40f)
         };
 
+        /// <summary>Current melee weapon (MeleeCatalog name).</summary>
+        public string VariantName { get; private set; } = "";
+        Transform variantModel;
+        static readonly string[] ProceduralBlade = { "Handle", "Guard", "Blade", "BladeTip", "Spine" };
+
+        /// <summary>Switches the melee weapon: stats plus the model in the knife hand.</summary>
+        public void SetVariant(string variant)
+        {
+            var d = MeleeCatalog.Get(variant);
+            if (d.name == VariantName) return;
+            VariantName = d.name;
+            damage = d.damage; range = d.range; slashTime = d.slashTime; backstabMultiplier = d.backstab;
+            if (!knifeArm) return;
+            if (variantModel) { Destroy(variantModel.gameObject); variantModel = null; }
+
+            Transform model = null;
+            var db = WeaponModelDB.Instance;
+            if (d.name == "Меч")
+            {
+                model = new GameObject("MeleeModel").transform;
+                model.SetParent(knifeArm, false);
+                var sword = AbilityProps.BuildSword(model, false);
+                sword.localRotation = Quaternion.Euler(90f, 0f, 0f);
+                sword.localScale = Vector3.one * 0.8f;
+                model.localPosition = new Vector3(0f, 0.004f, 0.06f);
+            }
+            else if (d.name == "Боевой нож" && db && db.knifePrefab)
+            {
+                model = new GameObject("MeleeModel").transform;
+                model.SetParent(knifeArm, false);
+                var k = Instantiate(db.knifePrefab, model, false).transform;
+                k.localRotation = Quaternion.Euler(db.knifeEuler);
+                k.localScale = Vector3.one * db.knifeScale;
+                k.localPosition = Vector3.zero;
+                model.localPosition = db.knifeOffset;
+                foreach (var c in k.GetComponentsInChildren<Collider>(true)) Destroy(c);
+            }
+            bool procedural = model == null;
+            foreach (var n in ProceduralBlade) { var t = knifeArm.Find(n); if (t) t.gameObject.SetActive(procedural); }
+            if (model)
+            {
+                foreach (var t in model.GetComponentsInChildren<Transform>(true)) t.gameObject.layer = knifeArm.gameObject.layer;
+                foreach (var r in model.GetComponentsInChildren<Renderer>(true)) r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                variantModel = model;
+            }
+        }
+
         void Start()
         {
             self = GetComponent<Combatant>();
+            if (VariantName.Length == 0 && GetComponent<PlayerMotor>()) SetVariant(PlayerLoadout.Melee);
             if (knifeArm) knifeArm.gameObject.SetActive(false);
             if (execLeftArm) execLeftArm.gameObject.SetActive(false);
         }
@@ -150,7 +198,7 @@ namespace FPS
                 float amount = damage;
                 bool crit = false;
                 if (bot && Vector3.Dot(bot.transform.parent ? bot.transform.parent.forward : bot.transform.forward, ct.forward) > 0.5f) { amount *= backstabMultiplier; crit = true; }
-                var res = d.TakeDamage(new DamageInfo { amount = amount, point = hit.point, normal = hit.normal, direction = ct.forward, critical = crit, attacker = self, weapon = "Нож" });
+                var res = d.TakeDamage(new DamageInfo { amount = amount, point = hit.point, normal = hit.normal, direction = ct.forward, critical = crit, attacker = self, weapon = VariantName.Length > 0 ? VariantName : "Нож" });
                 if (res.applied)
                 {
                     HUD.Ensure().ShowHitmarker(res.killed, crit);

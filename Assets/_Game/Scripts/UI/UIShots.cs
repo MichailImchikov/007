@@ -51,7 +51,7 @@ namespace FPS
             Click("Создать игру по сети"); yield return Wait(0.6f); yield return Shot("09_host");
             MenuPanel.CloseAll(); yield return null;
 
-            foreach (var map in new[] { "Map_Plant", "Map_Village", "Map_Port", "Map_Town", "Map_Warehouse" })
+            foreach (var map in new[] { "Map_Plant", "Map_Village", "Map_Port", "Map_Town", "Map_Warehouse", "Map_Flooded" })
             {
                 SceneManager.LoadScene(map);
                 yield return Wait(3f);
@@ -112,10 +112,15 @@ namespace FPS
         IEnumerator Overview(string name)
         {
             var cam = new GameObject("OverviewCam").AddComponent<Camera>();
-            cam.transform.position = new Vector3(-55f, 62f, -70f);
-            cam.transform.LookAt(new Vector3(0f, 0f, 2f));
+            // frame the spawn points (imported maps are not centred on the origin)
+            var sps = FindObjectsByType<SpawnPoint>(FindObjectsInactive.Exclude);
+            var b = new Bounds(sps.Length > 0 ? sps[0].transform.position : Vector3.zero, Vector3.zero);
+            foreach (var s in sps) b.Encapsulate(s.transform.position);
+            float k = Mathf.Max(1f, Mathf.Max(b.size.x, b.size.z) / 95f);
+            cam.transform.position = b.center + new Vector3(-55f, 62f, -72f) * k;
+            cam.transform.LookAt(b.center);
             cam.fieldOfView = 48f;
-            cam.farClipPlane = 400f;
+            cam.farClipPlane = 400f * k;
             cam.targetTexture = rt;
             yield return null;
             yield return null; // (WaitForEndOfFrame never fires in batch mode)

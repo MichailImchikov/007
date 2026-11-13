@@ -33,6 +33,7 @@ namespace FPS.EditorTools
             BuildWarehouse();
             BuildPlant();
             BuildVillage();
+            BuildFlooded();
             if (!AssetDatabase.LoadAssetAtPath<SceneAsset>(ScenePath)) Build();
             SetBuildScenes();
             EditorSceneManager.OpenScene("Assets/Scenes/MainMenu.unity");

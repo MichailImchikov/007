@@ -60,6 +60,11 @@ namespace FPS
             string ColorName(int i) => CharacterLook.ColorNames[i];
             Color? Col(int i) => colors[i];
 
+            UIKit.Header(list, "Модель");
+            refreshers.Add(UIKit.SelectorRow(list, "Боец", CharacterLook.ModelCount, () => look.model, i => { look.model = (byte)i; Changed(); }, CharacterLook.ModelName));
+            var modelHint = UIKit.Label(list, "Цвета и снаряжение ниже меняют только классического бойца.", 17, TextAnchor.MiddleLeft, new Color(1f, 1f, 1f, 0.45f));
+            modelHint.gameObject.AddComponent<LayoutElement>().preferredHeight = 30f;
+
             UIKit.Header(list, "Внешность");
             refreshers.Add(UIKit.SelectorRow(list, "Телосложение", CharacterLook.BuildNames.Length, () => look.build, i => { look.build = (byte)i; Changed(); }, i => CharacterLook.BuildNames[i]));
             refreshers.Add(UIKit.SelectorRow(list, "Тон кожи", tones.Length, () => look.skin, i => { look.skin = (byte)i; Changed(); }, i => CharacterLook.SkinNames[i], i => tones[i]));

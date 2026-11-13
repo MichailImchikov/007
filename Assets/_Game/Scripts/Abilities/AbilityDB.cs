@@ -5,8 +5,8 @@ namespace FPS
 {
     public enum AbilityType
     {
-        None, Grapple, Parry, ButtRocket, ChickenTrap, Invisibility, Phase, FartBlind, FartSmoke, Swap, Banana,
-        Shrink, BigHeads, Screamer, Snowman, Confuse, Launch, Minesweeper, Build, BSOD
+        None, Grapple, Parry, ButtRocket, ChickenTrap, Invisibility, Phase, FartBlind, FartSmoke, Swap,
+        Shrink, BigHeads, Screamer, Confuse, Launch, Minesweeper, Build, BSOD, Spin
     }
 
     public struct AbilityInfo
@@ -70,11 +70,6 @@ namespace FPS
                 name = "Рокировка", glyph = "О", color = new Color(1f, 0.3f, 0.8f), cooldown = 14f, weight = 0.9f,
                 desc = "Мгновенно меняет вас местами с врагом в прицеле."
             },
-            [AbilityType.Banana] = new AbilityInfo
-            {
-                name = "Банановая кожура", glyph = "Б", color = new Color(1f, 0.9f, 0.2f), cooldown = 9f, weight = 0.9f,
-                desc = "Бросьте кожуру: наступивший поскользнётся и шлёпнется на спину."
-            },
             [AbilityType.Shrink] = new AbilityInfo
             {
                 name = "Мини-я", glyph = "↓", color = new Color(0.45f, 0.95f, 0.4f), cooldown = 24f, duration = 12f, weight = 0.8f,
@@ -90,11 +85,6 @@ namespace FPS
                 name = "Скример", glyph = "!", color = new Color(0.9f, 0.12f, 0.1f), cooldown = 18f, radius = 12f, weight = 0.8f,
                 desc = "Всем врагам рядом — орущее лицо прямо в глаза."
             },
-            [AbilityType.Snowman] = new AbilityInfo
-            {
-                name = "Снеговик", glyph = "*", color = new Color(0.8f, 0.93f, 1f), cooldown = 22f, duration = 7f, radius = 10f, weight = 0.7f,
-                desc = "Враги рядом становятся снеговиками: еле ползут и не стреляют."
-            },
             [AbilityType.Confuse] = new AbilityInfo
             {
                 name = "Путаница", glyph = "↔", color = new Color(1f, 0.55f, 0.1f), cooldown = 18f, duration = 7f, radius = 14f, weight = 0.8f,
@@ -108,7 +98,7 @@ namespace FPS
             [AbilityType.Minesweeper] = new AbilityInfo
             {
                 name = "Сапёр", glyph = "#", color = new Color(0.7f, 0.72f, 0.75f), cooldown = 25f, radius = 12f, weight = 0.7f,
-                desc = "Враги рядом не сдвинутся, пока не решат сапёра 4×4. Ошибка — взрыв."
+                desc = "Все рядом — и вы тоже! — не сдвинутся, пока не решат сапёра 4×4. Ошибка — взрыв."
             },
             [AbilityType.Build] = new AbilityInfo
             {
@@ -119,6 +109,11 @@ namespace FPS
             {
                 name = "Синий экран", glyph = ":(", color = new Color(0.1f, 0.5f, 0.95f), cooldown = 20f, duration = 4.5f, radius = 14f, weight = 0.7f,
                 desc = "Враги рядом ловят синий экран смерти и зависают."
+            },
+            [AbilityType.Spin] = new AbilityInfo
+            {
+                name = "Карусель", glyph = "@", color = new Color(0.95f, 0.85f, 0.25f), cooldown = 18f, duration = 3f, radius = 14f, weight = 0.8f,
+                desc = "У врагов рядом камеру крутит на 360° — снова и снова, 3 секунды."
             },
         };
 
@@ -147,8 +142,8 @@ namespace FPS
             var real = new[]
             {
                 AbilityType.Grapple, AbilityType.Parry, AbilityType.ButtRocket, AbilityType.Invisibility, AbilityType.Phase, AbilityType.FartBlind,
-                AbilityType.Swap, AbilityType.Banana, AbilityType.Shrink, AbilityType.BigHeads, AbilityType.Screamer, AbilityType.Snowman,
-                AbilityType.Confuse, AbilityType.Launch, AbilityType.Minesweeper, AbilityType.Build, AbilityType.BSOD
+                AbilityType.Swap, AbilityType.Shrink, AbilityType.BigHeads, AbilityType.Screamer,
+                AbilityType.Confuse, AbilityType.Launch, AbilityType.Minesweeper, AbilityType.Build, AbilityType.BSOD, AbilityType.Spin
             };
             return real[Random.Range(0, real.Length)];
         }

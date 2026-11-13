@@ -4,7 +4,7 @@ using UnityEngine;
 namespace FPS
 {
     /// <summary>One-shot ability events broadcast by the caster's machine (visuals for everybody else).</summary>
-    public enum AbilityNetEvent : byte { Grapple, Rocket, Fart, Swap, Banana, Area, Build }
+    public enum AbilityNetEvent : byte { Grapple, Rocket, Fart, Swap, Area, Build }
 
     /// <summary>Effects one combatant's ability has on another one that lives on a different machine.</summary>
     public enum AbilityNetEffect : byte { Blind, Area, Teleport, Pull, PullEnd }
@@ -12,8 +12,8 @@ namespace FPS
     /// <summary>
     /// Multiplayer side of the ability system.
     /// Rule: an ability runs for real only on the machine that simulates the caster (owner). Everybody else
-    /// gets (a) persistent states via snapshots — sword, chicken, snowman, invisibility, phasing, scale, butt rocket —
-    /// and (b) one-shot visual events (rope, rocket flight, fart cloud, banana, built walls, shockwave).
+    /// gets (a) persistent states via snapshots — sword, chicken, invisibility, phasing, scale, butt rocket —
+    /// and (b) one-shot visual events (rope, rocket flight, fart cloud, built walls, shockwave).
     /// Effects on a combatant simulated elsewhere (blind, area debuffs, swap teleport, hook pull) are sent
     /// to that combatant's owner, who applies them through the normal single-player code.
     /// </summary>
@@ -41,11 +41,9 @@ namespace FPS
                 if (remoteRocket) Destroy(remoteRocket.gameObject);
                 return;
             }
-            bool chick = s.Has(CharState.Chicken), snow = s.Has(CharState.Snowman), sword = s.Has(CharState.Sword);
+            bool chick = s.Has(CharState.Chicken), sword = s.Has(CharState.Sword);
             if (chick && chickenT <= 0f) StartChicken(1e6f);
             else if (!chick && chickenT > 0f) EndChicken();
-            if (snow && snowmanT <= 0f) StartSnowman(1e6f);
-            else if (!snow && snowmanT > 0f) EndSnowman();
             if (sword && parryT <= 0f) StartParry(1e6f);
             else if (!sword && parryT > 0f) EndParry();
 
@@ -167,13 +165,6 @@ namespace FPS
                                          new Color(1f, 0.4f, 0.85f, 0.5f), new Color(0.9f, 0.3f, 0.7f, 0.4f));
                         ProcAudio.PlayAt(Sfx.Warp, p + Vector3.up, 0.9f, 0.05f);
                     }
-                    break;
-                }
-                case AbilityNetEvent.Banana:
-                {
-                    int id = r.ReadInt32();
-                    Vector3 pos = RV(r), vel = RV(r);
-                    BananaPeel.Throw(pos, vel, self, id);
                     break;
                 }
                 case AbilityNetEvent.Area:

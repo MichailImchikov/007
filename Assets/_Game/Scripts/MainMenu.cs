@@ -25,6 +25,8 @@ namespace FPS
                            desc = "Цех с котлами и трубопроводами, мостки на двух ярусах, двор с цистернами и железнодорожной веткой." },
             new MapEntry { scene = "Map_Village", title = "ДЕРЕВНЯ", tag = "Лесная деревня · открытые линии", accent = new Color(0.45f, 0.75f, 0.55f),
                            desc = "Избы, сараи и церковь на холме. Длинные линии через поле, заборы, стога и ближний бой в домах." },
+            new MapEntry { scene = "Map_Flooded", title = "ЗАТОПЛЕННАЯ ДЕРЕВНЯ", tag = "Туманная низина · большая карта", accent = new Color(0.4f, 0.62f, 0.68f),
+                           desc = "Особняк с садом, церковь, теплицы и ангар вокруг затопленной дороги. Дальние линии в тумане и бой в домах." },
             new MapEntry { scene = "ShootingRange", title = "ПОЛИГОН", tag = "Тренировка", accent = new Color(0.8f, 0.8f, 0.85f),
                            desc = "Мишени, полоса препятствий, тренировочные боты для добиваний, стенд со всеми способностями." },
         };
@@ -149,7 +151,7 @@ namespace FPS
         void RefreshProfile()
         {
             if (nickText) nickText.text = CharacterLook.Local.nick;
-            if (loadoutText) loadoutText.text = PlayerLoadout.Primary + "  ·  " + PlayerLoadout.Secondary + "  ·  НОЖ  ·  ГРАНАТЫ";
+            if (loadoutText) loadoutText.text = PlayerLoadout.Primary + "  ·  " + PlayerLoadout.Secondary + "  ·  " + PlayerLoadout.Melee.ToUpperInvariant() + "  ·  ГРАНАТЫ";
             if (controlsText)
             {
                 string K(BindAction a) => GameSettings.KeyName(a);
@@ -210,10 +212,12 @@ namespace FPS
                 int col = i % 2, row = i / 2;
                 var b = UIKit.Button(grid, "", () => { selectedMap = idx; Select(); }, UIKit.Style.Normal, 34, true);
                 var rt = (RectTransform)b.transform;
-                rt.anchorMin = new Vector2(col * 0.5f, 1f); rt.anchorMax = new Vector2(col * 0.5f + 0.5f, 1f); rt.pivot = new Vector2(0.5f, 1f);
-                rt.offsetMin = new Vector2(col == 0 ? 0f : 8f, 0f); rt.offsetMax = new Vector2(col == 0 ? -8f : 0f, 0f);
-                rt.sizeDelta = new Vector2(rt.sizeDelta.x, 196f);
-                rt.anchoredPosition = new Vector2(rt.anchoredPosition.x, -row * 210f);
+                // rows share the grid height, so more maps shrink the cards instead of overflowing
+                int rows = (Maps.Length + 1) / 2;
+                float top = 1f - row / (float)rows, bottom = 1f - (row + 1) / (float)rows;
+                rt.anchorMin = new Vector2(col * 0.5f, bottom); rt.anchorMax = new Vector2(col * 0.5f + 0.5f, top); rt.pivot = new Vector2(0.5f, 1f);
+                rt.offsetMin = new Vector2(col == 0 ? 0f : 8f, row == rows - 1 ? 0f : 7f);
+                rt.offsetMax = new Vector2(col == 0 ? -8f : 0f, row == 0 ? 0f : -7f);
                 var lbl = UIKit.LabelOf(b);
                 lbl.text = m.title;
                 lbl.alignment = TextAnchor.UpperLeft;
@@ -267,6 +271,7 @@ namespace FPS
                 var m = Maps[selectedMap];
                 for (int i = 0; i < cards.Count; i++) cards[i].Selected = i == selectedMap;
                 title.text = m.title;
+                title.fontSize = m.title.Length > 14 ? 34 : 46; // long names stay on one line above the description
                 desc.text = m.desc;
                 accentBar.color = m.accent;
             }

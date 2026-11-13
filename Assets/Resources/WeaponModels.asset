@@ -1,0 +1,292 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 12752707a95246f4e931a114de5c9eb7, type: 3}
+  m_Name: WeaponModels
+  m_EditorClassIdentifier: Assembly-CSharp::FPS.WeaponModelDB
+  entries:
+  - weaponName: M4A1
+    prefab: {fileID: 100014, guid: e3bb2d56ac6ffff4c97b2643ce137c62, type: 3}
+    keepMagazine: 0
+    scale: 1
+    offset: {x: 0, y: 0, z: 0}
+    ownSight: 1
+    sightPoint: {x: 0, y: 0.07162963, z: -0.2607189}
+    fixedScale: 0
+    sightKeepDepth: 0
+    triggerPoint: {x: -0.0012202482, y: -0.061308827, z: -0.29416895}
+    muzzlePoint: {x: 0, y: -0.0003238023, z: 0.2523429}
+    foregripPoint: {x: 0, y: -0.025588855, z: -0.00904157}
+    hasForegrip: 1
+  - weaponName: CV-47
+    prefab: {fileID: 100010, guid: 8b6bff4ef35094b429a318b9702cd2f5, type: 3}
+    keepMagazine: 0
+    scale: 1
+    offset: {x: 0, y: 0, z: 0}
+    ownSight: 1
+    sightPoint: {x: 0, y: 0.065180615, z: 0.2293764}
+    fixedScale: 1.3
+    sightKeepDepth: 1
+    triggerPoint: {x: -0.0044713067, y: -0.027470011, z: -0.19179991}
+    muzzlePoint: {x: 0, y: 0.013790079, z: 0.36146572}
+    foregripPoint: {x: 0, y: 0, z: 0}
+    hasForegrip: 0
+  - weaponName: DMR-7
+    prefab: {fileID: 100006, guid: 06a0769381b57eb47b2ea426b551e8c3, type: 3}
+    keepMagazine: 0
+    scale: 1
+    offset: {x: 0, y: 0, z: 0}
+    ownSight: 1
+    sightPoint: {x: 0, y: 0.08925387, z: -0.20639884}
+    fixedScale: 0
+    sightKeepDepth: 0
+    triggerPoint: {x: 0.001324467, y: -0.019732667, z: -0.22481053}
+    muzzlePoint: {x: 0, y: 0.0429475, z: 0.5379662}
+    foregripPoint: {x: 0, y: 0, z: 0}
+    hasForegrip: 0
+  - weaponName: M16A4
+    prefab: {fileID: 100014, guid: 5db3ca550a2ad37498853f4cce37733f, type: 3}
+    keepMagazine: 0
+    scale: 1
+    offset: {x: 0, y: 0, z: 0}
+    ownSight: 1
+    sightPoint: {x: 0, y: 0.06599971, z: -0.28922328}
+    fixedScale: 1.2
+    sightKeepDepth: 0
+    triggerPoint: {x: -0.0012202754, y: -0.06130879, z: -0.29427928}
+    muzzlePoint: {x: 0, y: -0.0002524741, z: 0.36090714}
+    foregripPoint: {x: 0, y: -0.023032244, z: 0.032998748}
+    hasForegrip: 1
+  - weaponName: SMG-9
+    prefab: {fileID: 100010, guid: 577f6dae739db164780bb8fc15692c88, type: 3}
+    keepMagazine: 0
+    scale: 1
+    offset: {x: 0, y: 0, z: 0}
+    ownSight: 0
+    sightPoint: {x: 0, y: 0.09908138, z: 0.17180529}
+    fixedScale: 0
+    sightKeepDepth: 0
+    triggerPoint: {x: 0, y: -0.03342051, z: -0.086672604}
+    muzzlePoint: {x: 0, y: 0.0003726864, z: 0.27882424}
+    foregripPoint: {x: 0, y: 0, z: 0}
+    hasForegrip: 0
+  - weaponName: KM4
+    prefab: {fileID: 100004, guid: a45086b8310776046b5f8219401dd407, type: 3}
+    keepMagazine: 0
+    scale: 1
+    offset: {x: 0, y: 0, z: 0}
+    ownSight: 1
+    sightPoint: {x: 0, y: 0.092736736, z: 0.19103245}
+    fixedScale: 1.2
+    sightKeepDepth: 1
+    triggerPoint: {x: 0.000000004656613, y: -0.041967757, z: -0.032198157}
+    muzzlePoint: {x: 0, y: 0.01841337, z: 0.29279596}
+    foregripPoint: {x: 0, y: -0.003924586, z: 0.1909133}
+    hasForegrip: 1
+  - weaponName: R90
+    prefab: {fileID: 100004, guid: d4426f89b66befc4bbc4986c7435ae32, type: 3}
+    keepMagazine: 0
+    scale: 1
+    offset: {x: 0, y: 0, z: 0}
+    ownSight: 1
+    sightPoint: {x: 0, y: 0.109, z: 0}
+    fixedScale: 1.25
+    sightKeepDepth: 1
+    triggerPoint: {x: 0, y: -0.01089198, z: 0.11175926}
+    muzzlePoint: {x: 0, y: 0.024497544, z: 0.271296}
+    foregripPoint: {x: 0, y: 0, z: 0}
+    hasForegrip: 0
+  - weaponName: CX8
+    prefab: {fileID: 100008, guid: 45ef89683a7ec864ca475e30366e678e, type: 3}
+    keepMagazine: 0
+    scale: 1
+    offset: {x: 0, y: 0, z: 0}
+    ownSight: 1
+    sightPoint: {x: 0, y: 0.08716126, z: 0.31135938}
+    fixedScale: 1.2
+    sightKeepDepth: 1
+    triggerPoint: {x: -0.00023156079, y: 0.023374798, z: 0.0413626}
+    muzzlePoint: {x: 0, y: 0.06756186, z: 0.4244489}
+    foregripPoint: {x: 0, y: 0.020756647, z: 0.24162462}
+    hasForegrip: 1
+  - weaponName: M870
+    prefab: {fileID: 100018, guid: c35e08bdf415bfc408cec0475d3ae69f, type: 3}
+    keepMagazine: 1
+    scale: 1
+    offset: {x: 0, y: 0, z: 0}
+    ownSight: 1
+    sightPoint: {x: 0, y: 0.0226, z: 0}
+    fixedScale: 0
+    sightKeepDepth: 0
+    triggerPoint: {x: 0.0000000048894435, y: -0.0740959, z: -0.06116421}
+    muzzlePoint: {x: 0, y: -0.032247886, z: 0.6011827}
+    foregripPoint: {x: 0, y: 0, z: 0}
+    hasForegrip: 0
+  - weaponName: SG-4
+    prefab: {fileID: 100004, guid: 0b8e2685f06f8fd4990a4df2148883f3, type: 3}
+    keepMagazine: 1
+    scale: 1
+    offset: {x: 0, y: 0, z: 0}
+    ownSight: 1
+    sightPoint: {x: 0, y: 0.11146518, z: 0.16263472}
+    fixedScale: 1.12
+    sightKeepDepth: 1
+    triggerPoint: {x: 4.656613e-10, y: 0.019758807, z: -0.3392472}
+    muzzlePoint: {x: 0, y: 0.06288319, z: 0.31717473}
+    foregripPoint: {x: 0, y: 0, z: 0}
+    hasForegrip: 0
+  - weaponName: FBS
+    prefab: {fileID: 100004, guid: f1ac788ed2682064db8039a088a4f10b, type: 3}
+    keepMagazine: 1
+    scale: 1
+    offset: {x: 0, y: 0, z: 0}
+    ownSight: 1
+    sightPoint: {x: 0, y: 0.094628975, z: 0.08610462}
+    fixedScale: 1.2
+    sightKeepDepth: 1
+    triggerPoint: {x: 0.00000003108289, y: 0.0016494729, z: -0.30815488}
+    muzzlePoint: {x: 0, y: 0.062151328, z: 0.21691333}
+    foregripPoint: {x: 0, y: 0, z: 0}
+    hasForegrip: 0
+  - weaponName: DT22
+    prefab: {fileID: 100006, guid: 1136e8df49a6d3b468b9bb8a6cc5d505, type: 3}
+    keepMagazine: 1
+    scale: 1
+    offset: {x: 0, y: 0, z: 0}
+    ownSight: 1
+    sightPoint: {x: 0, y: -0.15020263, z: 0.49057803}
+    fixedScale: 0.95
+    sightKeepDepth: 1
+    triggerPoint: {x: 0.0000000027939677, y: -0.2476769, z: -0.2145319}
+    muzzlePoint: {x: 0, y: -0.1993113, z: 0.6826534}
+    foregripPoint: {x: 0, y: 0, z: 0}
+    hasForegrip: 0
+  - weaponName: P-17
+    prefab: {fileID: 100008, guid: 7ae8505cbe1515348900b8ee128e35cd, type: 3}
+    keepMagazine: 0
+    scale: 1
+    offset: {x: 0, y: 0, z: 0}
+    ownSight: 1
+    sightPoint: {x: 0, y: 0.077, z: -0.066}
+    fixedScale: 0
+    sightKeepDepth: 0
+    triggerPoint: {x: -0.000032710843, y: 0.018896785, z: -0.017401913}
+    muzzlePoint: {x: 0, y: 0.05742952, z: 0.11014874}
+    foregripPoint: {x: 0, y: 0, z: 0}
+    hasForegrip: 0
+  - weaponName: AP85
+    prefab: {fileID: 100002, guid: d81d89596308cf241b1a6b377859b080, type: 3}
+    keepMagazine: 0
+    scale: 1
+    offset: {x: 0, y: 0, z: 0}
+    ownSight: 1
+    sightPoint: {x: 0, y: 0.06853368, z: 0.068858355}
+    fixedScale: 0.95
+    sightKeepDepth: 1
+    triggerPoint: {x: -0.00000008079223, y: 0.015840326, z: -0.0025207214}
+    muzzlePoint: {x: 0, y: 0.0480063, z: 0.098948345}
+    foregripPoint: {x: 0, y: 0, z: 0}
+    hasForegrip: 0
+  - weaponName: C1911
+    prefab: {fileID: 100008, guid: c59d5d5ee70dc0544a946b651abbf0a2, type: 3}
+    keepMagazine: 0
+    scale: 1
+    offset: {x: 0, y: 0, z: 0}
+    ownSight: 1
+    sightPoint: {x: 0, y: 0.06848946, z: 0.07924762}
+    fixedScale: 0.95
+    sightKeepDepth: 1
+    triggerPoint: {x: 0.0000000013969839, y: 0.015557316, z: -0.0146348635}
+    muzzlePoint: {x: 0, y: 0.047986858, z: 0.11162149}
+    foregripPoint: {x: 0, y: 0, z: 0}
+    hasForegrip: 0
+  - weaponName: Eder 22
+    prefab: {fileID: 100000, guid: 8d0c8809abe44784bae4df15397d3154, type: 3}
+    keepMagazine: 0
+    scale: 1
+    offset: {x: 0, y: 0, z: 0}
+    ownSight: 1
+    sightPoint: {x: 0, y: 0.12835507, z: 0.16270694}
+    fixedScale: 0.95
+    sightKeepDepth: 1
+    triggerPoint: {x: 0.0012285137, y: 0.07924091, z: 0.087074876}
+    muzzlePoint: {x: 0, y: 0.10546566, z: 0.19338885}
+    foregripPoint: {x: 0, y: 0, z: 0}
+    hasForegrip: 0
+  - weaponName: P350
+    prefab: {fileID: 100008, guid: fc9911aadaf045340b2c0cf4d8c87c9d, type: 3}
+    keepMagazine: 0
+    scale: 1
+    offset: {x: 0, y: 0, z: 0}
+    ownSight: 1
+    sightPoint: {x: 0, y: 0.07578784, z: 0.07190747}
+    fixedScale: 0.95
+    sightKeepDepth: 1
+    triggerPoint: {x: -4.656613e-10, y: 0.018957805, z: -0.0015520798}
+    muzzlePoint: {x: 0, y: 0.0492749, z: 0.10253649}
+    foregripPoint: {x: 0, y: 0, z: 0}
+    hasForegrip: 0
+  - weaponName: PT8
+    prefab: {fileID: 100006, guid: ea559664b1217614da3b57e19b8beb08, type: 3}
+    keepMagazine: 0
+    scale: 1
+    offset: {x: 0, y: 0, z: 0}
+    ownSight: 1
+    sightPoint: {x: 0, y: 0.057909627, z: 0.06440029}
+    fixedScale: 0.95
+    sightKeepDepth: 1
+    triggerPoint: {x: 0.00000010570511, y: 0.006804304, z: -0.004445111}
+    muzzlePoint: {x: 0, y: 0.031767208, z: 0.09315743}
+    foregripPoint: {x: 0, y: 0, z: 0}
+    hasForegrip: 0
+  - weaponName: Gruber .22
+    prefab: {fileID: 100006, guid: fecedd70f71a0354fb5df09462dcee57, type: 3}
+    keepMagazine: 0
+    scale: 1
+    offset: {x: 0, y: 0, z: 0}
+    ownSight: 1
+    sightPoint: {x: 0, y: 0.016984787, z: 0.15913983}
+    fixedScale: 0.95
+    sightKeepDepth: 1
+    triggerPoint: {x: 0.0000000060535967, y: -0.030492336, z: 0.042808954}
+    muzzlePoint: {x: 0, y: 0.0025596318, z: 0.19809346}
+    foregripPoint: {x: 0, y: 0, z: 0}
+    hasForegrip: 0
+  - weaponName: R-357
+    prefab: {fileID: 100016, guid: 0f8234f531f64a948bb3c22dcc7f2672, type: 3}
+    keepMagazine: 0
+    scale: 1
+    offset: {x: 0, y: 0, z: 0}
+    ownSight: 1
+    sightPoint: {x: 0, y: 0.0700931, z: 0.13436477}
+    fixedScale: 0.95
+    sightKeepDepth: 1
+    triggerPoint: {x: -0.0000044689514, y: 0.0008393144, z: -0.0172867}
+    muzzlePoint: {x: 0, y: 0.05690601, z: 0.17663711}
+    foregripPoint: {x: 0, y: 0, z: 0}
+    hasForegrip: 0
+  - weaponName: "\u0420\u0430\u043A\u0435\u0442\u043D\u0438\u0446\u0430"
+    prefab: {fileID: 100006, guid: 612f0f399b79c7044b4a1acee9a5ee88, type: 3}
+    keepMagazine: 0
+    scale: 1
+    offset: {x: 0, y: 0, z: 0}
+    ownSight: 1
+    sightPoint: {x: 0, y: 0.07524564, z: 0.070308626}
+    fixedScale: 0.95
+    sightKeepDepth: 1
+    triggerPoint: {x: 6.9849193e-10, y: 0.002759872, z: -0.0042418884}
+    muzzlePoint: {x: 0, y: 0.058718614, z: 0.1034739}
+    foregripPoint: {x: 0, y: 0, z: 0}
+    hasForegrip: 0
+  knifePrefab: {fileID: 6819225651408727727, guid: 95cfccfa8a8d7ce4ab87245e77e6cc35, type: 3}
+  knifeEuler: {x: 0, y: 0, z: 0}
+  knifeOffset: {x: 0, y: 0.004, z: 0.01}
+  knifeScale: 0.72

@@ -130,12 +130,11 @@ namespace FPS
 
         void SetupWeapon()
         {
-            switch (weaponName)
-            {
-                case "SMG-9": dmg = 14f; rpm = 820f; spread = 1.6f; prefDist = 9f; magSize = 32; burstMin = 4; burstMax = 9; sfx = Sfx.Shot; break;
-                case "DMR-7": dmg = 46f; rpm = 110f; spread = 0.3f; prefDist = 32f; magSize = 10; burstMin = 1; burstMax = 1; sfx = Sfx.ShotSniper; break;
-                default: dmg = 19f; rpm = 600f; spread = 0.9f; prefDist = 20f; magSize = 30; burstMin = 3; burstMax = 6; sfx = Sfx.Shot; break;
-            }
+            var def = WeaponCatalog.Get(weaponName) ?? WeaponCatalog.All[0];
+            dmg = def.BotDamage; rpm = def.BotRpm; spread = def.BotSpread; prefDist = def.BotPrefDist; magSize = def.mag;
+            burstMin = def.BotBurstMin; burstMax = def.BotBurstMax; sfx = def.sfx;
+            // bots never miss a trigger pull: cap semi-automatic fire rates
+            if (!def.fullAuto) rpm = Mathf.Min(rpm, def.category == WeaponCategory.Marksman ? 140f : 260f);
             ammo = magSize;
             if (rig && rig.weaponSocket)
             {
@@ -511,7 +510,7 @@ namespace FPS
             fireCd -= dt;
             bool fresh = Time.time - lastSeen < 0.25f && targetVisible;
             if (reloadTimer > 0f) return;
-            if (ammo <= 0) { reloadTimer = weaponName == "DMR-7" ? 2.6f : 2.2f; ProcAudio.PlayAt(Sfx.MagOut, transform.position, 0.4f); return; }
+            if (ammo <= 0) { reloadTimer = (WeaponCatalog.Get(weaponName)?.category ?? WeaponCategory.Assault) == WeaponCategory.Marksman ? 2.6f : 2.2f; ProcAudio.PlayAt(Sfx.MagOut, transform.position, 0.4f); return; }
             if (fresh && reactTimer <= 0f && fireCd <= 0f && FacingTarget(tp))
             {
                 if (burstLeft <= 0) burstLeft = Random.Range(burstMin, burstMax + 1);

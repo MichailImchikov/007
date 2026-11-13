@@ -56,3 +56,15 @@ ignore.conf
 # OS
 .DS_Store
 Thumbs.db
+
+/_Backup/
+
+# Asset Store packages (re-import from Asset Store, too large for GitHub)
+/[Aa]ssets/Flooded_Grounds/
+/[Aa]ssets/Flooded_Grounds.meta
+/[Aa]ssets/Weapons_ChamferZone/
+/[Aa]ssets/Weapons_ChamferZone.meta
+/[Aa]ssets/Police_ru/
+/[Aa]ssets/Police_ru.meta
+/[Aa]ssets/genAssault/
+/[Aa]ssets/genAssault.meta
