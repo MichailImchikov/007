@@ -30,7 +30,7 @@ namespace FPS
         public static readonly Vector3 Center = new Vector3(0f, 1500f, 0f);
         const float Half = 30f, WallHeight = 6f;
         const float FireRate = 13f, Damage = 26f, Spread = 0.6f;
-        const float MinHeight = 18f, MaxHeight = 60f, StartHeight = 34f;
+        const float MinHeight = 14f, MaxHeight = 55f, StartHeight = 26f;
 
         static readonly Color SkyColor = new Color(0.012f, 0.01f, 0.03f);
         static readonly Color Neon = new Color(0.85f, 0.15f, 1f);
@@ -595,10 +595,10 @@ namespace FPS
                 for (int x = 0; x < N; x++)
                 {
                     int gx = x % Cell, gy = y % Cell;
-                    float line = Mathf.Max(Mathf.Clamp01(1.6f - Mathf.Min(gx, Cell - gx)), Mathf.Clamp01(1.6f - Mathf.Min(gy, Cell - gy)));
+                    float line = Mathf.Max(Mathf.Clamp01(1.1f - Mathf.Min(gx, Cell - gx)), Mathf.Clamp01(1.1f - Mathf.Min(gy, Cell - gy)));
                     float n = Mathf.PerlinNoise(x * 0.07f, y * 0.07f) * 0.02f;
-                    byte b = (byte)((0.045f + n) * 255f);
-                    px[y * N + x] = line > 0f ? new Color32(90, 40, 120, 255) : new Color32(b, b, (byte)(b + 6), 255);
+                    byte b = (byte)((0.3f + n * 3f) * 255f);
+                    px[y * N + x] = line > 0f ? new Color32(90, 40, 120, 255) : new Color32(b, (byte)(b * 0.92f), (byte)Mathf.Min(255, b + 18), 255);
                     byte e = (byte)(line * 255f);
                     pe[y * N + x] = new Color32(e, e, e, 255);
                 }
@@ -607,9 +607,9 @@ namespace FPS
             floorMat = new Material(Shader.Find("Universal Render Pipeline/Lit")) { name = "SkyArenaFloor" };
             floorMat.SetTexture("_BaseMap", tex);
             floorMat.SetColor("_BaseColor", Color.white);
-            floorMat.SetTextureScale("_BaseMap", new Vector2(Half * 2f / 16f, Half * 2f / 16f)); // 2 m cells
-            floorMat.SetFloat("_Smoothness", 0.75f);
-            floorMat.SetFloat("_Metallic", 0.3f);
+            floorMat.SetTextureScale("_BaseMap", new Vector2(Half * 2f / 32f, Half * 2f / 32f)); // 4 m cells
+            floorMat.SetFloat("_Smoothness", 0.35f);
+            floorMat.SetFloat("_Metallic", 0f);
             floorMat.EnableKeyword("_EMISSION");
             floorMat.SetTexture("_EmissionMap", emi);
             floorMat.SetColor("_EmissionColor", Neon * 1.6f);

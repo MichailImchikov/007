@@ -152,7 +152,7 @@ namespace FPS
         readonly Spring3 bumpRot = new Spring3(120f, 10f);
 
         Vector3 magRest, chRest, boltRest, handRest, reticleRest, reticleCenter;
-        bool reloading, reloadEmpty, magHidden;
+        bool reloading, reloadEmpty, magHidden, arenaHidden;
         float reloadT, reloadDuration;
         int evtIndex;
         ReloadAnim tacAnim, emptyAnim;
@@ -330,6 +330,13 @@ namespace FPS
             if (holstering) holsterT = Mathf.Min(1f, holsterT + dt / 0.2f);
             lowerBlend = Anim.Damp(lowerBlend, Mathf.Max(ExternalLower, AbilityLower), 14f, dt);
             float lower = Mathf.Max(lowerBlend, Mathf.Max(1f - Anim.Smooth(equipT), Anim.Smooth(holsterT)));
+            // sky arena runner: knife only, the gun is not even in view
+            bool hideNow = SkyArena.LocalRunner;
+            if (hideNow != arenaHidden)
+            {
+                arenaHidden = hideNow;
+                if (renderers != null) foreach (var r in renderers) if (r) r.enabled = !hideNow && !scopeOn;
+            }
 
             bool wantAim = GameInput.AimHeld && !reloading && !motor.IsVaulting && lower < 0.5f && !holstering;
             WantAim = wantAim;
@@ -421,7 +428,7 @@ namespace FPS
             if (scopeOn == on) return;
             scopeOn = on;
             if (renderers != null)
-                foreach (var r in renderers) if (r) r.enabled = !on;
+                foreach (var r in renderers) if (r) r.enabled = !on && !arenaHidden;
             if (HUD.Instance) HUD.Instance.SetScope(on);
             if (on) ProcAudio.Play(Sfx.Switch, 0.25f, 0.05f);
         }

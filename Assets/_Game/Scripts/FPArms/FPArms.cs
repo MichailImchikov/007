@@ -324,7 +324,7 @@ namespace FPS
             if (w) ads.SetAds(w.WantAim);
             if (firing && w && !(w.FullAuto ? GameInput.FireHeld : GameInput.FirePressed)) { recoil.Stop(); firing = false; }
 
-            bool show = w && w.gameObject.activeInHierarchy && !w.IsScoped && playerCam.ThirdPerson < 0.01f && playerCam.DeathAmount < 0.01f;
+            bool show = w && w.gameObject.activeInHierarchy && !w.IsScoped && !SkyArena.LocalRunner && playerCam.ThirdPerson < 0.01f && playerCam.DeathAmount < 0.01f;
             if (show != visible)
             {
                 visible = show;
