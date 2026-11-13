@@ -4,9 +4,9 @@ using UnityEngine;
 namespace FPS
 {
     /// <summary>
-    /// First-person movement: walk / sprint / crouch / prone / slide / jump, Source-style
-    /// bunny hopping (air strafing + no friction on the landing frame), plus vaulting over
-    /// low obstacles and mantling onto ledges along a smooth bezier path.
+    /// First-person movement: walk / sprint / crouch / prone / slide / jump (no air strafing or
+    /// speed carry between jumps), plus vaulting over low obstacles and mantling onto ledges
+    /// along a smooth bezier path.
     /// </summary>
     [RequireComponent(typeof(CharacterController))]
     public class PlayerMotor : MonoBehaviour
@@ -23,15 +23,11 @@ namespace FPS
         public float coyoteTime = 0.12f;
         public float jumpBuffer = 0.15f;
 
-        [Header("Bunny hop / air strafe")]
-        public bool autoBhop = true;
-        public float airAccelerate = 12f;
-        public float airSpeedCap = 0.6f;
-        public float maxBhopSpeed = 8.2f;
-        [Tooltip("Horizontal speed kept when jumping faster than the run speed (chained hops bleed speed).")]
-        public float bhopJumpKeep = 0.88f;
-        [Tooltip("A jump this soon after landing from a previous jump counts as a bunny hop (BunnyHopped).")]
-        public float bhopWindow = 0.2f;
+        [Header("Air")]
+        [Tooltip("How fast the player can steer toward the input direction while airborne (never above the run speed).")]
+        public float airControl = 2.5f;
+        [Tooltip("Hard cap on horizontal speed (slides, impulses).")]
+        public float maxHorizontalSpeed = 8.2f;
 
         [Header("Stances")]
         public float standHeight = 1.8f;
@@ -149,8 +145,6 @@ namespace FPS
 
         public event Action<float> Landed;
         public event Action Jumped;
-        /// <summary>A jump chained right after landing from another jump (bunny hop attempt).</summary>
-        public event Action BunnyHopped;
         public event Action<bool> VaultStarted;
         public event Action Footstep;
         public event Action SlideStarted;
@@ -167,8 +161,6 @@ namespace FPS
         float stepAccum; int lastStepIndex;
         float airTime, lastVy;
         bool wasGrounded = true;
-        bool airFromJump, landedFromJump;
-        float lastLandTime = -10f;
 
         bool noclip, pulling;
         Func<Vector3> pullTarget;
@@ -190,7 +182,6 @@ namespace FPS
             IsSliding = false;
             IsVaulting = false;
             proneToggled = crouchToggled = false;
-            airFromJump = landedFromJump = false;
             cc.enabled = was && !locked;
         }
 
@@ -281,7 +272,7 @@ namespace FPS
             if (jumpPressedBuffered && !IsProne && TryVault(hSpeed)) { lastJumpPressTime = -10f; return; }
             if (jumpPressedBuffered && IsProne) { proneToggled = false; crouchToggled = true; lastJumpPressTime = -10f; jumpPressedBuffered = false; }
 
-            bool wantJump = jumpPressedBuffered || (autoBhop && GameInput.JumpHeld && !InputBlocked);
+            bool wantJump = jumpPressedBuffered;
             bool coyote = Time.time - lastGroundedTime <= coyoteTime;
             bool jumpNow = wantJump && coyote && velocity.y <= 0.5f && !IsProne && CanFit(standHeight);
 
@@ -307,30 +298,24 @@ namespace FPS
             }
             else if (hasInput)
             {
-                // Quake/Source air acceleration: strafe + turn to gain speed
-                Vector3 wd = wish.normalized;
-                float cap = Mathf.Min(target, airSpeedCap);
-                float current = Vector3.Dot(hv, wd);
-                float add = cap - current;
-                if (add > 0f) hv += wd * Mathf.Min(airAccelerate * target * dt, add);
+                // limited air steering: turning toward the input never adds speed above the run speed
+                float before = hv.magnitude;
+                hv = Vector3.MoveTowards(hv, wish * target, airControl * dt);
+                float cap = Mathf.Max(before, target);
+                if (hv.magnitude > cap) hv = hv.normalized * cap;
             }
-            if (hv.magnitude > maxBhopSpeed) hv = hv.normalized * maxBhopSpeed;
+            if (hv.magnitude > maxHorizontalSpeed) hv = hv.normalized * maxHorizontalSpeed;
 
             if (jumpNow)
             {
-                // chained hops lose speed instead of gaining it
-                float hs = hv.magnitude;
-                if (hs > target) hv = hv.normalized * Mathf.Max(target, hs * bhopJumpKeep);
+                // a jump never carries more than the current run speed
+                if (hv.magnitude > target) hv = hv.normalized * target;
                 crouchToggled = false;
                 IsSliding = false;
                 velocity.y = Mathf.Sqrt(2f * jumpHeight * -gravity);
                 lastGroundedTime = -10f;
                 lastJumpPressTime = -10f;
-                bool bhop = landedFromJump && Time.time - lastLandTime <= bhopWindow;
-                landedFromJump = false;
-                airFromJump = true;
                 Jumped?.Invoke();
-                if (bhop) BunnyHopped?.Invoke();
             }
 
             if (IsGrounded && !jumpNow && velocity.y < 0f) velocity.y = -3f;
@@ -343,12 +328,6 @@ namespace FPS
             if ((flags & CollisionFlags.Above) != 0 && velocity.y > 0f) velocity.y = 0f;
 
             bool groundedNow = cc.isGrounded;
-            if (groundedNow && !wasGrounded)
-            {
-                lastLandTime = Time.time;
-                landedFromJump = airFromJump;
-                airFromJump = false;
-            }
             if (groundedNow && !wasGrounded && airTime > 0.08f) Landed?.Invoke(-lastVy);
             airTime = groundedNow ? 0f : airTime + dt;
             wasGrounded = groundedNow;

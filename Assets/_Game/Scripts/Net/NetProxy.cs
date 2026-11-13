@@ -123,52 +123,6 @@ namespace FPS
             while (buffer.Count > 32) buffer.RemoveAt(0);
             latest = s;
             if (now > predictedUntil) predictedHealth = s.health;
-            DetectBhop(s, now);
-        }
-
-        // ------------------------------------------------------------------ bhop anti-cheat (old builds without the local penalty)
-
-        /// <summary>Damage dealt by the local player to a remote player caught bunny hopping.</summary>
-        public const float BhopPunishDamage = 99f;
-        // jump airtime on flat ground is ~0.59 s; PlayerMotor counts a jump within 0.2 s of landing as a bhop
-        const float BhopChainMaxInterval = 0.8f;
-        const int BhopChainToPunish = 2;      // chained hops in a row (i.e. 3 jumps) before we strike
-        const float BhopPunishCooldown = 2f;
-        float lastVy, lastJumpStart = -10f, lastBhopPunish = -10f;
-        int bhopChain;
-
-        /// <summary>
-        /// Watches the owner's replicated vertical velocity: a jump start shows up as vy jumping up to
-        /// ~6-7 m/s. Jumps started right after the previous one landed are bunny hops; a streak of them
-        /// means the owner runs a build without the local bhop penalty, so we hit them for 99 from the local player.
-        /// </summary>
-        void DetectBhop(CharState s, float now)
-        {
-            float vy = s.vel.y;
-            float prevVy = lastVy;
-            lastVy = vy;
-            if (bot || !s.Has(CharState.Alive) || s.Has(CharState.ButtRocket) || s.Has(CharState.Phasing)) { bhopChain = 0; return; }
-
-            bool jumpStart = vy > 4.5f && vy > prevVy + 0.5f;
-            if (!jumpStart) return;
-            bhopChain = now - lastJumpStart <= BhopChainMaxInterval ? bhopChain + 1 : 0;
-            lastJumpStart = now;
-            if (bhopChain < BhopChainToPunish || now - lastBhopPunish < BhopPunishCooldown) return;
-
-            var me = PlayerHealth.Local;
-            if (!me || me.IsDead || s.Has(CharState.Protected) || s.execV >= 0f) return;
-            bhopChain = 0;
-            lastBhopPunish = now;
-            NetGame.SendDamage(combatant, new DamageInfo
-            {
-                amount = BhopPunishDamage,
-                attacker = me.GetComponent<Combatant>(),
-                weapon = "Бхоп",
-                point = s.pos + Vector3.up,
-                direction = Vector3.down,
-            });
-            predictedHealth -= BhopPunishDamage / 100f;
-            predictedUntil = now + 0.4f;
         }
 
         void LateUpdate()

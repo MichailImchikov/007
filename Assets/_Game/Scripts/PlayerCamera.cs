@@ -263,7 +263,7 @@ namespace FPS
             float targetFov = baseFov;
             if (motor.IsSprinting && motor.Speed01 > 0.6f) targetFov += sprintFovAdd;
             if (motor.IsSliding) targetFov += slideFovAdd;
-            targetFov += Mathf.Clamp(motor.HorizontalSpeed - motor.sprintSpeed, 0f, 6f) * 1.2f; // bhop speed feel
+            targetFov += Mathf.Clamp(motor.HorizontalSpeed - motor.sprintSpeed, 0f, 6f) * 1.2f; // slide / impulse speed feel
             fovKick = Anim.Damp(fovKick, 0f, 5f, dt);
             moveFov = Anim.Damp(moveFov, targetFov, 6f, dt);
             cam.fieldOfView = Mathf.Lerp(moveFov + fovKick + FovAdd, AdsFov, AimBlend);
