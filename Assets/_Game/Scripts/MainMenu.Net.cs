@@ -144,6 +144,7 @@ namespace FPS
         void StartHosting()
         {
             MenuPanel.CloseAll();
+            MatchSettings.mode = GameMode.Deathmatch; // drone war is offline only for now
             if (!NetGame.Ensure().StartHost(NetMaps[netMap].scene))
             {
                 Cursor.lockState = CursorLockMode.None;

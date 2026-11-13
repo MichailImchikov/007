@@ -5,7 +5,7 @@ namespace FPS
 {
     /// <summary>
     /// Dynamic crosshair, animated hitmarker, ammo / weapon / grenade info, interaction prompts,
-    /// sniper scope overlay, speedometer, stats and control hints.
+    /// sniper scope overlay, speedometer, stats and flashlight hold indicator.
     /// </summary>
     [DefaultExecutionOrder(100)]
     public class HUD : MonoBehaviour
@@ -16,13 +16,14 @@ namespace FPS
         Font font;
         Loadout loadout;
         MeleeController melee;
+        Flashlight flashlight;
         PlayerMotor motor;
         Camera cam;
 
         readonly RectTransform[] cross = new RectTransform[4];
         readonly RectTransform[] hit = new RectTransform[4];
         readonly Image[] hitImg = new Image[4];
-        Text ammoText, reserveText, modeText, weaponText, slotsText, grenadeText, statsText, hintText, promptText, speedText, fpsText, sprintText;
+        Text ammoText, reserveText, modeText, weaponText, slotsText, grenadeText, statsText, lightText, promptText, speedText, fpsText, sprintText;
         readonly System.Collections.Generic.List<Image> crossImgs = new System.Collections.Generic.List<Image>();
         float fpsAcc; int fpsFrames;
         CanvasGroup crossGroup, scopeGroup, promptGroup;
@@ -182,8 +183,9 @@ namespace FPS
             speedText = Label("Speed", transform, new Vector2(0.5f, 0f), new Vector2(0f, 40f), new Vector2(300f, 30f), 22, TextAnchor.LowerCenter);
             speedText.color = new Color(1f, 1f, 1f, 0.55f);
 
-            hintText = Label("Hints", transform, new Vector2(0f, 0f), new Vector2(40f, 40f), new Vector2(1000f, 220f), 18, TextAnchor.LowerLeft);
-            hintText.color = new Color(1f, 1f, 1f, 0.6f);
+            lightText = Label("Flashlight", transform, new Vector2(0.5f, 0.5f), new Vector2(0f, -70f), new Vector2(400f, 26f), 18, TextAnchor.MiddleCenter);
+            lightText.color = new Color(1f, 0.95f, 0.8f, 0.85f);
+            lightText.enabled = false;
             RefreshKeys();
             GameSettings.Changed += RefreshKeys;
         }
@@ -196,17 +198,9 @@ namespace FPS
 
         static string K(BindAction a) => GameSettings.KeyName(a);
 
-        /// <summary>Control hints and crosshair color follow the settings.</summary>
+        /// <summary>Crosshair color follows the settings.</summary>
         void RefreshKeys()
         {
-            if (hintText)
-                hintText.text =
-                    $"{K(BindAction.MoveForward)}{K(BindAction.MoveLeft)}{K(BindAction.MoveBack)}{K(BindAction.MoveRight)} — движение    {K(BindAction.Sprint)} — бег ({(GameSettings.SprintToggle ? "нажатие" : "зажатие")})    {K(BindAction.Jump)} — прыжок / перелезть (держать — распрыжка)\n" +
-                    $"{K(BindAction.CrouchToggle)} — присед    {K(BindAction.CrouchHold)} — присед ({(GameSettings.CrouchHoldIsToggle ? "нажатие" : "зажатие")})    {K(BindAction.Prone)} — лечь    {K(BindAction.LeanLeft)} / {K(BindAction.LeanRight)} — выглянуть    {K(BindAction.CrouchToggle)} на бегу — подкат\n" +
-                    $"{K(BindAction.Fire)} — огонь    {K(BindAction.Aim)} — прицел    {K(BindAction.Reload)} — перезарядка    {K(BindAction.FireMode)} — режим огня    {K(BindAction.Primary)} / {K(BindAction.Secondary)} / колесо — оружие\n" +
-                    $"{K(BindAction.Grenade)} (держать) — граната    {K(BindAction.Melee)} — нож / добивание со спины    {K(BindAction.Pickup)} — подобрать\n" +
-                    $"{K(BindAction.Ability)} — способность (светящиеся предметы на карте)    {K(BindAction.Pickup)} — заменить способность    PgUp/PgDn — сменить (тест)\n" +
-                    $"Esc — пауза, снаряжение и настройки    {K(BindAction.Hints)} — скрыть подсказки";
             var c = GameSettings.CrosshairColors[Mathf.Clamp(GameSettings.CrosshairColor, 0, GameSettings.CrosshairColors.Length - 1)];
             foreach (var img in crossImgs) if (img) img.color = c;
         }
@@ -279,7 +273,14 @@ namespace FPS
             var weapon = loadout ? loadout.Active : FindAnyObjectByType<WeaponController>();
             if (!weapon || !cam) return;
 
-            if (GameInput.HintsPressed) hintText.enabled = !hintText.enabled;
+            if (!flashlight) flashlight = FindAnyObjectByType<Flashlight>();
+            float lp = flashlight ? flashlight.HoldProgress : 0f;
+            lightText.enabled = lp > 0f;
+            if (lp > 0f)
+            {
+                int n = Mathf.RoundToInt(lp * 10f);
+                lightText.text = (flashlight.On ? "Выключить фонарик  " : "Включить фонарик  ") + new string('■', n) + new string('□', 10 - n);
+            }
 
             scopeAlpha = Mathf.MoveTowards(scopeAlpha, scopeOn ? 1f : 0f, dt * 12f);
             scopeGroup.alpha = scopeAlpha;

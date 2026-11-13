@@ -120,6 +120,7 @@ namespace FPS
         {
             self = GetComponent<Combatant>();
             if (VariantName.Length == 0 && GetComponent<PlayerMotor>()) SetVariant(PlayerLoadout.Melee);
+            if (GetComponent<PlayerMotor>() && !GetComponent<Flashlight>()) gameObject.AddComponent<Flashlight>();
             if (knifeArm) knifeArm.gameObject.SetActive(false);
             if (execLeftArm) execLeftArm.gameObject.SetActive(false);
         }

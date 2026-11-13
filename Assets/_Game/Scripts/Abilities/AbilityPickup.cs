@@ -191,6 +191,7 @@ namespace FPS
             }
             fallbackCenter = PlayerHealth.Local ? PlayerHealth.Local.transform.position : Vector3.zero;
             if (Net.IsClient) yield break; // the host spawns pickups and tells us
+            if (DroneMode.Active) yield break; // drone war: the drone is the only ability
             if (!MatchManager.Instance) { BuildStand(); yield break; } // shooting range: every ability on a stand
             for (int i = 0; i < count; i++) SpawnOne();
         }

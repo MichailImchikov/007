@@ -23,7 +23,64 @@ namespace FPS
         public static bool Frozen;
         /// <summary>A gameplay UI (minesweeper) owns the mouse: the cursor stays free.</summary>
         public static bool ModalUI;
-        public static bool Enabled => Cursor.lockState == CursorLockMode.Locked && !Blocked && !Frozen;
+        /// <summary>The local player flies a drone: on-foot input is off, the drone reads <see cref="DroneKeys"/>.</summary>
+        public static bool Piloting;
+        public static bool Enabled => Cursor.lockState == CursorLockMode.Locked && !Blocked && !Frozen && !Piloting;
+        public static bool DroneEnabled => Cursor.lockState == CursorLockMode.Locked && !Blocked && !Frozen && Piloting;
+
+        /// <summary>Drone sticks and buttons (same bindings as on foot).</summary>
+        public static class DroneKeys
+        {
+            static bool On => DroneEnabled;
+            static Keyboard K => Keyboard.current;
+
+            /// <summary>Movement like on foot: x = strafe (A/D), y = forward (W/S), gamepad left stick.</summary>
+            public static Vector2 Cyclic
+            {
+                get
+                {
+                    if (!On) return Vector2.zero;
+                    Vector2 v = Vector2.zero;
+                    if (H(BindAction.MoveForward)) v.y += 1f;
+                    if (H(BindAction.MoveBack)) v.y -= 1f;
+                    if (H(BindAction.MoveRight)) v.x += 1f;
+                    if (H(BindAction.MoveLeft)) v.x -= 1f;
+                    if (G != null) v += G.leftStick.ReadValue();
+                    return Vector2.ClampMagnitude(v, 1f);
+                }
+            }
+            /// <summary>+1 up (Space), -1 down (Ctrl), gamepad A / B.</summary>
+            public static float Throttle
+            {
+                get
+                {
+                    if (!On) return 0f;
+                    float t = 0f;
+                    if (H(BindAction.Jump) || (K != null && K.spaceKey.isPressed)) t += 1f;
+                    if (H(BindAction.CrouchHold) || (K != null && (K.leftCtrlKey.isPressed || K.rightCtrlKey.isPressed))) t -= 1f;
+                    if (G != null) { if (G.buttonSouth.isPressed) t += 1f; if (G.buttonEast.isPressed) t -= 1f; }
+                    return Mathf.Clamp(t, -1f, 1f);
+                }
+            }
+            /// <summary>Look in degrees this frame (x = turn, y = look up / down): mouse, gamepad right stick.</summary>
+            public static Vector2 Look
+            {
+                get
+                {
+                    if (!On) return Vector2.zero;
+                    Vector2 v = Vector2.zero;
+                    if (M != null) v += M.delta.ReadValue() * MouseSensitivity;
+                    if (G != null) { Vector2 s = G.rightStick.ReadValue(); v += s * s.magnitude * StickSensitivity * Time.deltaTime; }
+                    if (GameSettings.InvertY) v.y = -v.y;
+                    return v;
+                }
+            }
+            public static bool FireHeld => On && (H(BindAction.Fire) || (G != null && G.rightTrigger.isPressed));
+            public static bool DetonatePressed => On && (P(BindAction.Aim) || (G != null && G.leftTrigger.wasPressedThisFrame));
+            public static bool SportHeld => On && (H(BindAction.Sprint) || (G != null && G.leftShoulder.isPressed));
+            public static bool ThermalPressed => On && (P(BindAction.Ability) || (G != null && G.buttonNorth.wasPressedThisFrame));
+            public static bool AbortPressed => On && (P(BindAction.Grenade) || (G != null && G.dpad.down.wasPressedThisFrame));
+        }
 
         static bool H(BindAction a) => GameSettings.Held(a);
         static bool P(BindAction a) => GameSettings.Pressed(a);
@@ -150,6 +207,7 @@ namespace FPS
         public static bool SwapPressed => Enabled && ((M != null && Mathf.Abs(M.scroll.ReadValue().y) > 0.1f) || (G != null && G.leftShoulder.wasPressedThisFrame));
         /// <summary>Scoreboard (works while dead too).</summary>
         public static bool ScoreboardHeld => H(BindAction.Scoreboard) || (G != null && G.startButton.isPressed);
-        public static bool HintsPressed => P(BindAction.Hints);
+        /// <summary>Melee key held — held long enough it toggles the flashlight.</summary>
+        public static bool FlashlightHeld => Enabled && (H(BindAction.Melee) || (G != null && G.rightStickButton.isPressed));
     }
 }

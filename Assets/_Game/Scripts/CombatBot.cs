@@ -196,6 +196,7 @@ namespace FPS
             if (abilities && abilities.TryDeflect(info)) return default;
             health -= info.amount;
             lastHurt = Time.time;
+            if (DroneOp) DroneOp.OperatorHurt(); // shot while flying: drops the controller
             bool killed = health <= 0f;
             if (info.attacker && info.attacker.isPlayer) DamageNumbers.Spawn(info.point, info.amount, info.critical, killed);
             if (anim) anim.Flinch(transform.InverseTransformDirection(info.direction), Mathf.Clamp(info.amount / 30f, 0.4f, 2f));
@@ -337,6 +338,21 @@ namespace FPS
             {
                 UpdateBody(dt);
                 return;
+            }
+
+            lookAtOverride = null;
+            if (DroneMode.Active)
+            {
+                // flying its own drone: the body crouches still where it launched
+                var dop = DroneOp;
+                if (dop && dop.BotTick(dt, state == State.Engage && targetVisible))
+                {
+                    if (agent.enabled) agent.isStopped = true;
+                    crouched = true;
+                    UpdateBody(dt);
+                    return;
+                }
+                if (AntiDrone(dt)) { UpdateBody(dt); return; }
             }
 
             switch (state)
@@ -568,15 +584,95 @@ namespace FPS
             return found;
         }
 
-        void Shoot()
+        // ------------------------------------------------------------------ drone war: shooting drones down
+
+        Drone antiTarget;
+        float antiThink, antiReact;
+        Vector3? lookAtOverride;
+        DroneOperator droneOpCache;
+        float droneOpCheck;
+
+        DroneOperator DroneOp
+        {
+            get
+            {
+                if (!droneOpCache && Time.time > droneOpCheck) { droneOpCheck = Time.time + 1f; droneOpCache = GetComponent<DroneOperator>(); }
+                return droneOpCache;
+            }
+        }
+
+        /// <summary>An enemy drone in sight (or heard close by) is the first threat: stop, track and shoot it.</summary>
+        bool AntiDrone(float dt)
+        {
+            antiThink -= dt;
+            if (antiThink <= 0f)
+            {
+                antiThink = 0.2f;
+                var prev = antiTarget;
+                antiTarget = FindDrone();
+                if (antiTarget && antiTarget != prev) antiReact = reaction + Random.Range(0.15f, 0.45f);
+            }
+            if (!antiTarget || antiTarget.Dead) { antiTarget = null; return false; }
+            // an enemy soldier close and in sight is still the bigger problem
+            if (targetVisible && target && (target.Chest - transform.position).sqrMagnitude < 10f * 10f) return false;
+
+            Vector3 dp = antiTarget.transform.position;
+            lookAtOverride = dp;
+            if (agent.enabled) agent.isStopped = true;
+            crouched = false;
+            if (reloadTimer > 0f)
+            {
+                reloadTimer -= dt;
+                if (reloadTimer <= 0f) ammo = magSize;
+                return true;
+            }
+            if (ammo <= 0) { reloadTimer = 2.2f; ProcAudio.PlayAt(Sfx.MagOut, transform.position, 0.4f); return true; }
+            antiReact -= dt;
+            fireCd -= dt;
+            Vector3 to = dp - transform.position; to.y = 0f;
+            if (antiReact > 0f || fireCd > 0f || Vector3.Angle(transform.forward, to) > 14f) return true;
+            // small, fast target: the error grows with its speed and distance
+            float err = errMin * 1.4f + antiTarget.Velocity.magnitude * 0.16f + Vector3.Distance(dp, transform.position) * 0.02f;
+            Shoot(dp + antiTarget.Velocity * 0.05f, err - aimError);
+            fireCd = 60f / rpm + Random.Range(0.05f, 0.2f);
+            return true;
+        }
+
+        Drone FindDrone()
+        {
+            Drone best = null;
+            float bestD = 45f;
+            Vector3 eye = rig.head.position + Vector3.up * 0.08f;
+            foreach (var d in Drone.All)
+            {
+                if (!d || d.Dead || !d.Owner || !combatant.IsEnemyOf(d.Owner)) continue;
+                Vector3 to = d.transform.position - eye;
+                float dist = to.magnitude;
+                if (dist > bestD) continue;
+                // heard within ~22 m wherever it is, seen in a wide cone farther out
+                if (dist > 22f && Vector3.Angle(transform.forward, to) > 100f) continue;
+                int n = Physics.RaycastNonAlloc(eye, to / dist, hits, dist + 0.3f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
+                float first = float.MaxValue; Transform ft = null;
+                for (int i = 0; i < n; i++)
+                {
+                    if (hits[i].collider.transform.IsChildOf(transform)) continue;
+                    if (hits[i].distance < first) { first = hits[i].distance; ft = hits[i].collider.transform; }
+                }
+                if (ft && !ft.IsChildOf(d.transform)) continue;
+                bestD = dist; best = d;
+            }
+            return best;
+        }
+
+        void Shoot(Vector3? forcedAim = null, float extraErr = 0f)
         {
             ammo--;
             combatant.lastShotTime = Time.time;
             Vector3 eye = rig.head.position + Vector3.up * 0.06f;
-            float hc = headChance + (target.abilities && target.abilities.BigHead ? 0.45f : 0f);
-            Vector3 aimAt = Random.value < hc ? target.Head : target.Chest;
+            float hc = target ? headChance + (target.abilities && target.abilities.BigHead ? 0.45f : 0f) : 0f;
+            Vector3 aimAt = forcedAim ?? (Random.value < hc ? target.Head : target.Chest);
             Vector3 dir = (aimAt - eye).normalized;
-            float err = aimError + spread + (agent.velocity.magnitude > 0.5f ? 0.8f : 0f) + (abilities ? abilities.AimPenalty : 0f);
+            float err = Mathf.Max(0.2f, aimError + extraErr) + spread + (agent.enabled && agent.velocity.magnitude > 0.5f ? 0.8f : 0f) + (abilities ? abilities.AimPenalty : 0f);
             Vector2 rnd = Random.insideUnitCircle * err;
             dir = Quaternion.AngleAxis(rnd.x, Vector3.up) * Quaternion.AngleAxis(rnd.y, Vector3.Cross(dir, Vector3.up)) * dir;
 
@@ -619,7 +715,7 @@ namespace FPS
             }
 
             // near-miss crack for the player
-            if (PlayerHealth.Local && target.isPlayer)
+            if (PlayerHealth.Local && target && target.isPlayer && !forcedAim.HasValue)
             {
                 Vector3 cam = PlayerHealth.Local.playerCam.cam.transform.position;
                 Vector3 closest = eye + dir * Mathf.Clamp(Vector3.Dot(cam - eye, dir), 0f, Vector3.Distance(eye, end));
@@ -649,6 +745,11 @@ namespace FPS
                 if (to.sqrMagnitude > 0.01f) want = Quaternion.LookRotation(to).eulerAngles.y;
             }
             else if (v.sqrMagnitude > 0.2f) want = Quaternion.LookRotation(new Vector3(v.x, 0f, v.z)).eulerAngles.y;
+            if (lookAtOverride.HasValue)
+            {
+                Vector3 to = lookAtOverride.Value - transform.position; to.y = 0f;
+                if (to.sqrMagnitude > 0.01f) want = Quaternion.LookRotation(to).eulerAngles.y;
+            }
             if (YawOverride.HasValue) want = YawOverride.Value;
             extLastPos = transform.position;
             yaw = Mathf.SmoothDampAngle(yaw, want, ref yawVel, 0.12f, 900f);
@@ -658,9 +759,14 @@ namespace FPS
             anim.localVelocity = transform.InverseTransformDirection(v);
             anim.grounded = true;
             anim.crouch = Anim.Damp(anim.crouch, crouched ? 1f : 0f, 8f, dt);
-            anim.aim = Anim.Damp(anim.aim, state == State.Engage ? 1f : 0.25f, 6f, dt);
+            anim.aim = Anim.Damp(anim.aim, state == State.Engage || lookAtOverride.HasValue ? 1f : 0.25f, 6f, dt);
             float pitch = 0f;
-            if (state == State.Engage && target)
+            if (lookAtOverride.HasValue)
+            {
+                Vector3 d = lookAtOverride.Value - rig.head.position;
+                pitch = -Mathf.Atan2(d.y, new Vector2(d.x, d.z).magnitude) * Mathf.Rad2Deg;
+            }
+            else if (state == State.Engage && target)
             {
                 Vector3 d = target.Chest - rig.head.position;
                 pitch = -Mathf.Atan2(d.y, new Vector2(d.x, d.z).magnitude) * Mathf.Rad2Deg;

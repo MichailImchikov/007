@@ -95,6 +95,7 @@ namespace FPS
             BindAction[] firstOf = { BindAction.MoveForward, BindAction.Fire, BindAction.Scoreboard };
             foreach (BindAction a in Enum.GetValues(typeof(BindAction)))
             {
+                if (a == BindAction.Hints) continue; // control hints were removed from the HUD
                 int g = Array.IndexOf(firstOf, a);
                 if (g >= 0) UIKit.Header(list, groups[g]);
                 var row = UIKit.Row(list, 56f);

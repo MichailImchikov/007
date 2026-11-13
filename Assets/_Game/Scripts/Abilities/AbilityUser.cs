@@ -135,6 +135,8 @@ namespace FPS
 
         void Start()
         {
+            // drone war: the ability key launches the drone (DroneOperator), no joke abilities
+            if (DroneMode.Active) { enabled = false; return; }
             if (isPlayer) AbilityHUD.Ensure().Bind(this);
         }
 

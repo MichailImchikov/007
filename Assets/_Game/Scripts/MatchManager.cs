@@ -16,7 +16,11 @@ namespace FPS
         public static int difficulty = 1;
         public static int killLimit = 25;
         public static float timeLimit = 600f;
+        /// <summary>Rules of the next match (chosen with the map in the main menu).</summary>
+        public static GameMode mode = GameMode.Deathmatch;
     }
+
+    public enum GameMode { Deathmatch, Drones }
 
     public struct KillEvent
     {
@@ -96,7 +100,8 @@ namespace FPS
         void Start()
         {
             MatchHUD.Ensure();
-            AbilitySpawner.Ensure();
+            if (DroneMode.Active) DroneMode.Ensure();
+            else AbilitySpawner.Ensure();
             if (PlayerHealth.Local) PlayerHealth.Local.Respawn();
             if (botTemplate)
             {
@@ -113,7 +118,8 @@ namespace FPS
             go.name = "Bot_" + Names[i % Names.Length];
             var bot = go.GetComponent<CombatBot>();
             bot.difficulty = MatchSettings.difficulty;
-            bot.weaponName = RandomBotWeapon();
+            // drone war: sidearms only, the drone is the main weapon
+            bot.weaponName = DroneMode.Active ? DroneMode.RandomPistol() : RandomBotWeapon();
             var c = go.GetComponent<Combatant>();
             c.displayName = Names[i % Names.Length];
             c.isPlayer = false;

@@ -11,7 +11,7 @@ namespace FPS
     /// </summary>
     public partial class MainMenu : MonoBehaviour
     {
-        public struct MapEntry { public string scene, title, tag, desc; public Color accent; }
+        public struct MapEntry { public string scene, title, tag, desc; public Color accent; public GameMode mode; }
 
         public static readonly MapEntry[] Maps =
         {
@@ -27,6 +27,8 @@ namespace FPS
                            desc = "Избы, сараи и церковь на холме. Длинные линии через поле, заборы, стога и ближний бой в домах." },
             new MapEntry { scene = "Map_Flooded", title = "ЗАТОПЛЕННАЯ ДЕРЕВНЯ", tag = "Туманная низина · большая карта", accent = new Color(0.4f, 0.62f, 0.68f),
                            desc = "Особняк с садом, церковь, теплицы и ангар вокруг затопленной дороги. Дальние линии в тумане и бой в домах." },
+            new MapEntry { scene = "Map_Flooded", title = "ВОЙНА ДРОНОВ", tag = "Затопленная деревня · нож, пистолет и FPV-дрон", accent = new Color(0.95f, 0.45f, 0.2f), mode = GameMode.Drones,
+                           desc = "Только нож и пистолет. [V] — запуск FPV-дрона (перезарядка 30 с после потери): реалистичная физика, пулемёт, подрыв при касании, тепловизор. Сбитый дрон выдаёт район оператора." },
             new MapEntry { scene = "ShootingRange", title = "ПОЛИГОН", tag = "Тренировка", accent = new Color(0.8f, 0.8f, 0.85f),
                            desc = "Мишени, полоса препятствий, тренировочные боты для добиваний, стенд со всеми способностями." },
         };
@@ -227,7 +229,7 @@ namespace FPS
                 var sw = UIKit.Solid(rt, "MapAccent", m.accent);
                 sw.rectTransform.anchorMin = new Vector2(0f, 0f); sw.rectTransform.anchorMax = new Vector2(1f, 0f); sw.rectTransform.pivot = new Vector2(0.5f, 0f);
                 sw.rectTransform.offsetMin = new Vector2(16f, 16f); sw.rectTransform.offsetMax = new Vector2(-16f, 22f);
-                var mode = UIKit.Label(rt, m.scene == "ShootingRange" ? "ТРЕНИРОВКА" : "DEATHMATCH", 16, TextAnchor.LowerRight, m.accent, true);
+                var mode = UIKit.Label(rt, m.scene == "ShootingRange" ? "ТРЕНИРОВКА" : m.mode == GameMode.Drones ? "ДРОНЫ" : "DEATHMATCH", 16, TextAnchor.LowerRight, m.accent, true);
                 UIKit.Fill(mode.rectTransform, 0f, 30f, 18f, 0f);
                 cards.Add(b.GetComponent<UIButtonFx>());
             }
@@ -257,7 +259,7 @@ namespace FPS
             UIKit.Span((RectTransform)lb.transform, 0.42f, 0.12f, 1f, 0.88f);
             ((RectTransform)lb.transform).offsetMax = new Vector2(-12f, 0f);
 
-            var go = UIKit.Button(body, "В БОЙ", () => Play(Maps[selectedMap].scene), UIKit.Style.Primary, 30);
+            var go = UIKit.Button(body, "В БОЙ", () => { MatchSettings.mode = Maps[selectedMap].mode; Play(Maps[selectedMap].scene); }, UIKit.Style.Primary, 30);
             var grt = (RectTransform)go.transform;
             grt.anchorMin = grt.anchorMax = grt.pivot = new Vector2(1f, 0f);
             grt.sizeDelta = new Vector2(340f, 64f); grt.anchoredPosition = Vector2.zero;

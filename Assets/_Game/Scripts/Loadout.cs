@@ -57,7 +57,7 @@ namespace FPS
 
         /// <summary>The weapons chosen in the loadout menu differ from what we carry (applied on respawn).</summary>
         public bool ChoicePending =>
-            (Find(PlayerLoadout.Primary) && primaryName != PlayerLoadout.Primary) ||
+            (!DroneMode.Active && Find(PlayerLoadout.Primary) && primaryName != PlayerLoadout.Primary) ||
             (Find(PlayerLoadout.Secondary) && secondaryName != PlayerLoadout.Secondary) ||
             (melee && melee.VariantName.Length > 0 && melee.VariantName != PlayerLoadout.Melee);
 
@@ -69,6 +69,7 @@ namespace FPS
             if (Find(p) && Find(p).slot == WeaponSlot.Primary) primaryName = p;
             if (Find(s) && Find(s).slot == WeaponSlot.Secondary) secondaryName = s;
             if (melee) melee.SetVariant(PlayerLoadout.Melee);
+            if (DroneMode.Active) { primaryName = ""; grenades = 0; } // drone war: knife + pistol only
             var want = Primary ?? Secondary;
             bool stale = Active && Active.weaponName != primaryName && Active.weaponName != secondaryName;
             if (Active && want && Active != want && (stale || Active.slot == WeaponSlot.Primary))
@@ -156,7 +157,7 @@ namespace FPS
         public void RefillAll()
         {
             foreach (var w in weapons) if (w) w.ResetAmmo();
-            grenades = Mathf.Max(grenades, 2);
+            grenades = DroneMode.Active ? 0 : Mathf.Max(grenades, 2);
         }
 
         void Pickup(WeaponPickup p)
@@ -164,13 +165,14 @@ namespace FPS
             if (p.kind == WeaponPickup.Kind.Ammo)
             {
                 foreach (var w in weapons) if (w) w.RefillAmmo();
-                grenades = maxGrenades;
+                if (!DroneMode.Active) grenades = maxGrenades;
                 ProcAudio.Play(Sfx.MagIn, 0.6f);
                 playerCam.Punch(new Vector3(6f, 0f, 3f));
                 return;
             }
             var nw = Find(p.weaponName);
             if (!nw) return;
+            if (DroneMode.Active && nw.slot == WeaponSlot.Primary) { ProcAudio.Play(Sfx.Dry, 0.4f); return; } // sidearms only
             bool isPrimary = nw.slot == WeaponSlot.Primary;
             string current = isPrimary ? primaryName : secondaryName;
             if (current == nw.weaponName)
