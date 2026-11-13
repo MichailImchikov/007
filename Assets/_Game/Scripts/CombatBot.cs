@@ -10,7 +10,7 @@ namespace FPS
     /// Can be executed from behind with the knife while unaware.
     /// </summary>
     [RequireComponent(typeof(NavMeshAgent))]
-    public class CombatBot : MonoBehaviour, IDamageable, IExecutable, IAbilityPuppet
+    public partial class CombatBot : MonoBehaviour, IDamageable, IExecutable, IAbilityPuppet
     {
         public HumanoidRig rig;
         public CharacterAnimator anim;
@@ -192,7 +192,7 @@ namespace FPS
 
         public DamageResult TakeDamage(DamageInfo info)
         {
-            if (dead || executing) return default;
+            if (dead || executing || SkyArena.IsGunner(combatant)) return default;
             if (abilities && abilities.TryDeflect(info)) return default;
             health -= info.amount;
             lastHurt = Time.time;
@@ -227,7 +227,7 @@ namespace FPS
             if (rig) rig.SetCollidersEnabled(false);
             deadAnim = 0f;
             MatchManager.Report(killer, combatant, weapon, headshot);
-            if (MatchManager.Instance) MatchManager.Instance.RequestRespawn(this, 4f);
+            if (MatchManager.Instance) MatchManager.Instance.RequestRespawn(this, SkyArena.Active ? 0.15f : 4f);
         }
 
         // ------------------------------------------------------------------ execution (victim side)
@@ -274,7 +274,7 @@ namespace FPS
             if (agent.enabled) agent.enabled = false;
             if (rig) rig.SetCollidersEnabled(false);
             deadAnim = Mathf.Max(deadAnim, 0.3f);
-            if (MatchManager.Instance) MatchManager.Instance.RequestRespawn(this, 4f);
+            if (MatchManager.Instance) MatchManager.Instance.RequestRespawn(this, SkyArena.Active ? 0.15f : 4f);
         }
 
         // ------------------------------------------------------------------ hearing
@@ -323,6 +323,9 @@ namespace FPS
 
             if (Time.time - lastHurt > 4f && health < maxHealth) health = Mathf.Min(maxHealth, health + 12f * dt);
 
+            // sky arena: knife fight on the floor, nothing else
+            if (ArenaTick(dt)) { UpdateBody(dt); return; }
+
             if (stunTimer > 0f)
             {
                 stunTimer -= dt;
@@ -354,6 +357,9 @@ namespace FPS
                 }
                 if (AntiDrone(dt)) { UpdateBody(dt); return; }
             }
+
+            // disco: the head's rockets are telegraphed — get out of the red circle
+            if (DiscoHead.Markers.Count > 0 && DiscoHead.BotDodge(transform, agent)) { crouched = false; UpdateBody(dt); return; }
 
             switch (state)
             {

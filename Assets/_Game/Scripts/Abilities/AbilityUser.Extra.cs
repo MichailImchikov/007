@@ -52,6 +52,7 @@ namespace FPS
         float ExtraFraction(out Color c)
         {
             c = Color.white;
+            if (isPlayer && SkyArena.Active && !SkyArena.IsGunner(self)) { c = AbilityDB.Get(AbilityType.SkyArena).color; return SkyArena.Fraction; }
             if (building) { c = AbilityDB.Get(AbilityType.Build).color; return buildT / buildDur; }
             if (Shrunk) { c = AbilityDB.Get(AbilityType.Shrink).color; return shrinkT / shrinkDur; }
             if (Confused) { c = AbilityDB.Get(AbilityType.Confuse).color; return confuseT / confuseDur; }
@@ -491,6 +492,12 @@ namespace FPS
             switch (logic)
             {
                 case AbilityType.Shrink: return vis && Random.value < 0.3f;
+                case AbilityType.SkyArena:
+                {
+                    int enemies = 0;
+                    foreach (var c in Combatant.All) if (c && c.alive && self.IsEnemyOf(c)) enemies++;
+                    return enemies >= 2 && Random.value < 0.25f;
+                }
                 case AbilityType.Build: return vis && dist > 6f && (bot.Health01 < 0.6f || Random.value < 0.15f);
                 case AbilityType.BigHeads:
                 case AbilityType.Screamer:

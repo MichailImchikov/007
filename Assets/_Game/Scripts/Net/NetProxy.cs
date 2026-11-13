@@ -269,7 +269,8 @@ namespace FPS
         public void OnShot(Vector3 origin, List<(Vector3 end, byte kind)> ends)
         {
             combatant.lastShotTime = Time.time;
-            Vector3 from = MuzzlePoint;
+            // the sky arena gunner shoots from the sky, not from the body standing on the map
+            Vector3 from = SkyArena.IsGunner(combatant) ? origin : MuzzlePoint;
             Vector3 dir0 = ends.Count > 0 ? (ends[0].end - origin).normalized : transform.forward;
             var fx = FX.Ensure();
             fx.MuzzleFlashWorld(from, dir0);
@@ -317,7 +318,8 @@ namespace FPS
             predictedHealth -= info.amount / 100f;
             predictedUntil = Time.unscaledTime + 0.4f;
             bool killed = predictedHealth <= 0f;
-            if (info.attacker && info.attacker.isPlayer && bot) DamageNumbers.Spawn(info.point, info.amount, info.critical, killed);
+            // numbers over everyone the local player hits: remote bots and other players alike
+            if (info.attacker && info.attacker.isPlayer) DamageNumbers.Spawn(info.point, info.amount, info.critical, killed);
             if (anim) anim.Flinch(transform.InverseTransformDirection(info.direction), Mathf.Clamp(info.amount / 30f, 0.4f, 2f));
             return new DamageResult { applied = true, killed = killed, dealt = info.amount };
         }

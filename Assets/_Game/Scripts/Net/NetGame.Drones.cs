@@ -188,6 +188,9 @@ namespace FPS
                 case Msg.DroneWind:
                     if (fromHost) DroneMode.SetNetWind(RV(r));
                     break;
+                default:
+                    DispatchDisco(m, r, fromHost);
+                    break;
             }
         }
 

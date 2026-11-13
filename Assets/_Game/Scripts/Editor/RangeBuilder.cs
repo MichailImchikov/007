@@ -82,7 +82,7 @@ namespace FPS.EditorTools
             AssetDatabase.CreateFolder(parent, Path.GetFileName(path));
         }
 
-        static readonly string[] SceneOrder = { "MainMenu", "ShootingRange", "Map_Port", "Map_Town", "Map_Warehouse", "Map_Plant", "Map_Village", "Map_Flooded" };
+        static readonly string[] SceneOrder = { "MainMenu", "ShootingRange", "Map_Port", "Map_Town", "Map_Warehouse", "Map_Plant", "Map_Village", "Map_Flooded", "Map_Disco" };
 
         static void SetBuildScenes()
         {

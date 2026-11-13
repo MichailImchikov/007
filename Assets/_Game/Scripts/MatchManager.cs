@@ -163,6 +163,13 @@ namespace FPS
         public bool GetSpawn(Combatant who, out Vector3 pos, out Quaternion rot)
         {
             pos = Vector3.zero; rot = Quaternion.identity;
+            // sky arena: everyone but the gunner respawns on the arena floor
+            if (SkyArena.Active && !SkyArena.IsGunner(who))
+            {
+                pos = SkyArena.Instance.SpawnPoint(who, out float yaw);
+                rot = Quaternion.Euler(0f, yaw, 0f);
+                return true;
+            }
             if (spawns.Count == 0) return false;
             var scored = new List<(SpawnPoint sp, float score)>();
             foreach (var sp in spawns)
@@ -237,6 +244,7 @@ namespace FPS
         {
             if (Ended) return;
             Ended = true;
+            SkyArena.Stop();
             Winner = Leader;
             if (Net.IsHost) NetGame.BroadcastMatchEnd(Winner);
             EndTime = Time.unscaledTime;

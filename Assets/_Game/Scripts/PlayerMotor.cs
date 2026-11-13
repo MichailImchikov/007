@@ -265,7 +265,7 @@ namespace FPS
             if (wish.sqrMagnitude > 1f) wish.Normalize();
             bool hasInput = wish.sqrMagnitude > 0.01f;
             float target = IsProne ? proneSpeed : IsCrouching ? crouchSpeed : (IsSprinting ? sprintSpeed : walkSpeed);
-            target *= SpeedMultiplier;
+            target *= SpeedMultiplier * SkyArena.SpeedScale; // sky arena: everybody runs twice as fast
 
             // ---- jump / vault decisions
             bool jumpPressedBuffered = Time.time - lastJumpPressTime <= jumpBuffer;
@@ -304,7 +304,8 @@ namespace FPS
                 float cap = Mathf.Max(before, target);
                 if (hv.magnitude > cap) hv = hv.normalized * cap;
             }
-            if (hv.magnitude > maxHorizontalSpeed) hv = hv.normalized * maxHorizontalSpeed;
+            float maxH = maxHorizontalSpeed * SkyArena.SpeedScale;
+            if (hv.magnitude > maxH) hv = hv.normalized * maxH;
 
             if (jumpNow)
             {

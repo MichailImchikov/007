@@ -17,7 +17,7 @@ namespace FPS.EditorTools
     /// </summary>
     public static class MapCheck
     {
-        static readonly string[] Maps = { "Map_Port", "Map_Town", "Map_Warehouse", "Map_Plant", "Map_Village", "Map_Flooded" };
+        static readonly string[] Maps = { "Map_Port", "Map_Town", "Map_Warehouse", "Map_Plant", "Map_Village", "Map_Flooded", "Map_Disco" };
 
         [MenuItem("Tools/FPS/Check Maps", priority = 30)]
         public static void Run()

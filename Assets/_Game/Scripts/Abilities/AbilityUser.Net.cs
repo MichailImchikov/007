@@ -4,7 +4,7 @@ using UnityEngine;
 namespace FPS
 {
     /// <summary>One-shot ability events broadcast by the caster's machine (visuals for everybody else).</summary>
-    public enum AbilityNetEvent : byte { Grapple, Rocket, Fart, Swap, Area, Build }
+    public enum AbilityNetEvent : byte { Grapple, Rocket, Fart, Swap, Area, Build, Arena }
 
     /// <summary>Effects one combatant's ability has on another one that lives on a different machine.</summary>
     public enum AbilityNetEffect : byte { Blind, Area, Teleport, Pull, PullEnd }
@@ -183,6 +183,9 @@ namespace FPS
                     ProcAudio.PlayAt(Sfx.Hammer, c, 0.9f, 0.1f);
                     break;
                 }
+                case AbilityNetEvent.Arena:
+                    SkyArena.Begin(self, r.ReadSingle());
+                    break;
             }
         }
 

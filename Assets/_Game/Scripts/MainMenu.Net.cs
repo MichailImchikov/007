@@ -10,7 +10,7 @@ namespace FPS
         static readonly (string scene, string title)[] NetMaps =
         {
             ("Map_Port", "ПОРТ"), ("Map_Town", "ГОРОДОК"), ("Map_Warehouse", "СКЛАД"), ("Map_Plant", "ЗАВОД"), ("Map_Village", "ДЕРЕВНЯ"),
-            ("Map_Flooded", "ЗАТОПЛЕННАЯ ДЕРЕВНЯ"),
+            ("Map_Flooded", "ЗАТОПЛЕННАЯ ДЕРЕВНЯ"), ("Map_Disco", "ДИСКОТЕКА"),
         };
         static int netMap;
         static int netMode;

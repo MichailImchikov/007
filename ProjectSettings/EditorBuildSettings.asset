@@ -30,6 +30,9 @@ EditorBuildSettings:
     path: Assets/Scenes/Map_Flooded.unity
     guid: f45514e53fed290449888e637df50759
   - enabled: 1
+    path: Assets/Scenes/Map_Disco.unity
+    guid: cf50412cb3f9b754bbd258b901f5d36d
+  - enabled: 1
     path: Assets/Julhiecio TPS Controller/Demos/Demo Scenes/Menu/Menu.unity
     guid: fdb5c4156b1e657409311d96ac41cdb5
   - enabled: 1

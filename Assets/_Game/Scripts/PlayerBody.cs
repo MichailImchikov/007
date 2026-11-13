@@ -65,7 +65,7 @@ namespace FPS
             anim.aimPitch = playerCam.Pitch;
             var w = loadout ? loadout.Active : null;
             anim.aim = w ? Mathf.Max(0.3f, w.AimBlend) : 0f;
-            anim.holdingWeapon = w;
+            anim.holdingWeapon = w && !SkyArena.LocalRunner;
             anim.pistolHold = w && w.slot == WeaponSlot.Secondary ? 1f : 0f;
             anim.reloading = w && w.IsReloading;
             anim.knife = melee ? melee.SlashProgress : -1f;

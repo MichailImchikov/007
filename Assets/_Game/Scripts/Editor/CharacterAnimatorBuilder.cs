@@ -90,6 +90,19 @@ namespace FPS.EditorTools
             return string.Join(" ", parts);
         }
 
+        /// <summary>
+        /// Disco mannequins: plain looping humanoid idles. DiscoDancer plays one directly (Playables) and adds the
+        /// dance on top procedurally — no controller asset (rebuilding one while scenes reference it proved fragile).
+        /// </summary>
+        public static AnimationClip[] DanceClips()
+        {
+            var clips = new List<AnimationClip>();
+            foreach (var c in new[] { Clip(HA + "Idle Animations/Normal Idle.anim"), Clip(HA + "Idle Animations/Neutral Idle.fbx"), Clip(JU + "Humanoid Zombie Animations/Zombie Idle.anim") })
+                if (c && c.humanMotion) clips.Add(c);
+            AssetDatabase.DeleteAsset(Dir + "/FPS_Disco_Dancer.controller"); // left over from the first version
+            return clips.ToArray();
+        }
+
         // ------------------------------------------------------------------ masks
 
         static AvatarMask UpperBodyMask()

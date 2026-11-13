@@ -133,8 +133,11 @@ namespace FPS
             if (state == 0)
             {
                 Candidate = FindCandidate();
-                bool blocked = loadout && (loadout.Switching || loadout.Throwing || loadout.ActionsBlocked);
-                if (GameInput.MeleePressed && !blocked && !motor.IsVaulting)
+                // sky arena runners: guns are away, the knife is all they have (F or LMB)
+                bool knifeOnly = SkyArena.KnifeOnly(self);
+                bool blocked = loadout && (loadout.Switching || loadout.Throwing || (loadout.ActionsBlocked && !knifeOnly));
+                bool press = GameInput.MeleePressed || (knifeOnly && GameInput.FirePressed);
+                if (press && !blocked && !motor.IsVaulting)
                 {
                     if (Candidate != null) StartExecution(Candidate);
                     else StartSlash();

@@ -70,7 +70,7 @@ namespace FPS
 
         public DamageResult TakeDamage(DamageInfo info)
         {
-            if (IsDead || protectTimer > 0f || execT >= 0f) return default;
+            if (IsDead || protectTimer > 0f || execT >= 0f || SkyArena.IsGunner(self)) return default;
             if (abilities && abilities.TryDeflect(info)) return default;
             float amount = info.amount;
             if (info.attacker == self) amount *= 0.6f; // own grenade hurts less
@@ -95,7 +95,7 @@ namespace FPS
         /// </summary>
         public void BeginExecutedBy(Combatant attacker)
         {
-            if (IsDead || execT >= 0f) return;
+            if (IsDead || execT >= 0f || SkyArena.IsGunner(self)) return;
             execT = 0f;
             executor = attacker;
             execKilled = false;
@@ -129,7 +129,7 @@ namespace FPS
             IsDead = true;
             Health = 0f;
             self.alive = false;
-            deathTimer = respawnDelay;
+            deathTimer = SkyArena.Active ? 0.15f : respawnDelay; // sky arena: back on your feet at once
             deathT = 0f;
             LastKiller = info.attacker;
             LastKillerWeapon = info.weapon;
@@ -157,7 +157,7 @@ namespace FPS
             DeadForward = false;
             execT = -1f;
             self.alive = true;
-            protectTimer = spawnProtection;
+            protectTimer = SkyArena.Active ? 0.5f : spawnProtection;
             GameInput.Blocked = MatchManager.Instance && MatchManager.Instance.Ended;
             if (loadout)
             {

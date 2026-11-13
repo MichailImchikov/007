@@ -162,10 +162,13 @@ namespace FPS
 
         void Say(string title, string sub, Color c) => Message?.Invoke(title, sub, c);
 
+        /// <summary>HUD message from outside the ability system (e.g. the sky arena).</summary>
+        public void Notify(string title, string sub, Color c) => Say(title, sub, c);
+
         public bool TryActivate()
         {
             if (Type == AbilityType.None || !self || !self.alive) return false;
-            bool blocked = Cooldown > 0f || Busy || slipT > 0f;
+            bool blocked = Cooldown > 0f || Busy || slipT > 0f || SkyArena.Active;
             if (isPlayer && (motor.Locked || (loadout && (loadout.Throwing || loadout.Switching)) || (melee && melee.Busy))) blocked = true;
             if (blocked)
             {
@@ -195,6 +198,17 @@ namespace FPS
                 case AbilityType.FartBlind: Fart(true, 0f); return true;
                 case AbilityType.FartSmoke: Fart(false, info.duration); return true;
                 case AbilityType.Swap: return StartSwap();
+                case AbilityType.SkyArena:
+                {
+                    if (!SkyArena.TryBegin(self, info.duration))
+                    {
+                        if (isPlayer) Say("Не сейчас", "Некого отправить на арену", new Color(1f, 0.4f, 0.4f));
+                        return false;
+                    }
+                    float dur = info.duration;
+                    SendEvent(AbilityNetEvent.Arena, w => w.Write(dur));
+                    return true;
+                }
             }
             return ExecuteExtra(t, info);
         }
@@ -311,7 +325,7 @@ namespace FPS
             }
 
             if (rocketAim && !self.alive) CancelRocketAim();
-            bool lowerAll = Morphed || Parrying || Building || Minesweeping || rocketAim;
+            bool lowerAll = Morphed || Parrying || Building || Minesweeping || rocketAim || SkyArena.LocalRunner;
             if (rocketAim) { motor.SpeedMultiplier *= 0.5f; motor.BlockSprint = true; }
             WeaponController.AbilityLower = lowerAll ? 1f : 0f;
             if (loadout) loadout.ActionsBlocked = lowerAll;
@@ -331,8 +345,8 @@ namespace FPS
         {
             bool flicker = phaseT > 0f && !isPlayer && Mathf.Repeat(Time.time * 9f, 1f) < 0.45f;
             bool bodyOn = !Morphed && !Invisible && !flicker;
-            bool gunOn = !Morphed && !Parrying && !flicker;
-            int key = (bodyOn ? 1 : 0) | (gunOn ? 2 : 0) | (flicker ? 4 : 0);
+            bool gunOn = !Morphed && !Parrying && !flicker && !SkyArena.KnifeOnly(self);
+            int key = (bodyOn ? 1 : 0) | (gunOn ? 2 : 0) | (flicker ? 4 : 0) | (SkyArena.Active ? 8 : 0);
             if (key == visKey) return;
             visKey = key;
             if (rig)
@@ -346,6 +360,13 @@ namespace FPS
         // ------------------------------------------------------------------ death / respawn
 
         public void OnDeath()
+        {
+            ClearStatus();
+            Type = AbilityType.None; Shown = AbilityType.None; Cooldown = 0f; NearbyPickup = null;
+        }
+
+        /// <summary>Ends every running ability and status effect but keeps the ability slot.</summary>
+        public void ClearStatus()
         {
             if (hookState != 0) { ReleaseVictim(false); CleanupHook(); }
             if (chickenT > 0f) EndChicken();
@@ -363,7 +384,6 @@ namespace FPS
                 if (isPlayer) motor.Noclip = false;
                 else if (bot) bot.ExternalControl = false;
             }
-            Type = AbilityType.None; Shown = AbilityType.None; Cooldown = 0f; NearbyPickup = null;
             if (isPlayer)
             {
                 GameInput.Inverted = false;
@@ -634,7 +654,7 @@ namespace FPS
         /// <summary>Player pressed V: crouch over, the charge pokes out of the butt, the view zooms in for aiming.</summary>
         void BeginRocketAim()
         {
-            bool blocked = Cooldown > 0f || Busy || slipT > 0f || motor.Locked
+            bool blocked = Cooldown > 0f || Busy || slipT > 0f || SkyArena.Active || motor.Locked
                            || (loadout && (loadout.Throwing || loadout.Switching)) || (melee && melee.Busy);
             if (blocked) { ProcAudio.Play(Sfx.Dry, 0.4f); return; }
             rocketAim = true;
@@ -1126,7 +1146,7 @@ namespace FPS
             thinkT -= dt;
             if (thinkT > 0f) return;
             thinkT = Random.Range(0.25f, 0.5f);
-            if (!bot || Type == AbilityType.None || Cooldown > 0f || Busy || Blinded || slipT > 0f || bot.ExternalControl) return;
+            if (!bot || Type == AbilityType.None || Cooldown > 0f || SkyArena.Active || Busy || Blinded || slipT > 0f || bot.ExternalControl) return;
 
             var t = bot.Target;
             bool vis = t && bot.TargetVisible;

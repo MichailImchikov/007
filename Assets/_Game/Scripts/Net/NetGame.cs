@@ -25,6 +25,7 @@ namespace FPS
         Grenade, Explosion, Exec, Ability, Effect, PickupSpawn, PickupGone, PickupTake, PickupGrant,
         CoverDamage, CoverState, CoverBreak,
         DroneSpawn, DroneState, DroneEnd, DroneDamage, DroneReveal, DroneWind,
+        DiscoVolley,
     }
 
     /// <summary>

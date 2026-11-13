@@ -6,7 +6,7 @@ namespace FPS
     public enum AbilityType
     {
         None, Grapple, Parry, ButtRocket, ChickenTrap, Invisibility, Phase, FartBlind, FartSmoke, Swap,
-        Shrink, BigHeads, Screamer, Confuse, Launch, Minesweeper, Build, BSOD, Spin
+        Shrink, BigHeads, Screamer, Confuse, Launch, Minesweeper, Build, BSOD, Spin, SkyArena
     }
 
     public struct AbilityInfo
@@ -115,6 +115,11 @@ namespace FPS
                 name = "Карусель", glyph = "@", color = new Color(0.95f, 0.85f, 0.25f), cooldown = 18f, duration = 3f, radius = 14f, weight = 0.8f,
                 desc = "У врагов рядом камеру крутит на 360° — снова и снова, 3 секунды."
             },
+            [AbilityType.SkyArena] = new AbilityInfo
+            {
+                name = "Небесный тир", glyph = "+", color = new Color(0.85f, 0.15f, 1f), cooldown = 1f, duration = 20f, uses = 1, weight = 0.35f,
+                desc = "Одноразовая. Все остальные — на тёмную арену: только бег и ножи, мгновенное воскрешение, скорость ×2. Вы сверху с пулемётом. 20 сек."
+            },
         };
 
         public static AbilityInfo Get(AbilityType t) => map.TryGetValue(t, out var i) ? i : default;
@@ -143,7 +148,7 @@ namespace FPS
             {
                 AbilityType.Grapple, AbilityType.Parry, AbilityType.ButtRocket, AbilityType.Invisibility, AbilityType.Phase, AbilityType.FartBlind,
                 AbilityType.Swap, AbilityType.Shrink, AbilityType.BigHeads, AbilityType.Screamer,
-                AbilityType.Confuse, AbilityType.Launch, AbilityType.Minesweeper, AbilityType.Build, AbilityType.BSOD, AbilityType.Spin
+                AbilityType.Confuse, AbilityType.Launch, AbilityType.Minesweeper, AbilityType.Build, AbilityType.BSOD, AbilityType.Spin, AbilityType.SkyArena
             };
             return real[Random.Range(0, real.Length)];
         }
