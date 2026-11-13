@@ -24,8 +24,10 @@ namespace FPS
         public const float RevealTime = 9f, RevealRadius = 14f;
 
         public static DroneMode Instance { get; private set; }
-        public static bool Active => MatchSettings.mode == GameMode.Drones && MatchManager.Instance && !Net.Active;
+        public static bool Active => MatchSettings.mode == GameMode.Drones && MatchManager.Instance;
         public static Vector3 Wind { get; private set; }
+        /// <summary>Network game: everybody flies in the host's wind.</summary>
+        public static void SetNetWind(Vector3 w) => Wind = w;
         public static float WaterLevel { get; private set; } = -10000f;
         public static Bounds Bounds { get; private set; }
         public static readonly List<RevealMark> Reveals = new List<RevealMark>();
@@ -146,10 +148,19 @@ namespace FPS
         {
             if (!owner || !owner.alive) return;
             Vector2 off = Random.insideUnitCircle * (RevealRadius * 0.55f);
+            Vector3 center = owner.transform.position + new Vector3(off.x, 0f, off.y);
+            NetGame.SendDroneReveal(owner, by, center);
+            AddReveal(owner, by, center);
+        }
+
+        /// <summary>Shows a reveal mark (also the one announced by another machine in a network game).</summary>
+        public static void AddReveal(Combatant owner, Combatant by, Vector3 center)
+        {
+            if (!owner) return;
             var m = new RevealMark
             {
                 owner = owner, by = by,
-                center = owner.transform.position + new Vector3(off.x, 0f, off.y),
+                center = center,
                 radius = RevealRadius, born = Time.time, until = Time.time + RevealTime,
             };
             Reveals.RemoveAll(r => r.owner == owner);

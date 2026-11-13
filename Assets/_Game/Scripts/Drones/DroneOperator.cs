@@ -99,6 +99,7 @@ namespace FPS
             if (IsLocalPlayer)
             {
                 Drone.pilot = DrivePlayer;
+                Drone.LookFlight = true;
                 EnterView();
             }
             else

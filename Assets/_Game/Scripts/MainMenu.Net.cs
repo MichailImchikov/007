@@ -13,6 +13,8 @@ namespace FPS
             ("Map_Flooded", "ЗАТОПЛЕННАЯ ДЕРЕВНЯ"),
         };
         static int netMap;
+        static int netMode;
+        static readonly string[] NetModeNames = { "DEATHMATCH", "ВОЙНА ДРОНОВ" };
         static string lastAddress = "";
 
         MenuPanel joinPanel;
@@ -44,6 +46,7 @@ namespace FPS
             UIKit.Header(list, "Игрок");
             var nick = NickRow(list);
             UIKit.Header(list, "Матч");
+            UIKit.SelectorRow(list, "Режим", NetModeNames.Length, () => netMode, i => netMode = i, i => NetModeNames[i]);
             UIKit.SelectorRow(list, "Карта", NetMaps.Length, () => netMap, i => netMap = i, i => NetMaps[i].title);
             UIKit.SelectorRow(list, "Боты", 14, () => MatchSettings.botCount, i => MatchSettings.botCount = i, i => i.ToString());
             UIKit.SelectorRow(list, "Сложность ботов", 3, () => MatchSettings.difficulty, i => MatchSettings.difficulty = i, i => DiffNames[i]);
@@ -144,7 +147,7 @@ namespace FPS
         void StartHosting()
         {
             MenuPanel.CloseAll();
-            MatchSettings.mode = GameMode.Deathmatch; // drone war is offline only for now
+            MatchSettings.mode = netMode == 1 ? GameMode.Drones : GameMode.Deathmatch;
             if (!NetGame.Ensure().StartHost(NetMaps[netMap].scene))
             {
                 Cursor.lockState = CursorLockMode.None;

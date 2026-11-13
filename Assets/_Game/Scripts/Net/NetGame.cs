@@ -24,6 +24,7 @@ namespace FPS
         Welcome, Ready, Roster, State, Shot, Damage, Kill, KillFeed, Score, MatchEnd, LoadMap,
         Grenade, Explosion, Exec, Ability, Effect, PickupSpawn, PickupGone, PickupTake, PickupGrant,
         CoverDamage, CoverState, CoverBreak,
+        DroneSpawn, DroneState, DroneEnd, DroneDamage, DroneReveal, DroneWind,
     }
 
     /// <summary>
@@ -39,12 +40,12 @@ namespace FPS
     ///  • one-shot events (shots, grenades, explosions, ability visuals) are relayed through the host.
     /// </summary>
     [DefaultExecutionOrder(300)]
-    public class NetGame : MonoBehaviour
+    public partial class NetGame : MonoBehaviour
     {
         public static NetGame I { get; private set; }
 
         public const ushort GamePort = 7777;
-        public const int Protocol = 1;
+        public const int Protocol = 2;
         public const int MaxPlayers = 8;
         const float SendInterval = 0.05f;
         const string RelName = "f7r", UnrelName = "f7u";
@@ -236,6 +237,7 @@ namespace FPS
             sceneReady = false;
             peers.Clear(); pending.Clear(); ents.Clear(); proxies.Clear(); clientStates.Clear();
             covers.Clear(); coverDirty.Clear(); pickups.Clear();
+            ClearDrones();
             pendingRoster = null;
             LocalId = 0;
         }
@@ -307,7 +309,7 @@ namespace FPS
                 w.Write(client);
                 w.Write(MapScene);
                 w.Write(p.nick);
-                w.Write(MatchSettings.botCount); w.Write(MatchSettings.difficulty); w.Write(MatchSettings.killLimit); w.Write(MatchSettings.timeLimit);
+                WriteSettings(w);
                 SendTo(client, End(), true);
                 SetStatus(p.nick + " подключился");
             }
@@ -365,7 +367,7 @@ namespace FPS
             foreach (var p in I.peers.Values) p.ready = false;
             var w = I.Begin(Msg.LoadMap);
             w.Write(scene);
-            w.Write(MatchSettings.botCount); w.Write(MatchSettings.difficulty); w.Write(MatchSettings.killLimit); w.Write(MatchSettings.timeLimit);
+            WriteSettings(w);
             I.SendAll(I.End(), true);
             I.LoadMapLocal(scene);
         }
@@ -374,6 +376,7 @@ namespace FPS
         {
             if (!Running) return;
             ents.Clear(); proxies.Clear(); covers.Clear(); coverDirty.Clear(); pickups.Clear(); clientStates.Clear();
+            ClearDrones();
             sceneReady = false;
             if (scene.name == "MainMenu") { Shutdown(); return; }
             // index scene cover by position: identical on every machine, before physics can move anything
@@ -502,8 +505,9 @@ namespace FPS
             else SendRaw(NetworkManager.ServerClientId, data, true);
         }
 
-        static bool Relayed(Msg m) => m == Msg.Shot || m == Msg.Grenade || m == Msg.Explosion || m == Msg.Ability;
-        static bool Targeted(Msg m) => m == Msg.Damage || m == Msg.Exec || m == Msg.Effect;
+        static bool Relayed(Msg m) => m == Msg.Shot || m == Msg.Grenade || m == Msg.Explosion || m == Msg.Ability
+                                      || m == Msg.DroneSpawn || m == Msg.DroneEnd || m == Msg.DroneReveal;
+        static bool Targeted(Msg m) => m == Msg.Damage || m == Msg.Exec || m == Msg.Effect || m == Msg.DroneDamage;
 
         void OnNamed(ulong sender, FastBufferReader reader)
         {
@@ -515,6 +519,12 @@ namespace FPS
             var m = (Msg)data[0];
             if (Hosting && sender != NetworkManager.ServerClientId)
             {
+                if (DroneOwned(m))
+                {
+                    // a client only speaks for its own drone
+                    if (data.Length < 3 || BitConverter.ToInt16(data, 1) != PlayerId(sender)) return;
+                    if (m == Msg.DroneState) SendAll(data, false, sender, true);
+                }
                 if (Relayed(m)) SendAll(data, true, sender, true);
                 if (Targeted(m))
                 {
@@ -679,8 +689,11 @@ namespace FPS
                 {
                     var thrower = Find(r.ReadInt16());
                     Vector3 pos = RV(r), vel = RV(r);
+                    bool impact = r.ReadBoolean();
                     if (thrower && !thrower.remote) return;
-                    Grenade.Spawn(pos, vel, null, thrower, true);
+                    // dropped from a drone: do not let the mirror of that drone (a few cm off) set the copy off
+                    var drone = thrower ? RemoteDrone(thrower.netId) : null;
+                    Grenade.Spawn(pos, vel, drone ? drone.Collider : null, thrower, true, impact);
                     ProcAudio.PlayAt(Sfx.Throw, pos, 0.7f);
                     break;
                 }
@@ -773,8 +786,16 @@ namespace FPS
                     if (covers.TryGetValue(id, out var d) && d && !d.Broken) d.Break(dir, point);
                     break;
                 }
+                default:
+                    DispatchDrone(m, r, fromHost);
                     break;
             }
+        }
+
+        static void WriteSettings(BinaryWriter w)
+        {
+            w.Write(MatchSettings.botCount); w.Write(MatchSettings.difficulty); w.Write(MatchSettings.killLimit); w.Write(MatchSettings.timeLimit);
+            w.Write((byte)MatchSettings.mode);
         }
 
         static void ReadSettings(BinaryReader r)
@@ -783,6 +804,7 @@ namespace FPS
             MatchSettings.difficulty = r.ReadInt32();
             MatchSettings.killLimit = r.ReadInt32();
             MatchSettings.timeLimit = r.ReadSingle();
+            MatchSettings.mode = (GameMode)r.ReadByte();
         }
 
         IEnumerator BotExecuted(CombatBot bot, Combatant attacker)
@@ -887,6 +909,7 @@ namespace FPS
                 SendTo(client, End(), true);
             }
             SendTo(client, ScoreMsg(), true);
+            SendDroneFullState(client);
         }
 
         // ------------------------------------------------------------------ per-frame: snapshots, score, cover
@@ -913,6 +936,7 @@ namespace FPS
                         SendRaw(NetworkManager.ServerClientId, End(), false);
                     }
                 }
+                SendDroneStates();
             }
             if (!Hosting) return;
             if (now - scoreT >= 1f)
@@ -1042,11 +1066,11 @@ namespace FPS
             I.SendAll(I.End(), true, ulong.MaxValue, true);
         }
 
-        public static void SendGrenade(Combatant thrower, Vector3 pos, Vector3 vel)
+        public static void SendGrenade(Combatant thrower, Vector3 pos, Vector3 vel, bool impactFuse = false)
         {
             if (!Ok || !thrower || thrower.remote) return;
             var w = I.Begin(Msg.Grenade);
-            w.Write((short)thrower.netId); WV(w, pos); WV(w, vel);
+            w.Write((short)thrower.netId); WV(w, pos); WV(w, vel); w.Write(impactFuse);
             I.Publish(I.End());
         }
 

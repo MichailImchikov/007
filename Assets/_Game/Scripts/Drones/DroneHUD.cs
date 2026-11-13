@@ -493,7 +493,7 @@ namespace FPS
             tBattery.text = d.Voltage.ToString("0.0") + "В  " + Mathf.RoundToInt(d.Battery * 100f) + "%";
             batteryFill.rectTransform.sizeDelta = new Vector2(200f * d.Battery, 8f);
             batteryFill.color = d.Battery > 0.3f ? new Color(0.6f, 1f, 0.6f, 0.9f) : new Color(1f, 0.35f, 0.25f, blink ? 1f : 0.4f);
-            tAmmo.text = "БК " + d.Ammo + " / " + Drone.MagSize;
+            tAmmo.text = d.DropCd > 0f ? "ГРАНАТА: " + d.DropCd.ToString("0.0") + " с" : "ГРАНАТА ГОТОВА  [ЛКМ]";
             string thKey = GameSettings.KeyName(BindAction.Ability);
             if (d.Thermal) tThermal.text = "ТЕПЛОВИЗОР  " + d.ThermalLeft.ToString("0.0") + " с   [" + thKey + "] выкл";
             else if (d.ThermalCd > 0f) tThermal.text = "тепловизор: перезарядка " + Mathf.CeilToInt(d.ThermalCd) + " с";
@@ -538,7 +538,7 @@ namespace FPS
             noise.color = new Color(1f, 1f, 1f, Mathf.Clamp01(na));
             noise.uvRect = new Rect(Random.value, Random.value, Screen.width / 256f * 0.5f, Screen.height / 256f * 0.5f);
             scan.uvRect = new Rect(0f, Time.unscaledTime * 0.3f, 1f, Screen.height / 3f);
-            vignette.color = new Color(0f, 0f, 0f, d.Thermal ? 0.75f : 0.55f);
+            vignette.color = new Color(0f, 0f, 0f, d.Thermal ? 0.6f : 0.3f);
 
             hitT += dt;
             float ha = Mathf.Clamp01(1f - hitT / 0.3f);
@@ -547,7 +547,7 @@ namespace FPS
 
             string K(BindAction ba) => GameSettings.KeyName(ba);
             tHints.text = $"{K(BindAction.MoveForward)}{K(BindAction.MoveLeft)}{K(BindAction.MoveBack)}{K(BindAction.MoveRight)} — движение   Мышь — взгляд   Пробел — вверх   Ctrl — вниз   {K(BindAction.Sprint)} — ускорение   " +
-                          $"ЛКМ — огонь   {K(BindAction.Aim)} — подрыв   {K(BindAction.Ability)} — тепловизор   {K(BindAction.Grenade)} — сброс связи";
+                          $"ЛКМ — сброс гранаты   {K(BindAction.Aim)} — подрыв   {K(BindAction.Ability)} — тепловизор   {K(BindAction.Grenade)} — сброс связи";
         }
     }
 }

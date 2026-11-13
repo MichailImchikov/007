@@ -22,6 +22,7 @@ namespace FPS
         Vector3 targetLast, targetVel;
         float retarget, noLosT, think;
         bool los;
+        int drops;
 
         public DroneBotPilot(DroneOperator op, CombatBot bot)
         {
@@ -80,7 +81,7 @@ namespace FPS
                     float alt = Mathf.Max(cruiseAlt, tp.y + 9f);
                     vDes = dir * Mathf.Min(16f, hd * 0.6f) * skill + Vector3.up * Mathf.Clamp((alt - pos.y) * 0.8f, -4f, 4f);
                     sport = hd > 60f;
-                    float engage = gunner && d.Ammo > 0 ? 34f : 28f;
+                    float engage = gunner && drops < 3 ? 34f : 28f;
                     if (hd < engage && los) phase = Phase.Attack;
                     if (hd < 20f && !los) { noLosT += dt; if (noLosT > 10f) { noLosT = 0f; PickTarget(pos, target); } }
                 }
@@ -89,15 +90,21 @@ namespace FPS
                     if (!los && !known) { noLosT += dt; if (noLosT > 2.5f) { phase = Phase.Cruise; noLosT = 0f; } }
                     else noLosT = 0f;
                     float dist = to.magnitude;
-                    if (gunner && d.Ammo > 0)
+                    if (gunner && drops < 3)
                     {
-                        // stand-off: hold 14 m away a few metres above, nose and camera on the target
-                        Vector3 away = dist > 0.1f ? -to / dist : Vector3.back;
-                        Vector3 hold = tp + new Vector3(away.x, 0f, away.z).normalized * 14f + Vector3.up * 6f;
-                        vDes = Vector3.ClampMagnitude((hold - pos) * 1.2f, 9f);
-                        Vector3 aimDir = (tp + targetVel * (dist / 300f) - d.Cam.transform.position).normalized;
-                        float err = Vector3.Angle(d.Cam.transform.forward, aimDir);
-                        d.cmdFire = los && err < 2.5f / skill && dist < 45f;
+                        // bomber: hang ~9 m above the target and release when the fall lands on it
+                        float h = Mathf.Max(4f, pos.y - tp.y);
+                        float tFall = Mathf.Sqrt(2f * h / 9.81f);
+                        Vector3 over = tp + targetVel * tFall * skill + Vector3.up * 9f;
+                        vDes = Vector3.ClampMagnitude((over - pos) * 1.4f, 12f);
+                        Vector3 impact = pos + new Vector3(v.x, 0f, v.z) * tFall;
+                        Vector2 miss = new Vector2(impact.x - tp.x - targetVel.x * tFall, impact.z - tp.z - targetVel.z * tFall);
+                        if (d.DropCd <= 0f && miss.magnitude < 1.6f / skill && los)
+                        {
+                            d.cmdFire = true;
+                            drops++;
+                        }
+                        lookAt = tp;
                     }
                     else
                     {

@@ -168,9 +168,9 @@ namespace FPS.EditorTools
             if (sun)
             {
                 sun.shadows = LightShadows.Soft;
-                sun.shadowStrength = 0.75f;
-                sun.intensity = 1.25f;
-                sun.color = new Color(0.9f, 0.93f, 1f);
+                sun.shadowStrength = 0.6f;
+                sun.intensity = 1.9f;
+                sun.color = new Color(0.97f, 0.96f, 0.92f);
                 sun.lightmapBakeType = LightmapBakeType.Realtime;
                 RenderSettings.sun = sun;
             }
@@ -180,9 +180,9 @@ namespace FPS.EditorTools
 
             // no baked environment lighting → explicit overcast ambient
             RenderSettings.ambientMode = AmbientMode.Trilight;
-            RenderSettings.ambientSkyColor = new Color(0.5f, 0.56f, 0.62f);
-            RenderSettings.ambientEquatorColor = new Color(0.4f, 0.43f, 0.43f);
-            RenderSettings.ambientGroundColor = new Color(0.2f, 0.21f, 0.19f);
+            RenderSettings.ambientSkyColor = new Color(0.78f, 0.84f, 0.9f);
+            RenderSettings.ambientEquatorColor = new Color(0.62f, 0.65f, 0.64f);
+            RenderSettings.ambientGroundColor = new Color(0.36f, 0.36f, 0.33f);
             RenderSettings.fog = true;
             RenderSettings.fogMode = FogMode.Linear;
             RenderSettings.fogStartDistance = 15f;
@@ -206,7 +206,7 @@ namespace FPS.EditorTools
             var tm = profile.Add<Tonemapping>(true); tm.mode.Override(TonemappingMode.ACES);
             var bloom = profile.Add<Bloom>(true); bloom.intensity.Override(0.5f); bloom.threshold.Override(1.1f); bloom.scatter.Override(0.6f);
             var vig = profile.Add<Vignette>(true); vig.intensity.Override(0.26f); vig.smoothness.Override(0.45f);
-            var ca = profile.Add<ColorAdjustments>(true); ca.postExposure.Override(0.45f); ca.contrast.Override(12f); ca.saturation.Override(-6f);
+            var ca = profile.Add<ColorAdjustments>(true); ca.postExposure.Override(0.85f); ca.contrast.Override(12f); ca.saturation.Override(-6f);
             var smh = profile.Add<ShadowsMidtonesHighlights>(true); smh.shadows.Override(new Vector4(0.95f, 1f, 1.05f, 0f));
             foreach (var c in profile.components) AssetDatabase.AddObjectToAsset(c, profile);
             EditorUtility.SetDirty(profile);

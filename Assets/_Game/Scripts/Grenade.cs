@@ -9,6 +9,10 @@ namespace FPS
         public float radius = 7f;
         public float damage = 150f;
         public float push = 9f;
+        /// <summary>Dropped from a drone: goes off on the first hard contact (the fuse timer is a backup).</summary>
+        public bool impactFuse;
+        /// <summary>Kill-feed name of the blast.</summary>
+        public string weaponName = "Граната";
 
         float t;
         bool exploded;
@@ -19,7 +23,7 @@ namespace FPS
         /// <summary>Network mirror of someone else's grenade: bounces and blinks; the blast arrives as an Explosion message.</summary>
         public bool visualOnly;
 
-        public static Grenade Spawn(Vector3 pos, Vector3 velocity, Collider owner, Combatant thrower = null, bool visualOnly = false)
+        public static Grenade Spawn(Vector3 pos, Vector3 velocity, Collider owner, Combatant thrower = null, bool visualOnly = false, bool impactFuse = false)
         {
             if (!bodyMat)
             {
@@ -75,9 +79,10 @@ namespace FPS
             g.led = ledGO.GetComponent<Renderer>();
             g.thrower = thrower;
             g.visualOnly = visualOnly;
+            g.impactFuse = impactFuse;
             if (thrower && visualOnly)
                 foreach (var c in thrower.GetComponentsInChildren<Collider>()) Physics.IgnoreCollision(col, c, true);
-            if (!visualOnly) NetGame.SendGrenade(thrower, pos, velocity);
+            if (!visualOnly) NetGame.SendGrenade(thrower, pos, velocity, impactFuse);
             return g;
         }
 
@@ -96,8 +101,13 @@ namespace FPS
         {
             exploded = true;
             if (visualOnly) { Destroy(gameObject, 0.25f); return; } // the owner's explosion message plays the blast
-            Explosions.Detonate(transform.position, radius, damage, push, thrower, "Граната", transform);
+            Explosions.Detonate(transform.position, radius, damage, push, thrower, weaponName, transform);
             Destroy(gameObject);
+        }
+
+        void OnCollisionEnter(Collision c)
+        {
+            if (impactFuse && !exploded && t > 0.08f) Explode();
         }
     }
 }

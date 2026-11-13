@@ -19,13 +19,12 @@ namespace FPS
     {
         public static readonly List<Drone> All = new List<Drone>();
 
-        public const string WeaponGun = "Дрон (пулемёт)";
         public const string WeaponBoom = "FPV-дрон";
 
         // ---- airframe (≈ 7" combat FPV with a warhead)
         public const float Mass = 1.15f;
         const float ArmL = 0.115f;              // motor offset along local x and z
-        const float MotorMax = 9.4f;            // N per motor at full battery (TWR ≈ 3.3)
+        const float MotorMax = 11.5f;           // N per motor at full battery (TWR ≈ 4)
         const float MotorIdle = 0.22f;          // N, air-mode idle
         const float MotorTau = 0.035f;          // s, motor + prop spool-up
         const float YawCoef = 0.018f;           // rotor drag torque per newton of thrust
@@ -33,16 +32,18 @@ namespace FPS
         static readonly float[] MX = { -1f, 1f, -1f, 1f }, MZ = { 1f, 1f, -1f, -1f }, MS = { 1f, -1f, -1f, 1f };
 
         /// <summary>Ground speed for full WASD (m/s): normal and with Shift.</summary>
-        public const float MaxSpeed = 15f, MaxSpeedSport = 24f;
+        public const float MaxSpeed = 20f, MaxSpeedSport = 30f;
         public const float MaxHealth = 30f;
-        public const int MagSize = 60;
         public const float ThermalDuration = 10f, ThermalCooldown = 10f;
         public const float SignalRange = 380f;
         public const float BlastRadius = 6.5f, BlastDamage = 175f;
 
         // ---- public state
         public DroneOperator Operator { get; private set; }
-        public Combatant Owner => Operator ? Operator.Combatant : null;
+        public Combatant Owner => Operator ? Operator.Combatant : remoteOwner;
+        /// <summary>Network mirror of a drone flown on another machine: follows its snapshots, hits go to the owner.</summary>
+        public bool Remote { get; private set; }
+        public Collider Collider => col;
         public Rigidbody Body => rb;
         public Camera Cam => cam;
         public DroneFlightMode Mode { get; private set; } = DroneFlightMode.Stab;
@@ -54,7 +55,6 @@ namespace FPS
         public float Signal { get; private set; } = 1f;
         public bool LinkLost => linkLost;
         public bool OutOfBounds { get; private set; }
-        public int Ammo { get; private set; } = MagSize;
         public float ThermalLeft { get; private set; }
         public float ThermalCd { get; private set; }
         public bool Thermal => ThermalLeft > 0f;
@@ -65,9 +65,11 @@ namespace FPS
         public float AltitudeAGL { get; private set; } = 99f;
         public float Heading => transform.eulerAngles.y;
         public float HeadingTarget => yawTarget;
-        public Vector3 Velocity => rb ? rb.linearVelocity : Vector3.zero;
+        public Vector3 Velocity => Remote ? netVel : rb ? rb.linearVelocity : Vector3.zero;
         public bool Sport => cmdSport;
         public bool IsLocalView { get; set; }
+        /// <summary>W / S fly along the camera direction including up / down (player piloting).</summary>
+        public bool LookFlight { get; set; }
         /// <summary>The operator was hit while flying (shown on the OSD).</summary>
         public float OperatorHitT { get; set; } = -99f;
         /// <summary>Why the flight ended (first cause wins): shown to the pilot.</summary>
@@ -95,10 +97,15 @@ namespace FPS
         public readonly List<MeshFilter> meshes = new List<MeshFilter>();
         float yawTarget, thrStick = 0.45f, holdAlt = float.NaN;
         Quaternion acroSet = Quaternion.identity;
-        float fireCd, noiseSeed;
+        float noiseSeed;
         bool linkLost;
         Vector3 lastVel;
         readonly RaycastHit[] hits = new RaycastHit[16];
+        // network mirror
+        Combatant remoteOwner;
+        Vector3 netPos, netVel;
+        Quaternion netRot = Quaternion.identity;
+        float netT;
 
         // ------------------------------------------------------------------ spawn
 
@@ -121,7 +128,64 @@ namespace FPS
                 foreach (var c in op.Combatant.GetComponentsInChildren<Collider>(true))
                     if (c) Physics.IgnoreCollision(d.col, c, true);
             foreach (var g in DroneMode.Ghosts) if (g) Physics.IgnoreCollision(d.col, g, true);
+            NetGame.DroneLaunched(d);
             return d;
+        }
+
+        /// <summary>Mirror of someone else's drone (network game): no physics, no fuse, moved by <see cref="NetState"/>.</summary>
+        public static Drone CreateRemote(Combatant owner, Vector3 pos, Quaternion rot)
+        {
+            var go = new GameObject("Drone_" + (owner ? owner.displayName : "?") + "_net");
+            go.transform.SetPositionAndRotation(pos, rot);
+            var d = go.AddComponent<Drone>();
+            d.Remote = true;
+            d.remoteOwner = owner;
+            d.Build();
+            d.rb.isKinematic = true;
+            d.rb.useGravity = false;
+            d.rb.interpolation = RigidbodyInterpolation.None;
+            d.rb.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
+            d.netPos = pos; d.netRot = rot; d.netT = Time.time;
+            d.yawTarget = rot.eulerAngles.y;
+            if (owner)
+                foreach (var c in owner.GetComponentsInChildren<Collider>(true))
+                    if (c) Physics.IgnoreCollision(d.col, c, true);
+            foreach (var g in DroneMode.Ghosts) if (g) Physics.IgnoreCollision(d.col, g, true);
+            return d;
+        }
+
+        /// <summary>A snapshot from the owner's machine.</summary>
+        public void NetState(Vector3 pos, Quaternion rot, Vector3 vel, float throttle, bool armed, bool thermal)
+        {
+            if (!Remote || Dead) return;
+            netPos = pos; netRot = rot; netVel = vel; netT = Time.time;
+            ThrottleFraction = throttle;
+            Armed = armed;
+            ThermalLeft = thermal ? ThermalDuration : 0f;
+            float spin = Mathf.Max(throttle, armed ? 0.1f : 0f) * MotorMax;
+            for (int i = 0; i < 4; i++) thrust[i] = spin;
+        }
+
+        /// <summary>The owner's drone ended: 0 — warhead went off (the blast comes as its own message), 1 — shot down, 2 — just gone.</summary>
+        public void NetEnd(int kind)
+        {
+            if (!Remote || Dead) return;
+            if (kind == 1) { ShotDown(); return; }
+            Dead = true;
+            if (buzz) buzz.Stop();
+            Destroy(gameObject);
+        }
+
+        void RemoteUpdate(float dt)
+        {
+            // light extrapolation over the snapshot gap, then smoothing toward it
+            float lag = Mathf.Min(Time.time - netT, 0.25f);
+            Vector3 target = netPos + netVel * lag;
+            float k = 1f - Mathf.Exp(-dt * 14f);
+            Vector3 p = (transform.position - target).sqrMagnitude > 25f ? target : Vector3.Lerp(transform.position, target, k);
+            transform.SetPositionAndRotation(p, Quaternion.Slerp(transform.rotation, netRot, k));
+            UpdateVisuals(dt);
+            if (Time.time - netT > 2f) NetEnd(2); // the owner stopped talking about it
         }
 
         void OnEnable() => All.Add(this);
@@ -280,6 +344,9 @@ namespace FPS
         }
 
         public void SetHeading(float yaw) => yawTarget = yaw;
+        /// <summary>Altitude hold re-targets the current height (after a teleport, tests).</summary>
+        public void HoldAltitudeHere() => holdAlt = rb ? rb.position.y : transform.position.y;
+        public float HoldAltitude => holdAlt;
         /// <summary>Camera elevation in degrees (world-relative in stabilized mode).</summary>
         public void SetCamTilt(float t) => CamTilt = Mathf.Clamp(t, -85f, 60f);
 
@@ -299,7 +366,7 @@ namespace FPS
 
         void LateUpdate()
         {
-            if (!Dead && cam) AimCamera(); // after interpolation moved the frame this frame
+            if (!Dead && cam && !Remote) AimCamera(); // after interpolation moved the frame this frame
         }
 
         public void CycleMode()
@@ -343,6 +410,7 @@ namespace FPS
             if (dt <= 0f) return;
             Age += dt;
             HitFlash = Mathf.Max(0f, HitFlash - dt * 2.5f);
+            if (Remote) { RemoteUpdate(dt); return; }
 
             cmdFire = false;
             if (Armed && !linkLost && pilot != null) pilot(this, dt);
@@ -353,7 +421,7 @@ namespace FPS
 
             AimCamera();
 
-            UpdateGun(dt);
+            UpdateDrop(dt);
             UpdateLink(dt);
             UpdateVisuals(dt);
             CheckFuse();
@@ -361,7 +429,7 @@ namespace FPS
 
         void FixedUpdate()
         {
-            if (Dead || !rb) return;
+            if (Dead || !rb || Remote) return;
             float dt = Time.fixedDeltaTime;
             Quaternion rot = rb.rotation;
             Vector3 up = rot * Vector3.up;
@@ -378,17 +446,21 @@ namespace FPS
             if (Armed)
             {
                 bool sport = cmdSport;
-                float maxTilt = sport ? 50f : 35f;
+                float maxTilt = sport ? 62f : 48f;
                 Vector3 wDes;
+                // WASD in the look direction: with LookFlight (player) W also climbs / dives where the camera points
+                Quaternion head = Quaternion.Euler(0f, yawTarget, 0f);
+                Vector3 lookDir = LookFlight ? Quaternion.Euler(-CamTilt, yawTarget, 0f) * Vector3.forward : head * Vector3.forward;
+                float top = sport ? MaxSpeedSport : MaxSpeed;
+                Vector3 vCmd = (lookDir * cmdCyclic.y + head * Vector3.right * cmdCyclic.x) * top;
                 if (Mode == DroneFlightMode.Acro) wDes = AttitudeRate(acroSet, rot);
                 else if (Mode == DroneFlightMode.Stab)
                 {
-                    // position mode (GPS-style): WASD asks for a ground speed in the look direction; the flight
-                    // controller tilts the frame to get there and tilts back to brake when the keys are released
-                    Quaternion head = Quaternion.Euler(0f, yawTarget, 0f);
-                    Vector3 vDes = head * new Vector3(cmdCyclic.x, 0f, cmdCyclic.y) * (sport ? MaxSpeedSport : MaxSpeed);
+                    // position mode (GPS-style): WASD asks for a speed; the flight controller tilts the frame to get
+                    // there and tilts back to brake when the keys are released
+                    Vector3 vDes = new Vector3(vCmd.x, 0f, vCmd.z);
                     Vector3 vH = new Vector3(v.x, 0f, v.z);
-                    Vector3 aDes = (vDes - vH) * 2.4f;
+                    Vector3 aDes = (vDes - vH) * 3.6f;
                     // feed-forward against air drag so the commanded speed is actually held
                     Vector3 airH = vH - new Vector3(DroneMode.Wind.x, 0f, DroneMode.Wind.z);
                     aDes += airH * airH.magnitude * 0.024f / Mass;
@@ -407,20 +479,22 @@ namespace FPS
                 float collective;
                 if (Mode == DroneFlightMode.Stab)
                 {
-                    // barometer altitude hold: the throttle commands a climb rate
-                    // barometer hold: Space / Ctrl set a climb rate; released, the drone holds the height it was
-                    // left at (position loop), so tilting to fly forward neither climbs nor sinks
+                    // barometer hold: Space / Ctrl (and W toward the sky or the ground) set a climb rate; released,
+                    // the drone holds the height it was left at, so tilting to fly forward neither climbs nor sinks
                     float vzDes;
                     float y = rb.position.y;
-                    if (Mathf.Abs(cmdThrottle) > 0.05f || float.IsNaN(holdAlt))
+                    float vzLook = LookFlight ? Mathf.Clamp(vCmd.y, -10f, 10f) : 0f;
+                    if (Mathf.Abs(cmdThrottle) > 0.05f || Mathf.Abs(vzLook) > 0.4f || float.IsNaN(holdAlt))
                     {
-                        vzDes = cmdThrottle * (cmdThrottle > 0f ? (sport ? 7f : 4.5f) : (sport ? 7f : 3.5f));
-                        holdAlt = y;
+                        vzDes = vzLook + cmdThrottle * (sport ? 8f : 5.5f);
+                        // when the input stops, hold where the climb / descent naturally comes to rest
+                        holdAlt = y + v.y * 0.35f;
                     }
                     else vzDes = Mathf.Clamp((holdAlt - y) * 2.5f, -4f, 4f);
                     var bb = DroneMode.Bounds;
                     if (bb.size != Vector3.zero) holdAlt = Mathf.Min(holdAlt, bb.max.y - 0.5f);
-                    float az = 5f * (vzDes - v.y);
+                    // limited down-acceleration: diving along the look keeps enough thrust to also fly forward
+                    float az = Mathf.Clamp(5f * (vzDes - v.y), -6f, 14f);
                     collective = Mass * (9.81f + az) / Mathf.Max(0.35f, up.y);
                 }
                 else
@@ -433,18 +507,28 @@ namespace FPS
 
                 // rate loop -> torque (inertia-scaled P), then mixer
                 Vector3 wLocal = Quaternion.Inverse(rot) * rb.angularVelocity;
-                Vector3 tau = Vector3.Scale(Inertia, (wDes - wLocal) * 22f);
+                Vector3 tau = Vector3.Scale(Inertia, (wDes - wLocal) * 28f);
+                // mixer with priorities: roll / pitch first (air mode may shift collective for them), yaw only gets
+                // the headroom left over — a hard turn must never add lift (that made the drone climb when turning)
                 float mn = float.MaxValue, mx = float.MinValue;
                 for (int i = 0; i < 4; i++)
                 {
-                    cmdT[i] = collective * 0.25f - tau.x * MZ[i] / (4f * ArmL) + tau.z * MX[i] / (4f * ArmL) + tau.y * MS[i] / (4f * YawCoef);
+                    cmdT[i] = collective * 0.25f - tau.x * MZ[i] / (4f * ArmL) + tau.z * MX[i] / (4f * ArmL);
                     mn = Mathf.Min(mn, cmdT[i]); mx = Mathf.Max(mx, cmdT[i]);
                 }
-                // desaturation: keep attitude authority by shifting collective (air mode)
                 float shift = 0f;
                 if (mx > tMax) shift = tMax - mx;
                 if (mn + shift < MotorIdle) shift = MotorIdle - mn;
-                for (int i = 0; i < 4; i++) cmdT[i] = Mathf.Clamp(cmdT[i] + shift, MotorIdle, tMax);
+                float yawScale = 1f;
+                for (int i = 0; i < 4; i++)
+                {
+                    cmdT[i] = Mathf.Clamp(cmdT[i] + shift, MotorIdle, tMax);
+                    float yi = tau.y * MS[i] / (4f * YawCoef);
+                    if (yi > 0f) yawScale = Mathf.Min(yawScale, (tMax - cmdT[i]) / yi);
+                    else if (yi < 0f) yawScale = Mathf.Min(yawScale, (cmdT[i] - MotorIdle) / -yi);
+                }
+                yawScale = Mathf.Clamp01(yawScale);
+                for (int i = 0; i < 4; i++) cmdT[i] = Mathf.Clamp(cmdT[i] + yawScale * tau.y * MS[i] / (4f * YawCoef), MotorIdle, tMax);
             }
             else for (int i = 0; i < 4; i++) cmdT[i] = 0f;
 
@@ -513,73 +597,33 @@ namespace FPS
             float s = axis.magnitude;
             if (s < 1e-5f) return Vector3.zero;
             float ang = 2f * Mathf.Atan2(s, err.w);
-            Vector3 wWorld = axis / s * ang * 7f;
-            return Vector3.ClampMagnitude(Quaternion.Inverse(rot) * wWorld, 12f);
+            Vector3 wWorld = axis / s * ang * 10f;
+            return Vector3.ClampMagnitude(Quaternion.Inverse(rot) * wWorld, 16f);
         }
 
-        // ------------------------------------------------------------------ gun
+        // ------------------------------------------------------------------ grenade drop
 
-        void UpdateGun(float dt)
+        /// <summary>Seconds until the next grenade can be dropped.</summary>
+        public float DropCd { get; private set; }
+        public const float DropCooldown = 4f;
+        public const string WeaponDrop = "Сброс с дрона";
+
+        /// <summary>The fire button releases a grenade under the drone (impact fuse, cooldown, unlimited).</summary>
+        void UpdateDrop(float dt)
         {
-            fireCd -= dt;
-            if (!cmdFire || !Armed || Ammo <= 0 || fireCd > 0f || Age < 0.4f) return;
-            fireCd = 60f / 600f;
-            Ammo--;
+            if (DropCd > 0f) DropCd = Mathf.Max(0f, DropCd - dt);
+            if (!cmdFire || !Armed || DropCd > 0f || Age < 0.4f) return;
+            DropCd = DropCooldown;
             if (Owner) Owner.lastShotTime = Time.time;
-            Transform ct = cam.transform;
-            Vector3 origin = transform.TransformPoint(new Vector3(0.045f, -0.016f, 0.15f));
-            Vector2 r = Random.insideUnitCircle * 0.7f;
-            Vector3 dir = ct.rotation * Quaternion.Euler(-r.y, r.x, 0f) * Vector3.forward;
-            // converge on what the camera centre points at
-            Vector3 aim = ct.position + dir * 150f;
-            int n = Physics.RaycastNonAlloc(ct.position, dir, hits, 150f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
-            RaycastHit hit = default; float best = float.MaxValue; bool any = false;
-            for (int i = 0; i < n; i++)
-            {
-                if (hits[i].collider.transform.IsChildOf(transform)) continue;
-                if (Owner && hits[i].collider.transform.IsChildOf(Owner.transform)) continue;
-                if (DroneMode.IsGhost(hits[i].collider)) continue;
-                if (hits[i].distance < best) { best = hits[i].distance; hit = hits[i]; any = true; }
-            }
-            Vector3 end = aim;
-            if (any)
-            {
-                end = hit.point;
-                var hb = hit.collider.GetComponent<Hitbox>();
-                IDamageable d = hb ? hb.Owner : hit.collider.GetComponent<IDamageable>();
-                if (d != null && !ReferenceEquals(d, this))
-                {
-                    float mult = hb ? hb.multiplier : 1f;
-                    bool crit = hb && hb.critical;
-                    if (d is PlayerHealth ph) { crit = hit.point.y > ph.transform.position.y + ph.motor.EyeHeight - 0.2f; mult = crit ? 1.6f : 1f; }
-                    float falloff = Mathf.Lerp(1f, 0.55f, Mathf.InverseLerp(25f, 90f, hit.distance));
-                    var res = d.TakeDamage(new DamageInfo
-                    {
-                        amount = Mathf.Round(11f * mult * falloff), point = hit.point, normal = hit.normal, direction = dir,
-                        critical = crit, attacker = Owner, weapon = WeaponGun
-                    });
-                    if (IsLocalView && res.applied && !(d is Destructible))
-                    {
-                        HUD.Ensure().RegisterHit(res.killed);
-                        DroneHUD.Hitmarker(res.killed);
-                        ProcAudio.Play(res.killed ? Sfx.Kill : Sfx.Hit, 0.45f);
-                    }
-                }
-                if (hit.collider.GetComponentInParent<HumanoidRig>()) FX.Ensure().Blood(hit.point, hit.normal, 6);
-                else
-                {
-                    var tag = hit.collider.GetComponentInParent<SurfaceTag>();
-                    FX.Ensure().Impact(hit, tag ? tag.kind : SurfaceKind.Concrete, d == null && hit.rigidbody == null);
-                }
-                if (hit.rigidbody && !hit.rigidbody.isKinematic && hit.rigidbody != rb) hit.rigidbody.AddForceAtPosition(dir * 2f, hit.point, ForceMode.Impulse);
-            }
-            FX.Ensure().Tracer(origin, end);
-            FX.Ensure().MuzzleFlashWorld(origin, dir);
-            ProcAudio.PlayAt(Sfx.ShotPistol, origin, IsLocalView ? 0.5f : 0.8f, 0.12f);
-            // recoil: the light airframe is pushed back and the nose kicks up
-            rb.AddForce(-dir * 0.09f, ForceMode.Impulse);
-            rb.AddRelativeTorque(new Vector3(-0.0012f, Random.Range(-0.0004f, 0.0004f), 0f), ForceMode.Impulse);
-            AIEvents.Emit(origin, 35f, Owner);
+            Vector3 pos = transform.position - Vector3.up * 0.14f;
+            var g = Grenade.Spawn(pos, rb.linearVelocity + Vector3.down * 1.2f, col, Owner, false, true);
+            g.fuse = 6f;
+            g.radius = 6f;
+            g.damage = 140f;
+            g.weaponName = WeaponDrop;
+            ProcAudio.PlayAt(Sfx.GrenadePin, pos, IsLocalView ? 0.6f : 0.8f, 0.1f);
+            // the airframe gets lighter for a moment: a small upward kick
+            rb.AddForce(Vector3.up * 0.25f, ForceMode.Impulse);
         }
 
         // ------------------------------------------------------------------ link, fuse, visuals
@@ -611,7 +655,7 @@ namespace FPS
 
         void OnCollisionEnter(Collision c)
         {
-            if (Dead) return;
+            if (Dead || Remote) return;
             if (Owner && c.collider.transform.IsChildOf(Owner.transform)) return;
             Explode(); // contact fuse: anything it touches sets the warhead off
         }
@@ -644,10 +688,19 @@ namespace FPS
         {
             if (Dead) return default;
             if (info.attacker && info.attacker == Owner && info.weapon == WeaponBoom) return default;
-            Health -= info.amount;
             HitFlash = 1f;
-            FX.Ensure().SparkBurst(info.point, info.normal == Vector3.zero ? -info.direction : info.normal, 8, 6f);
-            ProcAudio.PlayAt(Sfx.ImpactMetal, info.point, 0.7f);
+            if (!info.fromNetwork)
+            {
+                FX.Ensure().SparkBurst(info.point, info.normal == Vector3.zero ? -info.direction : info.normal, 8, 6f);
+                ProcAudio.PlayAt(Sfx.ImpactMetal, info.point, 0.7f);
+            }
+            if (Remote)
+            {
+                // the drone is simulated by its owner: the hit is applied there (its end comes back as a message)
+                NetGame.SendDroneDamage(this, info);
+                return new DamageResult { applied = true, killed = false, dealt = info.amount };
+            }
+            Health -= info.amount;
             if (rb) rb.AddForceAtPosition(info.direction.normalized * 0.4f, info.point, ForceMode.Impulse);
             bool killed = Health <= 0f;
             if (!killed)
@@ -675,6 +728,7 @@ namespace FPS
             Dead = true;
             if (EndReason.Length == 0) EndReason = "Дрон подорван";
             Vector3 p = transform.position;
+            if (!Remote) NetGame.DroneEnded(this, 0);
             Explosions.Detonate(p, BlastRadius, BlastDamage, 10f, Owner, WeaponBoom, transform);
             Finish();
             Destroy(gameObject);
@@ -685,13 +739,14 @@ namespace FPS
         {
             Dead = true;
             if (EndReason.Length == 0) EndReason = "Дрон сбит";
+            if (!Remote) NetGame.DroneEnded(this, 1);
             Vector3 p = transform.position;
             FX.Ensure().SparkBurst(p, Vector3.up, 24, 8f);
             FX.Ensure().Puff(p, Vector3.up, 8, 0.9f, new Vector2(0.5f, 2f), new Vector2(0.3f, 0.7f), new Vector2(0.8f, 1.6f),
                              new Color(0.2f, 0.2f, 0.2f, 0.7f), new Color(0.35f, 0.33f, 0.3f, 0.5f));
             ProcAudio.PlayAt(Sfx.ImpactMetal, p, 1f, 0.05f);
             ProcAudio.PlayAt(Sfx.WoodBreak, p, 0.6f, 0.2f);
-            Vector3 v = rb ? rb.linearVelocity : Vector3.zero;
+            Vector3 v = Velocity;
             var model = transform.Find("Model");
             if (model)
             {
@@ -723,6 +778,7 @@ namespace FPS
 
         void OnDestroy()
         {
+            if (!Dead && !Remote) NetGame.DroneEnded(this, 2);
             if (!Dead && Operator) Operator.OnDroneGone(this);
         }
     }

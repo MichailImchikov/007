@@ -29,9 +29,9 @@ namespace FPS
             {
                 var ld = p.Add<LensDistortion>(true); ld.intensity.Override(-0.28f); ld.scale.Override(0.94f);
                 var ca = p.Add<ChromaticAberration>(true); ca.intensity.Override(0.35f);
-                var vg = p.Add<Vignette>(true); vg.intensity.Override(0.38f); vg.smoothness.Override(0.5f);
-                var fg = p.Add<FilmGrain>(true); fg.type.Override(FilmGrainLookup.Medium4); fg.intensity.Override(0.55f); fg.response.Override(0.6f);
-                var adj = p.Add<ColorAdjustments>(true); adj.saturation.Override(-18f); adj.contrast.Override(12f);
+                var vg = p.Add<Vignette>(true); vg.intensity.Override(0.22f); vg.smoothness.Override(0.5f);
+                var fg = p.Add<FilmGrain>(true); fg.type.Override(FilmGrainLookup.Medium4); fg.intensity.Override(0.35f); fg.response.Override(0.8f);
+                var adj = p.Add<ColorAdjustments>(true); adj.saturation.Override(-8f); adj.contrast.Override(8f); adj.postExposure.Override(0.45f);
             });
             thermVol = MakeVolume("Thermal", 160, p =>
             {
