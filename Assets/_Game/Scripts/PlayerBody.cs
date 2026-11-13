@@ -32,7 +32,11 @@ namespace FPS
             if (rig) rig.SetShadowsOnly(firstPersonShadowsOnly);
             if (loadout) loadout.ActiveChanged += OnActiveChanged;
             if (loadout && loadout.Active) OnActiveChanged(loadout.Active);
+            // first-person arms on the FPS Animation Framework (the player's own character model)
+            if (!fpArms && loadout && playerCam) fpArms = FPArms.Create(loadout, playerCam, motor);
         }
+
+        public FPArms fpArms;
 
         void OnDestroy()
         {
@@ -63,6 +67,7 @@ namespace FPS
             anim.aim = w ? Mathf.Max(0.3f, w.AimBlend) : 0f;
             anim.holdingWeapon = w;
             anim.pistolHold = w && w.slot == WeaponSlot.Secondary ? 1f : 0f;
+            anim.reloading = w && w.IsReloading;
             anim.knife = melee ? melee.SlashProgress : -1f;
             anim.executeAttack = melee ? melee.ExecutionProgress : -1f;
             anim.executeVictim = health ? health.ExecutedProgress : -1f;

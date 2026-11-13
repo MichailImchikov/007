@@ -31,6 +31,7 @@ namespace FPS
         public float dead;                 // 0..1 fall progress
         public float deadDir = -1f;        // -1 backwards, +1 forwards
         public float lookYaw;              // head look around (bots), degrees
+        public bool reloading;             // weapon reload (skinned bodies play the reload clip, the support hand leaves the gun)
 
         [Header("Ability poses")]
         public float bentOver;             // 0..1 bent over, butt to the enemy (rocket)

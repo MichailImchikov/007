@@ -37,6 +37,10 @@ namespace FPS
         public float modelScale;
         /// <summary>Sight line point in the FBX root space; null = measured automatically (reticle, else the front sight top).</summary>
         public Vector3? sight;
+        /// <summary>Trigger / support-hand points in the model root space when the mesh has no "trigger" / "foregrip" part.</summary>
+        public Vector3? trigger, foregrip;
+        /// <summary>JU TPS 3 weapon prefab: the builder saves a clean copy (meshes only) and uses it as the imported model.</summary>
+        public string juPrefab;
         public bool keepMagazine;
 
         public bool Secondary => category == WeaponCategory.Pistol;
@@ -100,6 +104,9 @@ namespace FPS
         public static readonly string[] CategoryNames = { "Автоматы", "Снайперские", "ПП", "Дробовики", "Пистолеты" };
 
         const string W = "Assets/Weapons_ChamferZone/";
+        const string JU = "Assets/Julhiecio TPS Controller/Demos/Demo Prefabs/Items/Weapons/Guns/";
+        /// <summary>Clean (meshes only) copies of the JU TPS 3 weapon prefabs, written by Build Weapon Models.</summary>
+        public const string Gen = "Assets/_Game/Generated/Weapons/";
 
         public static readonly WeaponDef[] All =
         {
@@ -117,11 +124,26 @@ namespace FPS
                 fbx = W + "CV47/CV47.FBX", modelScale = 1.3f },
 
             // ================= marksman
-            new WeaponDef { name = "DMR-7", kind = "Марксманская винтовка", category = WeaponCategory.Marksman, archetype = WeaponArchetype.DMR,
-                damage = 58f, rpm = 300f, mag = 10, reserve = 60, fullAuto = false, sfx = Sfx.ShotSniper,
-                uiDamage = 0.8f, uiRate = 0.33f, uiRange = 1f, uiControl = 0.45f, uiMobility = 0.42f,
-                desc = "Оптика 6×, 58 урона за выстрел: два попадания в тело, одно в голову. Для длинных линий.",
+            // bolt-action sniper: 88 per hit, no range falloff → body max 88 × 1.06 ≈ 93 (< 100 HP, never a one-shot),
+            // head min 88 × 2.2 × 0.94 ≈ 182 (always a one-shot). Limbs 70.
+            new WeaponDef { name = "Hunter 85", kind = "Болтовая снайперская винтовка", category = WeaponCategory.Marksman, archetype = WeaponArchetype.DMR,
+                damage = 88f, rpm = 50f, mag = 5, reserve = 30, fullAuto = false, sfx = Sfx.ShotSniper,
+                setup = w => { w.pumpAction = true; w.boltAction = true; w.pumpTime = 1.05f; w.chTravel = 0.07f;
+                               w.adsFov = 12f; w.aimTime = 0.3f; w.adsSpread = 0f; w.hipSpread = 3.2f; w.recoilUp = 3.2f; w.recoilSide = 0.6f;
+                               w.falloffStart = 1000f; w.falloffEnd = 2000f; w.falloffMin = 1f; w.moveSpeedMul = 0.9f;
+                               w.reloadTime = 2.6f; w.emptyReloadTime = 2.6f; w.kickScale = 1.8f; w.punchScale = 2f; w.impactForce = 10f; w.shotVolume = 1f; },
+                uiDamage = 0.95f, uiRate = 0.08f, uiRange = 1f, uiControl = 0.4f, uiMobility = 0.4f,
+                desc = "Болтовая винтовка, оптика 8×. В голову — убивает с одного выстрела на любой дистанции, в тело — нет (88 урона). После выстрела — перезарядка затвора.",
                 fbx = W + "Hunter85/WPN_Hunter85.FBX", sight = new Vector3(0f, 0.089f, -0.206f) },
+            new WeaponDef { name = "Barrett M82", kind = "Крупнокалиберная винтовка", category = WeaponCategory.Marksman, archetype = WeaponArchetype.DMR,
+                damage = 70f, rpm = 150f, mag = 10, reserve = 40, fullAuto = false, sfx = Sfx.ShotSniper,
+                setup = w => { w.adsFov = 14f; w.aimTime = 0.34f; w.hipSpread = 3.6f; w.recoilUp = 3.6f; w.recoilSide = 0.8f; w.moveSpeedMul = 0.85f;
+                               w.falloffStart = 150f; w.falloffEnd = 400f; w.falloffMin = 0.9f; w.reloadTime = 3f; w.emptyReloadTime = 3.6f;
+                               w.kickScale = 2.1f; w.punchScale = 2.3f; w.impactForce = 16f; w.shotVolume = 1f; w.shotPitch = 0.8f; w.bloomPerShot = 1.4f; },
+                uiDamage = 0.85f, uiRate = 0.22f, uiRange = 1f, uiControl = 0.25f, uiMobility = 0.3f,
+                desc = "Самозарядный .50: два попадания в тело, одно в голову. Тяжёлый, медленно вскидывается и сильно бьёт в плечо.",
+                juPrefab = JU + "SNIPER M82.prefab", fbx = Gen + "SNIPER M82.prefab", modelScale = 1f,
+                sight = new Vector3(-0.003f, 0.145f, 0f), trigger = new Vector3(0f, -0.03f, 0.03f), foregrip = new Vector3(0f, -0.02f, 0.3f) },
             new WeaponDef { name = "M16A4", kind = "Винтовка с оптикой 4×", category = WeaponCategory.Marksman, archetype = WeaponArchetype.Rifle,
                 damage = 36f, rpm = 720f, mag = 30, reserve = 150, fullAuto = false,
                 setup = w => { w.adsFov = 30f; w.adsSpread = 0.02f; w.aimTime = 0.24f; w.aimDistance = 0.26f; w.recoilUp = 0.95f; w.recoilSide = 0.3f;
@@ -154,7 +176,15 @@ namespace FPS
                 setup = w => { w.hipSpread = 1.2f; w.adsSpread = 0.04f; w.recoilUp = 0.6f; w.aimDistance = 0.32f; w.falloffStart = 30f; w.falloffEnd = 90f; w.falloffMin = 0.65f; w.moveSpeedMul = 1.02f; w.shotVolume = 0.8f; },
                 uiDamage = 0.52f, uiRate = 0.45f, uiRange = 0.5f, uiControl = 0.8f, uiMobility = 0.75f,
                 desc = "Полуавтоматический карабин под пистолетный патрон: дальше и точнее любого ПП.",
-                fbx = W + "CX8_Alaris/WPN_CX8.FBX", modelScale = 1.2f },
+                // sight line = rear aperture center / front post tip (the auto-measure took the muzzle top: the view was under the sights)
+                fbx = W + "CX8_Alaris/WPN_CX8.FBX", modelScale = 1.2f, sight = new Vector3(0f, 0.112f, 0.28f) },
+            new WeaponDef { name = "UMP-45", kind = "Пистолет-пулемёт .45", category = WeaponCategory.SMG, archetype = WeaponArchetype.SMG,
+                damage = 26f, rpm = 600f, mag = 25, reserve = 175,
+                setup = w => { w.hipSpread = 1.4f; w.recoilUp = 0.68f; w.recoilSide = 0.38f; w.moveSpeedMul = 1.03f; w.falloffStart = 18f; w.falloffEnd = 55f; w.falloffMin = 0.6f;
+                               w.reloadTime = 2f; w.emptyReloadTime = 2.4f; w.shotVolume = 0.8f; w.shotPitch = 0.95f; },
+                uiDamage = 0.45f, uiRate = 0.55f, uiRange = 0.34f, uiControl = 0.75f, uiMobility = 0.8f,
+                desc = "Неторопливый .45 с прикладом: четыре попадания на противника и ровная очередь на средней дистанции.",
+                juPrefab = JU + "UMP.prefab", fbx = Gen + "UMP.prefab", modelScale = 1f, foregrip = new Vector3(0f, -0.03f, 0.2f) },
 
             // ================= shotguns
             new WeaponDef { name = "M870", kind = "Помповый дробовик", category = WeaponCategory.Shotgun, archetype = WeaponArchetype.Shotgun,
@@ -181,6 +211,13 @@ namespace FPS
                 uiDamage = 1f, uiRate = 0.5f, uiRange = 0.15f, uiControl = 0.22f, uiMobility = 0.6f,
                 desc = "Два ствола — два выстрела подряд, потом перезарядка. Дуплет в упор не оставляет шансов.",
                 fbx = W + "DT22/DT22.FBX", modelScale = 0.95f, keepMagazine = true },
+            new WeaponDef { name = "Super 90", kind = "Полуавтоматический дробовик", category = WeaponCategory.Shotgun, archetype = WeaponArchetype.Shotgun,
+                damage = 12f, pellets = 8, rpm = 260f, mag = 7, reserve = 42, fullAuto = false, sfx = Sfx.ShotShotgun,
+                setup = w => { w.pelletSpread = 2.9f; w.recoilUp = 3.6f; w.falloffStart = 11f; w.falloffEnd = 34f; w.kickScale = 1.8f; w.moveSpeedMul = 0.95f; },
+                uiDamage = 0.86f, uiRate = 0.36f, uiRange = 0.14f, uiControl = 0.34f, uiMobility = 0.52f,
+                desc = "Самозарядный дробовик с магазином на 7: чуть кучнее SG-4, но тяжелее.",
+                juPrefab = JU + "Benelli M4.prefab", fbx = Gen + "Benelli M4.prefab", modelScale = 1f, keepMagazine = true,
+                trigger = new Vector3(0f, -0.02f, 0f), foregrip = new Vector3(0f, -0.01f, 0.27f) },
 
             // ================= pistols (secondary)
             new WeaponDef { name = "P-17", kind = "Пистолет", category = WeaponCategory.Pistol, archetype = WeaponArchetype.Pistol,
@@ -194,6 +231,12 @@ namespace FPS
                 uiDamage = 0.44f, uiRate = 0.55f, uiRange = 0.32f, uiControl = 0.8f, uiMobility = 1f,
                 desc = "Тяжёлая стальная рамка гасит отдачу: самый послушный пистолет.",
                 fbx = W + "AP85/WPN_AP85.FBX", modelScale = 0.95f },
+            new WeaponDef { name = "P226", kind = "Пистолет", category = WeaponCategory.Pistol, archetype = WeaponArchetype.Pistol,
+                damage = 25f, rpm = 470f, mag = 15, reserve = 90, fullAuto = false, sfx = Sfx.ShotPistol,
+                setup = w => { w.recoilUp = 1.2f; w.adsSpread = 0.13f; },
+                uiDamage = 0.44f, uiRate = 0.52f, uiRange = 0.32f, uiControl = 0.76f, uiMobility = 1f,
+                desc = "Надёжная классика: 15 патронов, спокойная отдача, ничего лишнего.",
+                juPrefab = JU + "P226.prefab", fbx = Gen + "P226.prefab", modelScale = 1f, trigger = new Vector3(0f, -0.003f, -0.028f) },
             new WeaponDef { name = "C1911", kind = "Пистолет .45", category = WeaponCategory.Pistol, archetype = WeaponArchetype.Pistol,
                 damage = 35f, rpm = 380f, mag = 8, reserve = 64, fullAuto = false, sfx = Sfx.ShotPistol,
                 setup = w => { w.recoilUp = 1.8f; w.shotVolume = 0.85f; w.shotPitch = 0.92f; w.kickScale = 1.5f; },

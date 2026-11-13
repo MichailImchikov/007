@@ -214,10 +214,14 @@ namespace FPS
             foreach (var w in weapons)
             {
                 if (!w || !w.model) continue;
+                w.EnsureInit();
                 var clone = Instantiate(w.model.gameObject, templatesRoot);
                 clone.name = w.weaponName;
                 clone.transform.localPosition = Vector3.zero;
                 clone.transform.localRotation = Quaternion.identity;
+                // the support-hand grip lives under the (removed) procedural left arm: keep it on the gun
+                var gl = HandGrips.Find(clone.transform, HandGrips.Left);
+                if (gl) gl.SetParent(clone.transform, true);
                 foreach (var t in clone.GetComponentsInChildren<Transform>(true))
                 {
                     if (!t || t == clone.transform) continue;

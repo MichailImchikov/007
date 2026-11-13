@@ -165,10 +165,14 @@ namespace FPS
         public static bool FireHeld => Enabled && (H(BindAction.Fire) || (G != null && G.rightTrigger.isPressed));
         public static bool FirePressed => Enabled && (P(BindAction.Fire) || (G != null && G.rightTrigger.wasPressedThisFrame));
 
+        /// <summary>Automated tests (ADS screenshots): aim as if the button were held.</summary>
+        public static bool ForceAim;
+
         public static bool AimHeld
         {
             get
             {
+                if (ForceAim) return true;
                 if (!Enabled) return false;
                 if (GameSettings.AimToggle) { UpdateLatches(); return aimOn; }
                 return H(BindAction.Aim) || (G != null && G.leftTrigger.isPressed);

@@ -11,7 +11,8 @@ namespace FPS.EditorTools
     /// </summary>
     public static class ImportedMaterialFixer
     {
-        static readonly string[] Folders = { "Assets/genAssault", "Assets/Weapons_ChamferZone", "Assets/Police_ru" };
+        static readonly string[] Folders = { "Assets/genAssault", "Assets/Weapons_ChamferZone", "Assets/Police_ru",
+                                             "Assets/Julhiecio TPS Controller/Demos/Models/Items/Weapons Models" };
 
         [MenuItem("Tools/FPS/Fix Imported Materials (URP)")]
         public static void FixAll()

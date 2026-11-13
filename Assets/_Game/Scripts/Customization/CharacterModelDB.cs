@@ -22,6 +22,12 @@ namespace FPS
 
         public Entry[] entries = new Entry[0];
 
+        [Header("Animation (JU TPS 3 clips, built by Tools > FPS > Build Character Animators)")]
+        /// <summary>Full-body third-person controller: locomotion / crouch / prone / air + upper-body weapon layer.</summary>
+        public RuntimeAnimatorController tpController;
+        /// <summary>First-person arms: weapon hold poses (FPS Animation Framework drives the IK on top).</summary>
+        public RuntimeAnimatorController fpController;
+
         static CharacterModelDB instance;
         static bool loaded;
 

@@ -14,34 +14,44 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::FPS.CharacterModelDB
   entries:
   - name: "\u0428\u0442\u0443\u0440\u043C\u043E\u0432\u0438\u043A: \u0430\u0440\u043C\u0438\u044F"
-    prefab: {fileID: 3182036682576108352, guid: f647cb8e06a9303489f276cbb487280f, type: 3}
+    prefab: {fileID: 3182036682576108352, guid: f647cb8e06a9303489f276cbb487280f,
+      type: 3}
     skin: {fileID: 2100000, guid: 92bb0da9002ff2a46b86c6275c73b16a, type: 2}
   - name: "\u0428\u0442\u0443\u0440\u043C\u043E\u0432\u0438\u043A: \u0441\u043F\u0435\u0446\u043D\u0430\u0437"
-    prefab: {fileID: 3182036682576108352, guid: f647cb8e06a9303489f276cbb487280f, type: 3}
+    prefab: {fileID: 3182036682576108352, guid: f647cb8e06a9303489f276cbb487280f,
+      type: 3}
     skin: {fileID: 2100000, guid: ccb91e94bcfa4b04dbcec1f7833e2d8f, type: 2}
   - name: "\u0428\u0442\u0443\u0440\u043C\u043E\u0432\u0438\u043A: \xAB\u0414\u0435\u043B\u044C\u0442\u0430\xBB"
-    prefab: {fileID: 3182036682576108352, guid: f647cb8e06a9303489f276cbb487280f, type: 3}
+    prefab: {fileID: 3182036682576108352, guid: f647cb8e06a9303489f276cbb487280f,
+      type: 3}
     skin: {fileID: 2100000, guid: 09ed6b0dd0289ab4589846a0618f1c91, type: 2}
   - name: "\u0428\u0442\u0443\u0440\u043C\u043E\u0432\u0438\u043A: \u043D\u0430\u0451\u043C\u043D\u0438\u043A"
-    prefab: {fileID: 3182036682576108352, guid: f647cb8e06a9303489f276cbb487280f, type: 3}
+    prefab: {fileID: 3182036682576108352, guid: f647cb8e06a9303489f276cbb487280f,
+      type: 3}
     skin: {fileID: 2100000, guid: 03c1b1d5dcf778c42bc8f6da296ddfd0, type: 2}
   - name: "\u0428\u0442\u0443\u0440\u043C\u043E\u0432\u0438\u043A: \u0441\u0435\u0432\u0435\u0440"
-    prefab: {fileID: 3182036682576108352, guid: f647cb8e06a9303489f276cbb487280f, type: 3}
+    prefab: {fileID: 3182036682576108352, guid: f647cb8e06a9303489f276cbb487280f,
+      type: 3}
     skin: {fileID: 2100000, guid: 81c49b35534dd7b488cca6a6b1a9fea6, type: 2}
   - name: "\u0428\u0442\u0443\u0440\u043C\u043E\u0432\u0438\u043A: \u0430\u0440\u043A\u0442\u0438\u043A\u0430"
-    prefab: {fileID: 3182036682576108352, guid: f647cb8e06a9303489f276cbb487280f, type: 3}
+    prefab: {fileID: 3182036682576108352, guid: f647cb8e06a9303489f276cbb487280f,
+      type: 3}
     skin: {fileID: 2100000, guid: 5e8fb415628977048bc99f457df8fdea, type: 2}
   - name: "\u0428\u0442\u0443\u0440\u043C\u043E\u0432\u0438\u043A: \u043A\u0440\u0430\u0441\u043D\u044B\u0439"
-    prefab: {fileID: 3182036682576108352, guid: f647cb8e06a9303489f276cbb487280f, type: 3}
+    prefab: {fileID: 3182036682576108352, guid: f647cb8e06a9303489f276cbb487280f,
+      type: 3}
     skin: {fileID: 2100000, guid: 7b2240e13fabbf34dac1990b6230cf67, type: 2}
   - name: "\u0428\u0442\u0443\u0440\u043C\u043E\u0432\u0438\u043A: \u0441\u043E\u043B\u0434\u0430\u0442\u0438\u043A"
-    prefab: {fileID: 3182036682576108352, guid: f647cb8e06a9303489f276cbb487280f, type: 3}
+    prefab: {fileID: 3182036682576108352, guid: f647cb8e06a9303489f276cbb487280f,
+      type: 3}
     skin: {fileID: 2100000, guid: db23ad1bafc9db147bc2b6695a831f50, type: 2}
   - name: "\u0428\u0442\u0443\u0440\u043C\u043E\u0432\u0438\u043A: \u0437\u043E\u043B\u043E\u0442\u043E\u0439"
-    prefab: {fileID: 3182036682576108352, guid: f647cb8e06a9303489f276cbb487280f, type: 3}
+    prefab: {fileID: 3182036682576108352, guid: f647cb8e06a9303489f276cbb487280f,
+      type: 3}
     skin: {fileID: 2100000, guid: 2475a5c7d561b8447b3b0377309b1706, type: 2}
   - name: "\u0428\u0442\u0443\u0440\u043C\u043E\u0432\u0438\u043A: \u0441\u0430\u043C\u043E\u0437\u0432\u0430\u043D\u0435\u0446"
-    prefab: {fileID: 3182036682576108352, guid: f647cb8e06a9303489f276cbb487280f, type: 3}
+    prefab: {fileID: 3182036682576108352, guid: f647cb8e06a9303489f276cbb487280f,
+      type: 3}
     skin: {fileID: 2100000, guid: 1f34dbb67d9418c439e71c95b96a4cf7, type: 2}
   - name: "\u0424\u0421\u0411: \u0448\u0442\u0443\u0440\u043C"
     prefab: {fileID: 161206, guid: 5521fc2f4765b904d9e1af06e4a22829, type: 3}
@@ -71,3 +81,5 @@ MonoBehaviour:
   - name: "\u041F\u043E\u043B\u0438\u0446\u0438\u044F: \u0441\u043F\u0435\u0446\u043D\u0430\u0437"
     prefab: {fileID: 199736, guid: 7eeec0f6ee758d2459bbb3b82964867e, type: 3}
     skin: {fileID: 0}
+  tpController: {fileID: 9100000, guid: 2e59d52d87b145a4ca8dc1a8942d20b7, type: 2}
+  fpController: {fileID: 9100000, guid: 869c01d47a676ed4a820f2e6aeb55034, type: 2}

@@ -337,7 +337,7 @@ namespace FPS
             ammoText.color = low ? new Color(1f, 0.35f, 0.3f) : Color.white;
             reserveText.text = "/ " + weapon.Reserve;
             weaponText.text = weapon.weaponName;
-            modeText.text = weapon.IsReloading ? "ПЕРЕЗАРЯДКА" : weapon.pumpAction ? "ПОМПА" : (weapon.FullAuto ? "АВТО" : "ОДИНОЧНЫЙ");
+            modeText.text = weapon.IsReloading ? "ПЕРЕЗАРЯДКА" : weapon.boltAction ? "ЗАТВОР" : weapon.pumpAction ? "ПОМПА" : (weapon.FullAuto ? "АВТО" : "ОДИНОЧНЫЙ");
             if (loadout)
             {
                 string p = loadout.primaryName, sc = loadout.secondaryName;

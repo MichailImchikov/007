@@ -39,7 +39,7 @@ MonoBehaviour:
     muzzlePoint: {x: 0, y: 0.013790079, z: 0.36146572}
     foregripPoint: {x: 0, y: 0, z: 0}
     hasForegrip: 0
-  - weaponName: DMR-7
+  - weaponName: Hunter 85
     prefab: {fileID: 100006, guid: 06a0769381b57eb47b2ea426b551e8c3, type: 3}
     keepMagazine: 0
     scale: 1
@@ -52,6 +52,20 @@ MonoBehaviour:
     muzzlePoint: {x: 0, y: 0.0429475, z: 0.5379662}
     foregripPoint: {x: 0, y: 0, z: 0}
     hasForegrip: 0
+  - weaponName: Barrett M82
+    prefab: {fileID: 7562196336842618742, guid: f7095fd646aea0941adc9f39e32dbfdd,
+      type: 3}
+    keepMagazine: 0
+    scale: 1
+    offset: {x: 0, y: 0, z: 0}
+    ownSight: 1
+    sightPoint: {x: -0.003, y: 0.145, z: 0}
+    fixedScale: 1
+    sightKeepDepth: 1
+    triggerPoint: {x: 0, y: -0.03, z: 0.03}
+    muzzlePoint: {x: 0, y: 0.07119669, z: 1.1051549}
+    foregripPoint: {x: 0, y: -0.02, z: 0.3}
+    hasForegrip: 1
   - weaponName: M16A4
     prefab: {fileID: 100014, guid: 5db3ca550a2ad37498853f4cce37733f, type: 3}
     keepMagazine: 0
@@ -110,12 +124,26 @@ MonoBehaviour:
     scale: 1
     offset: {x: 0, y: 0, z: 0}
     ownSight: 1
-    sightPoint: {x: 0, y: 0.08716126, z: 0.31135938}
+    sightPoint: {x: 0, y: 0.112, z: 0.28}
     fixedScale: 1.2
     sightKeepDepth: 1
     triggerPoint: {x: -0.00023156079, y: 0.023374798, z: 0.0413626}
     muzzlePoint: {x: 0, y: 0.06756186, z: 0.4244489}
     foregripPoint: {x: 0, y: 0.020756647, z: 0.24162462}
+    hasForegrip: 1
+  - weaponName: UMP-45
+    prefab: {fileID: 4140583283905361405, guid: 4d7bcb0090600e8409b9560372a4c9e9,
+      type: 3}
+    keepMagazine: 0
+    scale: 1
+    offset: {x: 0, y: 0, z: 0}
+    ownSight: 1
+    sightPoint: {x: 0, y: 0.12156732, z: 0.2464113}
+    fixedScale: 1
+    sightKeepDepth: 1
+    triggerPoint: {x: 0.000000020489097, y: -0.018735081, z: 0.016787231}
+    muzzlePoint: {x: 0, y: 0.046105027, z: 0.35193306}
+    foregripPoint: {x: 0, y: -0.03, z: 0.2}
     hasForegrip: 1
   - weaponName: M870
     prefab: {fileID: 100018, guid: c35e08bdf415bfc408cec0475d3ae69f, type: 3}
@@ -169,6 +197,20 @@ MonoBehaviour:
     muzzlePoint: {x: 0, y: -0.1993113, z: 0.6826534}
     foregripPoint: {x: 0, y: 0, z: 0}
     hasForegrip: 0
+  - weaponName: Super 90
+    prefab: {fileID: 7591222191488255598, guid: c287936a755859a478a7af1ce4e92cec,
+      type: 3}
+    keepMagazine: 1
+    scale: 1
+    offset: {x: 0, y: 0, z: 0}
+    ownSight: 1
+    sightPoint: {x: 0, y: 0.12179679, z: 0.56443703}
+    fixedScale: 1
+    sightKeepDepth: 1
+    triggerPoint: {x: 0, y: -0.02, z: 0}
+    muzzlePoint: {x: 0, y: 0.089172386, z: 0.7162649}
+    foregripPoint: {x: 0, y: -0.01, z: 0.27}
+    hasForegrip: 1
   - weaponName: P-17
     prefab: {fileID: 100008, guid: 7ae8505cbe1515348900b8ee128e35cd, type: 3}
     keepMagazine: 0
@@ -193,6 +235,20 @@ MonoBehaviour:
     sightKeepDepth: 1
     triggerPoint: {x: -0.00000008079223, y: 0.015840326, z: -0.0025207214}
     muzzlePoint: {x: 0, y: 0.0480063, z: 0.098948345}
+    foregripPoint: {x: 0, y: 0, z: 0}
+    hasForegrip: 0
+  - weaponName: P226
+    prefab: {fileID: 8352196752035279571, guid: 7c5d097b75383034c9542cdcb07ff9d2,
+      type: 3}
+    keepMagazine: 0
+    scale: 1
+    offset: {x: 0, y: 0, z: 0}
+    ownSight: 1
+    sightPoint: {x: 0, y: 0.06259723, z: 0.049652793}
+    fixedScale: 1
+    sightKeepDepth: 1
+    triggerPoint: {x: 0, y: -0.003, z: -0.028}
+    muzzlePoint: {x: 0, y: 0.039950326, z: 0.084138535}
     foregripPoint: {x: 0, y: 0, z: 0}
     hasForegrip: 0
   - weaponName: C1911
@@ -286,7 +342,8 @@ MonoBehaviour:
     muzzlePoint: {x: 0, y: 0.058718614, z: 0.1034739}
     foregripPoint: {x: 0, y: 0, z: 0}
     hasForegrip: 0
-  knifePrefab: {fileID: 6819225651408727727, guid: 95cfccfa8a8d7ce4ab87245e77e6cc35, type: 3}
+  knifePrefab: {fileID: 6819225651408727727, guid: 95cfccfa8a8d7ce4ab87245e77e6cc35,
+    type: 3}
   knifeEuler: {x: 0, y: 0, z: 0}
   knifeOffset: {x: 0, y: 0.004, z: 0.01}
   knifeScale: 0.72

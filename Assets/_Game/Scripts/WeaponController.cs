@@ -89,6 +89,8 @@ namespace FPS
 
         [Header("Action")]
         public bool pumpAction;
+        /// <summary>Bolt action (uses the pump cycle): the bolt goes back after every shot, the support hand stays, the scope drops.</summary>
+        public bool boltAction;
         public float pumpTime = 0.5f;
         public float shellScale = 1f;
 
@@ -113,6 +115,18 @@ namespace FPS
         public float ExternalLower { get; set; }
         /// <summary>0..1, lowers every first-person weapon (abilities: sword, chicken). Only the local player has viewmodels.</summary>
         public static float AbilityLower;
+
+        // ---- FPS Animation Framework (FPArms): the holder sits on the rig's weapon bone and the framework's layers do
+        // ADS / sway / recoil / wall collision; this controller only reports its gameplay pose offsets (camera space)
+        /// <summary>Set by FPArms: don't move the holder, publish PoseOffsetPos / PoseOffsetRot instead.</summary>
+        public bool AnimDriven { get; set; }
+        public Vector3 PoseOffsetPos { get; private set; }
+        public Vector3 PoseOffsetRot { get; private set; }
+        /// <summary>Aim input this frame (ADS allowed and held).</summary>
+        public bool WantAim { get; private set; }
+        public float AimTime => aimTime;
+        /// <summary>Fired after every shot (FPArms plays the recoil animation and camera shake).</summary>
+        public event Action Fired;
 
         int ammo, reserve;
         bool initialized;
@@ -164,12 +178,16 @@ namespace FPS
 
         void Awake() => Init();
 
+        /// <summary>Initializes an inactive weapon (imported mesh, grips) — world copies are cloned from its model.</summary>
+        public void EnsureInit() => Init();
+
         void Init()
         {
             if (initialized) return;
             initialized = true;
             if (!model && transform.childCount > 0) model = transform.GetChild(0);
             ImportedWeapons.Apply(this); // imported gun mesh over the procedural one (if the pack is present)
+            HandGrips.Ensure(this);      // palm anchors for the IK hands (first-person arms, third-person bodies)
             ammo = magSize;
             reserve = reserveAmmo;
             recoilSeed = Random.value * 100f;
@@ -314,7 +332,8 @@ namespace FPS
             float lower = Mathf.Max(lowerBlend, Mathf.Max(1f - Anim.Smooth(equipT), Anim.Smooth(holsterT)));
 
             bool wantAim = GameInput.AimHeld && !reloading && !motor.IsVaulting && lower < 0.5f && !holstering;
-            aim = Mathf.MoveTowards(aim, wantAim ? 1f : 0f, dt / Mathf.Max(0.01f, aimTime));
+            WantAim = wantAim;
+            aim =Mathf.MoveTowards(aim, wantAim ? 1f : 0f, dt / Mathf.Max(0.01f, aimTime));
             aimEased = Anim.Smooth(aim);
             playerCam.AimBlend = aimEased;
             playerCam.AdsFov = adsFov;
@@ -385,7 +404,7 @@ namespace FPS
             UpdateWallTuck(dt);
             UpdatePose(dt, lower);
 
-            SetScope(scoped && aimEased > 0.93f && !reloading && !holstering);
+            SetScope(scoped && aimEased > 0.93f && !reloading && !holstering && !(boltAction && pumping && pumpT > 0.05f));
 
             if (holstering && holsterT >= 1f)
             {
@@ -522,13 +541,14 @@ namespace FPS
             playerCam.AddRecoil(up, side);
             playerCam.Punch(new Vector3(-Random.Range(5f, 9f) * mul, Random.Range(-3f, 3f), Random.Range(-7f, 7f)) * punchScale);
 
+            Fired?.Invoke();
             float vm = Mathf.Lerp(1f, 0.42f, aimEased) * kickScale;
             kickPos.Kick(new Vector3(Random.Range(-0.05f, 0.05f), Random.Range(0.02f, 0.1f), -Random.Range(1.0f, 1.3f)) * vm);
             kickRot.Kick(new Vector3(-Random.Range(55f, 80f), Random.Range(-22f, 22f), Random.Range(-40f, 40f)) * vm);
 
             bloom = Mathf.Min(maxBloom, bloom + bloomPerShot);
             if (ammo == 0) ProcAudio.Play(Sfx.Dry, 0.25f);
-            if (pumpAction && ammo > 0) StartPump(0.1f);
+            if (pumpAction && ammo > 0) StartPump(boltAction ? 0.28f : 0.1f);
         }
 
         void DryFire()
@@ -813,8 +833,11 @@ namespace FPS
             rot += new Vector3(0f, -6f, -14f) * slideBlend * hipW;
             pos += new Vector3(0.04f, -0.22f, -0.1f) * vaultBlend;
             rot += new Vector3(38f, -22f, 48f) * vaultBlend;
-            pos += new Vector3(-0.03f, -0.02f, -0.14f) * wallTuck;
-            rot += new Vector3(-38f, -14f, 10f) * wallTuck;
+            if (!AnimDriven) // with FPS Animation the WeaponCollision layer pulls the gun back from walls
+            {
+                pos += new Vector3(-0.03f, -0.02f, -0.14f) * wallTuck;
+                rot += new Vector3(-38f, -14f, 10f) * wallTuck;
+            }
             pos += new Vector3(0.03f, -0.3f, -0.12f) * lower;
             rot += new Vector3(40f, -18f, 25f) * lower;
 
@@ -850,16 +873,36 @@ namespace FPS
             {
                 float po = PumpOffset();
                 chOff += new Vector3(0f, 0f, -chTravel * po);
-                handOff += new Vector3(0f, -0.004f * po, -chTravel * po);
-                pos += new Vector3(0f, 0f, -0.012f * po);
-                rot += new Vector3(-2f * po, 0f, 3f * po);
+                if (boltAction)
+                {
+                    // the gun cants and comes off the eye while the right hand works the bolt
+                    float bw = pumping && pumpT > 0f ? Mathf.Sin(Mathf.Clamp01(pumpT) * Mathf.PI) : 0f;
+                    pos += new Vector3(-0.015f, -0.02f, -0.02f) * bw;
+                    rot += new Vector3(-4f, 8f, 24f) * bw;
+                }
+                else
+                {
+                    handOff += new Vector3(0f, -0.004f * po, -chTravel * po);
+                    pos += new Vector3(0f, 0f, -0.012f * po);
+                    rot += new Vector3(-2f * po, 0f, 3f * po);
+                }
             }
 
-            pos += bobP + idleP + sp + kp + bp;
-            rot += bobR + idleR + sr + kr + br;
-
-            transform.localPosition = pos;
-            transform.localRotation = Quaternion.Euler(rot);
+            if (AnimDriven)
+            {
+                // hip / ADS base, look sway and shot kicks come from the FPS Animation layers (AdsLayer, SwayLayer, RecoilLayer)
+                PoseOffsetPos = pos - Vector3.Lerp(hipPosition, aimPosition, aimEased) + bobP + idleP + bp;
+                PoseOffsetRot = rot + bobR + idleR + br;
+                transform.localPosition = Vector3.zero;
+                transform.localRotation = Quaternion.identity;
+            }
+            else
+            {
+                pos += bobP + idleP + sp + kp + bp;
+                rot += bobR + idleR + sr + kr + br;
+                transform.localPosition = pos;
+                transform.localRotation = Quaternion.Euler(rot);
+            }
 
             if (magazine)
             {

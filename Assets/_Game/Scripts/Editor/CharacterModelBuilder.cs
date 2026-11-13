@@ -94,6 +94,7 @@ namespace FPS.EditorTools
             foreach (var def in WeaponCatalog.All)
             {
                 if (string.IsNullOrEmpty(def.fbx)) continue;
+                if (!string.IsNullOrEmpty(def.juPrefab)) CleanJUPrefab(def.juPrefab, def.fbx);
                 var go = AssetDatabase.LoadAssetAtPath<GameObject>(def.fbx);
                 if (!go) { Debug.LogWarning("[CharacterModelBuilder] missing " + def.fbx); continue; }
                 // keep hand-tuned scale / offset from a previous build
@@ -105,6 +106,9 @@ namespace FPS.EditorTools
                     fixedScale = def.modelScale,
                 };
                 Measure(go, e);
+                if (def.trigger.HasValue) e.triggerPoint = def.trigger.Value;
+                if (def.foregrip.HasValue) { e.foregripPoint = def.foregrip.Value; e.hasForegrip = true; }
+                Debug.Log($"[CharacterModelBuilder] {def.name}: trigger {e.triggerPoint:F3} muzzle {e.muzzlePoint:F3} sight {e.sightPoint:F3} foregrip {(e.hasForegrip ? e.foregripPoint.ToString("F3") : "-")}");
                 // an optic's measured reticle center beats a hand-typed sight point (that one was a few mm off)
                 if (def.sight.HasValue) { e.ownSight = true; if (!HasReticle(go)) e.sightPoint = def.sight.Value; }
                 if (def.modelScale > 0f) { e.ownSight = true; e.sightKeepDepth = !HasReticle(go); }
@@ -120,6 +124,27 @@ namespace FPS.EditorTools
             EditorUtility.SetDirty(db);
             AssetDatabase.SaveAssets();
             Debug.Log($"[CharacterModelBuilder] {list.Count} weapon models");
+        }
+
+        /// <summary>JU TPS 3 weapon prefab → meshes-only copy (its Weapon / Rigidbody / audio / particle parts would act on their own).</summary>
+        static void CleanJUPrefab(string src, string dst)
+        {
+            var srcGo = AssetDatabase.LoadAssetAtPath<GameObject>(src);
+            if (!srcGo) { Debug.LogWarning("[CharacterModelBuilder] missing " + src); return; }
+            string dir = System.IO.Path.GetDirectoryName(dst).Replace('\\', '/');
+            if (!AssetDatabase.IsValidFolder(dir)) AssetDatabase.CreateFolder(System.IO.Path.GetDirectoryName(dir).Replace('\\', '/'), System.IO.Path.GetFileName(dir));
+            var inst = Object.Instantiate(srcGo);
+            inst.name = System.IO.Path.GetFileNameWithoutExtension(dst);
+            inst.transform.position = Vector3.zero;
+            inst.transform.rotation = Quaternion.identity;
+            // children without a mesh (shooting / IK points, shell particles) go; then every non-render component
+            foreach (var t in inst.GetComponentsInChildren<Transform>(true))
+                if (t && t != inst.transform && !t.GetComponent<MeshFilter>() && t.GetComponentsInChildren<MeshFilter>(true).Length == 0) Object.DestroyImmediate(t.gameObject);
+            for (int pass = 0; pass < 3; pass++)
+                foreach (var c in inst.GetComponentsInChildren<Component>(true))
+                    if (c && !(c is Transform) && !(c is MeshFilter) && !(c is MeshRenderer)) Object.DestroyImmediate(c);
+            PrefabUtility.SaveAsPrefabAsset(inst, dst);
+            Object.DestroyImmediate(inst);
         }
 
         static bool Skip(string n)

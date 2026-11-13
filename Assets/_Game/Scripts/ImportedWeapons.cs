@@ -168,6 +168,7 @@ namespace FPS
                 string n = t.name.ToLowerInvariant();
                 Transform target = null;
                 if (n.Contains("magazine") && !n.Contains("release")) target = e.keepMagazine ? null : w.magazine;
+                else if (n.Contains("bolt_handle")) target = w.chargingHandle ? w.chargingHandle : w.bolt; // bolt-action handle rides the cycling anchor
                 else if (n.Contains("slide") || n.EndsWith("_bolt")) target = w.bolt ? w.bolt : w.chargingHandle;
                 else if (n.Contains("forend") || n.Contains("pump")) target = w.chargingHandle;
                 if (target) t.SetParent(target, true);
