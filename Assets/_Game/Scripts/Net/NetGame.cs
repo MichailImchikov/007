@@ -26,6 +26,8 @@ namespace FPS
         CoverDamage, CoverState, CoverBreak,
         DroneSpawn, DroneState, DroneEnd, DroneDamage, DroneReveal, DroneWind,
         DiscoVolley,
+        Launcher, Revive,
+        ObjState, ObjEvent, ObjAction,
     }
 
     /// <summary>
@@ -46,7 +48,7 @@ namespace FPS
         public static NetGame I { get; private set; }
 
         public const ushort GamePort = 7777;
-        public const int Protocol = 2;
+        public const int Protocol = 4; // 4: objective modes (ObjState / ObjEvent / ObjAction), internet sessions
         public const int MaxPlayers = 8;
         const float SendInterval = 0.05f;
         const string RelName = "f7r", UnrelName = "f7u";
@@ -65,7 +67,7 @@ namespace FPS
         UnityTransport utp;
 
         class Peer { public ulong client; public string nick; public byte[] look; public bool ready; }
-        class RosterEntry { public int id; public string nick; public byte[] look; public bool bot; }
+        class RosterEntry { public int id; public string nick; public byte[] look; public bool bot; public sbyte team = -1; }
 
         readonly Dictionary<ulong, Peer> peers = new Dictionary<ulong, Peer>();
         readonly Dictionary<ulong, Peer> pending = new Dictionary<ulong, Peer>();
@@ -235,12 +237,14 @@ namespace FPS
             }
             if (Discovery) Discovery.StopAdvertising();
             Running = Hosting = false;
+            Online = false;
             sceneReady = false;
             peers.Clear(); pending.Clear(); ents.Clear(); proxies.Clear(); clientStates.Clear();
             covers.Clear(); coverDirty.Clear(); pickups.Clear();
             ClearDrones();
             pendingRoster = null;
             LocalId = 0;
+            NetOnline.OnNetShutdown(); // an internet game: leave its session (the host closes it)
         }
 
         void OnDestroy() { if (I == this) { Shutdown(); I = null; } }
@@ -507,8 +511,8 @@ namespace FPS
         }
 
         static bool Relayed(Msg m) => m == Msg.Shot || m == Msg.Grenade || m == Msg.Explosion || m == Msg.Ability
-                                      || m == Msg.DroneSpawn || m == Msg.DroneEnd || m == Msg.DroneReveal;
-        static bool Targeted(Msg m) => m == Msg.Damage || m == Msg.Exec || m == Msg.Effect || m == Msg.DroneDamage;
+                                      || m == Msg.DroneSpawn || m == Msg.DroneEnd || m == Msg.DroneReveal || m == Msg.Launcher;
+        static bool Targeted(Msg m) => m == Msg.Damage || m == Msg.Exec || m == Msg.Effect || m == Msg.DroneDamage || m == Msg.Revive;
 
         void OnNamed(ulong sender, FastBufferReader reader)
         {
@@ -543,11 +547,15 @@ namespace FPS
 
         // ------------------------------------------------------------------ incoming
 
+        /// <summary>The connection the message being dispatched came from (objective actions need it).</summary>
+        ulong dispatchSender;
+
         void Dispatch(ulong sender, byte[] data)
         {
             var r = new BinaryReader(new MemoryStream(data, 1, data.Length - 1));
             var m = (Msg)data[0];
             bool fromHost = !Hosting;
+            dispatchSender = sender;
             switch (m)
             {
                 case Msg.Welcome:
@@ -589,7 +597,7 @@ namespace FPS
                     int n = r.ReadInt16();
                     var list = new List<RosterEntry>();
                     for (int i = 0; i < n; i++)
-                        list.Add(new RosterEntry { id = r.ReadInt16(), nick = r.ReadString(), look = r.ReadBytes(r.ReadByte()), bot = r.ReadBoolean() });
+                        list.Add(new RosterEntry { id = r.ReadInt16(), nick = r.ReadString(), look = r.ReadBytes(r.ReadByte()), bot = r.ReadBoolean(), team = r.ReadSByte() });
                     if (sceneReady) ApplyRoster(list); else pendingRoster = list;
                     break;
                 }
@@ -833,6 +841,9 @@ namespace FPS
             var look = new CharacterLook { nick = p.nick };
             look.SetBytes(p.look);
             var px = NetProxy.Create(id, p.nick, look, false);
+            // the host keeps the remote player's team on its proxy too: bots, zones, round elimination and
+            // friendly checks on the host all read it (the roster only told the clients)
+            px.combatant.team = Teams.AssignHuman(id);
             proxies[id] = px;
             ents[id] = px.combatant;
         }
@@ -841,15 +852,24 @@ namespace FPS
         {
             var list = new List<RosterEntry>();
             var me = Find(LocalId);
-            list.Add(new RosterEntry { id = LocalId, nick = me ? me.displayName : CharacterLook.Local.nick, look = CharacterLook.Local.GetBytes(), bot = false });
+            list.Add(new RosterEntry { id = LocalId, nick = me ? me.displayName : CharacterLook.Local.nick, look = CharacterLook.Local.GetBytes(), bot = false,
+                                       team = (sbyte)Teams.AssignHuman(LocalId) });
             foreach (var p in peers.Values)
-                if (p.ready) list.Add(new RosterEntry { id = PlayerId(p.client), nick = p.nick, look = p.look, bot = false });
+            {
+                if (!p.ready) continue;
+                int pid = PlayerId(p.client);
+                int team = Teams.AssignHuman(pid);
+                list.Add(new RosterEntry { id = pid, nick = p.nick, look = p.look, bot = false, team = (sbyte)team });
+                if (proxies.TryGetValue(pid, out var px) && px) px.combatant.team = team;
+            }
             foreach (var kv in ents)
             {
                 if (kv.Key < 1000 || !kv.Value) continue;
                 var c = kv.Value;
-                list.Add(new RosterEntry { id = kv.Key, nick = c.displayName, look = (c.look ?? new CharacterLook()).GetBytes(), bot = true });
+                list.Add(new RosterEntry { id = kv.Key, nick = c.displayName, look = (c.look ?? new CharacterLook()).GetBytes(), bot = true, team = (sbyte)c.team });
             }
+            // the host's own combatant takes its team here too
+            if (me) me.team = Teams.AssignHuman(LocalId);
             return list;
         }
 
@@ -859,7 +879,7 @@ namespace FPS
             var list = BuildRoster();
             var w = Begin(Msg.Roster);
             w.Write((short)list.Count);
-            foreach (var e in list) { w.Write((short)e.id); w.Write(e.nick); w.Write((byte)e.look.Length); w.Write(e.look); w.Write(e.bot); }
+            foreach (var e in list) { w.Write((short)e.id); w.Write(e.nick); w.Write((byte)e.look.Length); w.Write(e.look); w.Write(e.bot); w.Write(e.team); }
             SendAll(End(), true, ulong.MaxValue, true);
         }
 
@@ -869,12 +889,19 @@ namespace FPS
             var keep = new HashSet<int>();
             foreach (var e in list)
             {
-                if (e.id == LocalId) continue;
+                if (e.id == LocalId)
+                {
+                    // the host decides the teams: our own player takes the one it was given
+                    var me = Find(LocalId);
+                    if (me) me.team = e.team;
+                    continue;
+                }
                 keep.Add(e.id);
                 var look = new CharacterLook { nick = e.nick };
                 look.SetBytes(e.look);
-                if (proxies.TryGetValue(e.id, out var px) && px) { px.SetIdentity(e.nick, look); continue; }
+                if (proxies.TryGetValue(e.id, out var px) && px) { px.SetIdentity(e.nick, look); px.combatant.team = e.team; continue; }
                 px = NetProxy.Create(e.id, e.nick, look, e.bot);
+                px.combatant.team = e.team;
                 proxies[e.id] = px;
                 ents[e.id] = px.combatant;
             }

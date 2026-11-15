@@ -1,0 +1,61 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 964a63dbb02ae074d85a453a22a283be, type: 3}
+  m_Name: Grip_Vertical_RK2
+  m_EditorClassIdentifier: Assembly-CSharp::FPS.AttachmentData
+  id: Grip_Vertical_RK2
+  displayName: "\u0420\u0443\u043A\u043E\u044F\u0442\u044C \u0420\u041A-2"
+  description: "\u0412\u0435\u0440\u0442\u0438\u043A\u0430\u043B\u044C\u043D\u0430\u044F
+    \u0440\u0443\u043A\u043E\u044F\u0442\u044C Zenitco: \u0432\u0442\u043E\u0440\u0430\u044F
+    \u0440\u0443\u043A\u0430 \u0434\u0435\u0440\u0436\u0438\u0442 \u0435\u0451, \u043E\u0442\u0434\u0430\u0447\u0430
+    \u043C\u0435\u043D\u044C\u0448\u0435."
+  slot: 2
+  prefab: {fileID: 919132149155446097, guid: f5d4072049e8cfb4ca67b37849aebb98, type: 3}
+  compatible:
+  - HK416
+  - MK18
+  - QBZ191
+  - MK47
+  - AKM
+  - HoneyBadger
+  - Vector
+  - MPX
+  - Scorpion
+  - SR2
+  - M249
+  - M4A1
+  - AK12
+  - M14EBR
+  recoilMul: 0.85
+  hipSpreadMul: 0.92
+  adsSpreadMul: 1
+  adsTimeMul: 1.04
+  moveSpeedMul: 1
+  reloadTimeMul: 1
+  rangeMul: 1
+  damageMul: 1
+  magnification: 1
+  adsFov: 0
+  aimDistance: 0
+  scoped: 0
+  opaqueSightLine: 0
+  addReticle: 0
+  reticleMaterial: {fileID: 0}
+  suppressed: 0
+  flashMul: 1
+  volumeMul: 1
+  noiseMul: 1
+  muzzleLength: 0
+  magCapacity: 0
+  laser: 0
+  flashlight: 0
+  foregrip: 1

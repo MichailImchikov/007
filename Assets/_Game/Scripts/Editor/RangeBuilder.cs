@@ -82,7 +82,14 @@ namespace FPS.EditorTools
             AssetDatabase.CreateFolder(parent, Path.GetFileName(path));
         }
 
-        static readonly string[] SceneOrder = { "MainMenu", "ShootingRange", "Map_Port", "Map_Town", "Map_Warehouse", "Map_Plant", "Map_Village", "Map_Flooded", "Map_Disco" };
+        static readonly string[] SceneOrder = { "MainMenu", "ShootingRange", "Map_Port", "Map_Town", "Map_Warehouse", "Map_Plant", "Map_Village", "Map_Flooded", "Map_Disco", "Map_Downtown", "Map_Bazaar", "Map_Suburb", "Map_Depot", "Map_Station", "Map_Construction", "Map_DesertBase", "Map_Factory" };
+
+        /// <summary>
+        /// Maps made from a git-ignored asset pack that is not in the project right now: the scene file stays, but it is kept
+        /// out of the build (missing prefabs, no NavMesh), so the menu hides it until the pack is imported again.
+        /// </summary>
+        static bool SceneUnavailable(string sceneName) =>
+            sceneName == "Map_Flooded" && !AssetDatabase.IsValidFolder("Assets/Flooded_Grounds");
 
         static void SetBuildScenes()
         {
@@ -90,10 +97,11 @@ namespace FPS.EditorTools
             foreach (var n in SceneOrder)
             {
                 string path = "Assets/Scenes/" + n + ".unity";
-                if (AssetDatabase.LoadAssetAtPath<SceneAsset>(path)) list.Add(new EditorBuildSettingsScene(path, true));
+                if (!SceneUnavailable(n) && AssetDatabase.LoadAssetAtPath<SceneAsset>(path)) list.Add(new EditorBuildSettingsScene(path, true));
             }
+            // other scenes already in the list stay, unless their file is gone (removed packs' demo scenes)
             foreach (var s in EditorBuildSettings.scenes)
-                if (!list.Exists(x => x.path == s.path)) list.Add(s);
+                if (!list.Exists(x => x.path == s.path) && System.IO.File.Exists(s.path) && !SceneUnavailable(System.IO.Path.GetFileNameWithoutExtension(s.path))) list.Add(s);
             EditorBuildSettings.scenes = list.ToArray();
         }
 

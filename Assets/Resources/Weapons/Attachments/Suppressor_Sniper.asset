@@ -1,0 +1,52 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 964a63dbb02ae074d85a453a22a283be, type: 3}
+  m_Name: Suppressor_Sniper
+  m_EditorClassIdentifier: Assembly-CSharp::FPS.AttachmentData
+  id: Suppressor_Sniper
+  displayName: "\u0422\u044F\u0436\u0451\u043B\u044B\u0439 \u0433\u043B\u0443\u0448\u0438\u0442\u0435\u043B\u044C"
+  description: "\u0414\u043B\u0438\u043D\u043D\u044B\u0439 \u0433\u043B\u0443\u0448\u0438\u0442\u0435\u043B\u044C
+    \u043F\u043E\u0434 7,62: \u043F\u043E\u0437\u0438\u0446\u0438\u044E \u0441\u0442\u0440\u0435\u043B\u043A\u0430
+    \u043D\u0435 \u0432\u044B\u0434\u0430\u044E\u0442 \u043D\u0438 \u0437\u0432\u0443\u043A,
+    \u043D\u0438 \u0432\u0441\u043F\u044B\u0448\u043A\u0430. \u0422\u044F\u0436\u0451\u043B\u044B\u0439."
+  slot: 1
+  prefab: {fileID: 919132149155446097, guid: 7bcb8deac357ad7428161898846fe2e1, type: 3}
+  compatible:
+  - M700
+  - M14EBR
+  - AWM
+  - AXMC
+  - SVD
+  recoilMul: 0.88
+  hipSpreadMul: 1
+  adsSpreadMul: 1
+  adsTimeMul: 1.1
+  moveSpeedMul: 0.98
+  reloadTimeMul: 1
+  rangeMul: 1
+  damageMul: 1
+  magnification: 1
+  adsFov: 0
+  aimDistance: 0
+  scoped: 0
+  opaqueSightLine: 0
+  addReticle: 0
+  reticleMaterial: {fileID: 0}
+  suppressed: 1
+  flashMul: 0.25
+  volumeMul: 0.45
+  noiseMul: 0.4
+  muzzleLength: 0.23
+  magCapacity: 0
+  laser: 0
+  flashlight: 0
+  foregrip: 0

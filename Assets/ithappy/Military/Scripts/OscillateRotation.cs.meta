@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 44f65a1f3df7c2443b97fbcaa0a21ab5
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 198691
+  packageName: Military - Low Poly 3D Models Pack
+  packageVersion: 2.1
+  assetPath: Assets/ithappy/Military/Scripts/OscillateRotation.cs
+  uploadId: 760669

@@ -94,6 +94,37 @@ namespace FPS
         float deadAnim, yawVel;
         readonly RaycastHit[] hits = new RaycastHit[12];
 
+        /// <summary>Movement / reload-time multipliers (class passives, adrenaline): set by <see cref="ClassAbility"/>.</summary>
+        public float SpeedMul { get; set; } = 1f;
+        public float ReloadMul { get; set; } = 1f;
+        public bool IsDead => dead;
+        public float Health => health;
+
+        /// <summary>Health back (medic kit, adrenaline), up to the maximum.</summary>
+        public void Heal(float amount)
+        {
+            if (dead || amount <= 0f) return;
+            health = Mathf.Min(maxHealth, health + amount);
+        }
+
+        /// <summary>A medic brought this bot back where it fell: half health, same weapon; the pending respawn is skipped.</summary>
+        public void Revive(Combatant medic)
+        {
+            if (!dead || executing || (MatchManager.Instance && MatchManager.Instance.Ended)) return;
+            dead = false;
+            health = maxHealth * PlayerHealth.Revive_Health;
+            combatant.alive = true;
+            deadAnim = 0f;
+            target = null;
+            state = State.Roam;
+            if (anim) { anim.dead = 0f; anim.executeVictim = -1f; }
+            if (rig) rig.SetCollidersEnabled(true);
+            if (!agent.enabled) agent.enabled = true;
+            if (NavMesh.SamplePosition(transform.position, out var nh, 2f, NavMesh.AllAreas)) agent.Warp(nh.position);
+            agent.isStopped = false;
+            lastHurt = Time.time;
+        }
+
         void Awake()
         {
             if (!agent) agent = GetComponent<NavMeshAgent>();
@@ -119,7 +150,7 @@ namespace FPS
         void Start()
         {
             agent.updateRotation = false;
-            agent.speed = 4.4f;
+            agent.speed = SpeedMul * 4.4f;
             agent.acceleration = 22f;
             agent.angularSpeed = 720f;
             agent.stoppingDistance = 0.4f;
@@ -179,6 +210,7 @@ namespace FPS
             combatant.alive = true;
             target = null;
             state = State.Roam;
+            ReleaseObjective();
             ammo = magSize;
             reloadTimer = 0f;
             deadAnim = 0f;
@@ -193,6 +225,7 @@ namespace FPS
         public DamageResult TakeDamage(DamageInfo info)
         {
             if (dead || executing || SkyArena.IsGunner(combatant)) return default;
+            if (Teams.Friendly(info.attacker, combatant)) return default; // no friendly fire in team games
             if (abilities && abilities.TryDeflect(info)) return default;
             health -= info.amount;
             lastHurt = Time.time;
@@ -221,13 +254,14 @@ namespace FPS
             health = 0f;
             combatant.alive = false;
             if (abilities) abilities.OnDeath();
+            ReleaseObjective();
             external = false;
             if (agent.enabled) { agent.isStopped = true; agent.enabled = false; }
             if (anim) anim.deadDir = Vector3.Dot(dir, transform.forward) > 0f ? 1f : -1f;
             if (rig) rig.SetCollidersEnabled(false);
             deadAnim = 0f;
             MatchManager.Report(killer, combatant, weapon, headshot);
-            if (MatchManager.Instance) MatchManager.Instance.RequestRespawn(this, SkyArena.Active ? 0.15f : 4f);
+            if (MatchManager.Instance) MatchManager.Instance.RequestRespawn(this, SkyArena.Active ? 0.15f : Teams.Active ? Teams.ReviveWindow : 4f);
         }
 
         // ------------------------------------------------------------------ execution (victim side)
@@ -274,7 +308,7 @@ namespace FPS
             if (agent.enabled) agent.enabled = false;
             if (rig) rig.SetCollidersEnabled(false);
             deadAnim = Mathf.Max(deadAnim, 0.3f);
-            if (MatchManager.Instance) MatchManager.Instance.RequestRespawn(this, SkyArena.Active ? 0.15f : 4f);
+            if (MatchManager.Instance) MatchManager.Instance.RequestRespawn(this, SkyArena.Active ? 0.15f : Teams.Active ? Teams.ReviveWindow : 4f);
         }
 
         // ------------------------------------------------------------------ hearing
@@ -326,6 +360,9 @@ namespace FPS
             // sky arena: knife fight on the floor, nothing else
             if (ArenaTick(dt)) { UpdateBody(dt); return; }
 
+            // objective modes: everybody waits for the start of the round
+            if (ObjectiveFrozen(dt)) return;
+
             if (stunTimer > 0f)
             {
                 stunTimer -= dt;
@@ -338,6 +375,13 @@ namespace FPS
             if (thinkTimer <= 0f) { thinkTimer = 0.12f + Random.value * 0.06f; Perceive(); }
 
             if (abilities && abilities.BotOverride(dt))
+            {
+                UpdateBody(dt);
+                return;
+            }
+
+            // the class: passives, kit / adrenaline, an engineer's rocket, a medic walking over to revive an ally
+            if (ClassTick(dt))
             {
                 UpdateBody(dt);
                 return;
@@ -368,6 +412,7 @@ namespace FPS
                 case State.Engage: Engage(dt); break;
                 case State.Retreat: Retreat(dt); break;
             }
+            if (state != State.Roam) ReleaseObjective(); // a fight interrupts a plant / defuse
 
             if (reloadTimer > 0f)
             {
@@ -462,8 +507,9 @@ namespace FPS
 
         void Roam()
         {
+            if (ObjectiveRoam()) return; // objective modes: the point / site / bomb instead of wandering
             agent.isStopped = false;
-            agent.speed = 4.4f;
+            agent.speed = SpeedMul * 4.4f;
             crouched = false;
             if (!agent.pathPending && (!agent.hasPath || agent.remainingDistance < 1.5f))
             {
@@ -478,10 +524,11 @@ namespace FPS
 
         void Search(float dt)
         {
+            if (ObjectiveUrgent()) { state = State.Roam; target = null; return; } // the bomb is ticking
             agent.isStopped = false;
-            agent.speed = 4.0f;
+            agent.speed = SpeedMul * 4.0f;
             crouched = false;
-            searchTimer -= dt;
+            searchTimer -= dt * (ObjectiveMode.Current ? 2.5f : 1f); // objective modes: back to the objective sooner
             if (NavMesh.SamplePosition(lastKnown, out var nh, 3f, NavMesh.AllAreas) && (agent.destination - nh.position).sqrMagnitude > 1f)
                 agent.SetDestination(nh.position);
             if (searchTimer <= 0f || (!agent.pathPending && agent.remainingDistance < 1f))
@@ -502,7 +549,7 @@ namespace FPS
             if (abilities && abilities.Parrying)
             {
                 agent.isStopped = false;
-                agent.speed = 5.4f;
+                agent.speed = SpeedMul * 5.4f;
                 crouched = false;
                 if (NavMesh.SamplePosition(target.transform.position, out var ph, 2f, NavMesh.AllAreas)) agent.SetDestination(ph.position);
                 return;
@@ -516,13 +563,16 @@ namespace FPS
                 strafeTimer = Random.Range(0.7f, 1.6f);
                 Vector3 side = Vector3.Cross(Vector3.up, to.normalized) * (Random.value < 0.5f ? -1f : 1f);
                 Vector3 radial = dist > prefDist * 1.3f ? to.normalized * 4f : dist < prefDist * 0.5f ? -to.normalized * 3f : Vector3.zero;
-                Vector3 dest = transform.position + side * Random.Range(1.5f, 3.5f) + radial;
+                // objective modes: keep pushing toward the point / site while trading shots
+                Vector3 push = ObjectivePush();
+                if (push != Vector3.zero) radial = Vector3.ClampMagnitude(radial, 1.5f);
+                Vector3 dest = transform.position + side * Random.Range(1.5f, 3.5f) + radial + push;
                 if (NavMesh.SamplePosition(dest, out var nh, 2f, NavMesh.AllAreas)) agent.SetDestination(nh.position);
-                crouched = Random.value < 0.22f && dist > 8f;
+                crouched = Random.value < (push != Vector3.zero ? 0.08f : 0.22f) && dist > 8f;
                 if (crouched) agent.SetDestination(transform.position);
             }
             agent.isStopped = false;
-            agent.speed = crouched ? 1.6f : 3.2f;
+            agent.speed = SpeedMul * (crouched ? 1.6f : 3.2f);
 
             // aim converges while tracking; target movement makes it harder
             float targetSpeed = target.isPlayer && PlayerHealth.Local ? PlayerHealth.Local.motor.HorizontalSpeed : 3f;
@@ -532,7 +582,7 @@ namespace FPS
             fireCd -= dt;
             bool fresh = Time.time - lastSeen < 0.25f && targetVisible;
             if (reloadTimer > 0f) return;
-            if (ammo <= 0) { reloadTimer = (WeaponCatalog.Get(weaponName)?.category ?? WeaponCategory.Assault) == WeaponCategory.Marksman ? 2.6f : 2.2f; ProcAudio.PlayAt(Sfx.MagOut, transform.position, 0.4f); return; }
+            if (ammo <= 0) { reloadTimer = ((WeaponCatalog.Get(weaponName)?.category ?? WeaponCategory.Assault) == WeaponCategory.Marksman ? 2.6f : 2.2f) * ReloadMul; ProcAudio.PlayAt(Sfx.MagOut, transform.position, 0.4f); return; }
             if (fresh && reactTimer <= 0f && fireCd <= 0f && FacingTarget(tp))
             {
                 if (burstLeft <= 0) burstLeft = Random.Range(burstMin, burstMax + 1);
@@ -552,7 +602,7 @@ namespace FPS
         void Retreat(float dt)
         {
             agent.isStopped = false;
-            agent.speed = 5f;
+            agent.speed = SpeedMul * 5f;
             crouched = false;
             if (!agent.pathPending && agent.remainingDistance < 0.8f)
             {
@@ -632,7 +682,7 @@ namespace FPS
                 if (reloadTimer <= 0f) ammo = magSize;
                 return true;
             }
-            if (ammo <= 0) { reloadTimer = 2.2f; ProcAudio.PlayAt(Sfx.MagOut, transform.position, 0.4f); return true; }
+            if (ammo <= 0) { reloadTimer = 2.2f * ReloadMul; ProcAudio.PlayAt(Sfx.MagOut, transform.position, 0.4f); return true; }
             antiReact -= dt;
             fireCd -= dt;
             Vector3 to = dp - transform.position; to.y = 0f;

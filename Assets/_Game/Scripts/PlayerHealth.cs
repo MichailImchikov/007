@@ -53,6 +53,7 @@ namespace FPS
             self.isPlayer = true;
             abilities = GetComponent<AbilityUser>();
             if (!abilities) abilities = gameObject.AddComponent<AbilityUser>();
+            if (!GetComponent<ClassAbility>()) gameObject.AddComponent<ClassAbility>();
             self.chestPoint = () => transform.position + Vector3.up * (motor.EyeHeight - 0.4f);
             self.headPoint = () => transform.position + Vector3.up * (motor.EyeHeight - 0.03f);
             Health = maxHealth;
@@ -63,6 +64,9 @@ namespace FPS
         void Start()
         {
             MatchHUD.Ensure();
+            ClassHUD.Ensure();
+            TeamNameplates.Ensure();
+            MiniMap.Ensure();
             PauseMenu.Ensure();
             AbilitySpawner.Ensure();
             GameInput.Blocked = false;
@@ -71,6 +75,7 @@ namespace FPS
         public DamageResult TakeDamage(DamageInfo info)
         {
             if (IsDead || protectTimer > 0f || execT >= 0f || SkyArena.IsGunner(self)) return default;
+            if (Teams.Friendly(info.attacker, self)) return default; // no friendly fire in team games
             if (abilities && abilities.TryDeflect(info)) return default;
             float amount = info.amount;
             if (info.attacker == self) amount *= 0.6f; // own grenade hurts less
@@ -129,7 +134,8 @@ namespace FPS
             IsDead = true;
             Health = 0f;
             self.alive = false;
-            deathTimer = SkyArena.Active ? 0.15f : respawnDelay; // sky arena: back on your feet at once
+            // sky arena: back on your feet at once; team game: a medic has a few seconds to bring us back (Space skips)
+            deathTimer = SkyArena.Active ? 0.15f : Teams.Active ? Teams.ReviveWindow : respawnDelay;
             deathT = 0f;
             LastKiller = info.attacker;
             LastKillerWeapon = info.weapon;
@@ -138,6 +144,8 @@ namespace FPS
             playerCam.Locked = true;
             if (loadout && loadout.Active) loadout.Active.ExternalLower = 1f;
             MatchManager.Report(info.attacker, self, info.weapon, info.critical);
+            self.streak = 0;
+            KillStreak.ResetLocal(); // also outside a match
             ProcAudio.Play(Sfx.Land, 0.9f, 0.05f);
             Died?.Invoke();
         }
@@ -168,6 +176,44 @@ namespace FPS
             Respawned?.Invoke();
         }
 
+        /// <summary>Health back (medic kit, adrenaline), up to the maximum.</summary>
+        public void Heal(float amount)
+        {
+            if (IsDead || amount <= 0f) return;
+            Health = Mathf.Min(maxHealth, Health + amount);
+        }
+
+        /// <summary>Lying in a team game, a medic can still reach us: the respawn waits (Space respawns at once).</summary>
+        public bool AwaitingRevive => IsDead && Teams.Active && !SkyArena.Active && deathTimer > 0f;
+
+        public event Action<Combatant> Revived;
+
+        /// <summary>
+        /// A medic brought us back where we fell: half health, same weapons and ammo, a moment of protection. The death
+        /// stays on the scoreboard (the kill was already counted).
+        /// </summary>
+        public void Revive(Combatant medic)
+        {
+            if (!IsDead || (MatchManager.Instance && MatchManager.Instance.Ended)) return;
+            motor.Locked = false;
+            playerCam.Locked = false;
+            playerCam.DeathAmount = 0f;
+            Health = maxHealth * Revive_Health;
+            IsDead = false;
+            DeadForward = false;
+            execT = -1f;
+            self.alive = true;
+            protectTimer = 1.2f;
+            lastHit = Time.time;
+            GameInput.Blocked = false;
+            if (loadout && loadout.Active) loadout.Active.ExternalLower = 0f;
+            ProcAudio.Play(Sfx.Equip, 0.8f);
+            Revived?.Invoke(medic);
+        }
+
+        /// <summary>Share of the maximum health a revived soldier gets back.</summary>
+        public const float Revive_Health = 0.5f;
+
         void Update()
         {
             float dt = Time.deltaTime;
@@ -179,7 +225,11 @@ namespace FPS
                 deathT += dt;
                 playerCam.DeathAmount = Anim.Smooth(deathT / 0.9f);
                 deathTimer -= dt;
-                bool canRespawn = !MatchManager.Instance || !MatchManager.Instance.Ended;
+                // waiting for a medic: Space (jump) respawns now
+                var kb = UnityEngine.InputSystem.Keyboard.current;
+                if (AwaitingRevive && deathT > 1.5f && kb != null && kb.spaceKey.wasPressedThisFrame) deathTimer = 0f;
+                bool canRespawn = (!MatchManager.Instance || !MatchManager.Instance.Ended)
+                                  && (!ObjectiveMode.Current || ObjectiveMode.Current.CanRespawn(self)); // one life per round
                 if (deathTimer <= 0f && canRespawn) Respawn();
                 return;
             }

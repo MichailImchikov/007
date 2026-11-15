@@ -1,0 +1,797 @@
+{
+ "AKM": {
+  "src": "{WORK}/weapons_src/low-poly-akm/low-poly-akm.blend",
+  "muzzle": "+Y",
+  "length": 0.88,
+  "parts": {
+   "Mag": {
+    "objects": [
+     "akm_pmag"
+    ]
+   },
+   "Bolt": {
+    "objects": [
+     "akm_boltcarrier"
+    ]
+   },
+   "IronSights": {
+    "objects": [
+     "akm_rear_sight"
+    ]
+   }
+  },
+  "kind": "rifle",
+  "mat_by_object": {
+   "wood": "Wood",
+   "pgrip": "Wood",
+   "pmag": "Metal_Dark"
+  },
+  "sockets": {
+   "Socket_Underbarrel": [
+    321,
+    16,
+    0
+   ]
+  }
+ },
+ "HK416": {
+  "src": "{WORK}/weapons_src/low-poly-hk416/low-poly-hk416.fbx",
+  "muzzle": "+X",
+  "length": 0.84,
+  "parts": {
+   "Mag": {
+    "groups": [
+     "mag",
+     "bullet",
+     "bullets"
+    ]
+   },
+   "Bolt": {
+    "groups": [
+     "charginghandle"
+    ]
+   },
+   "IronSights": {
+    "groups": [
+     "frontsight"
+    ]
+   }
+  },
+  "kind": "rifle",
+  "iron_post": true
+ },
+ "M4A4": {
+  "src": "{WORK}/weapons_src/low-poly-m4a1/low-poly-m4a1.fbx",
+  "muzzle": "+X",
+  "length": 0.84,
+  "parts": {
+   "Mag": {
+    "groups": [
+     "mag",
+     "bullet",
+     "bullets"
+    ]
+   },
+   "Bolt": {
+    "groups": [
+     "charginghandle"
+    ]
+   }
+  },
+  "kind": "rifle",
+  "iron_post": true
+ },
+ "MK47": {
+  "src": "{WORK}/weapons_src/low-poly-mk-47-mutant/low-poly-mk-47-mutant.blend",
+  "muzzle": "+Y",
+  "length": 0.88,
+  "parts": {
+   "Mag": {
+    "objects": [
+     "Mag_762_polymer"
+    ]
+   },
+   "Bolt": {
+    "objects": [
+     "charging_handle.001"
+    ]
+   },
+   "IronSights": {
+    "objects": [
+     "front_sight",
+     "rear_sight"
+    ]
+   }
+  },
+  "kind": "rifle"
+ },
+ "QBZ191": {
+  "src": "{WORK}/weapons_src/low-poly-qbz-192/low-poly-qbz-192.blend",
+  "muzzle": "+X",
+  "length": 0.9,
+  "parts": {
+   "Mag": {
+    "groups": [
+     "mag",
+     "bullet",
+     "bullets"
+    ]
+   },
+   "Bolt": {
+    "groups": [
+     "bolt"
+    ]
+   },
+   "IronSights": {
+    "groups": [
+     "rearsight",
+     "frontsight"
+    ]
+   }
+  },
+  "kind": "rifle"
+ },
+ "MK18": {
+  "src": "{WORK}/weapons_src/low-poly-mk18-mod1/low-poly-mk18-mod1.blend",
+  "muzzle": "+Y",
+  "length": 0.7,
+  "parts": {
+   "Mag": {
+    "objects": [
+     "magazine"
+    ]
+   },
+   "Bolt": {
+    "objects": [
+     "charging_handle"
+    ]
+   },
+   "IronSights": {
+    "objects": [
+     "front_sight",
+     "rear_sight"
+    ]
+   }
+  },
+  "kind": "rifle"
+ },
+ "HoneyBadger": {
+  "src": "{WORK}/weapons_src/low-poly-aac-honey-badger/low-poly-aac-honey-badger.fbx",
+  "muzzle": "+X",
+  "length": 0.74,
+  "parts": {
+   "Mag": {
+    "groups": [
+     "mag",
+     "bullet",
+     "bullets"
+    ]
+   },
+   "Bolt": {
+    "groups": [
+     "charger"
+    ]
+   }
+  },
+  "kind": "rifle",
+  "iron_post": true
+ },
+ "Vector": {
+  "src": "{WORK}/weapons_src/low-poly-kriss-vector/low-poly-kriss-vector.fbx",
+  "muzzle": "+X",
+  "length": 0.62,
+  "drop_objects": [
+   "Cylinder",
+   "Cylinder.001"
+  ],
+  "parts": {
+   "Mag": {
+    "box": [
+     [
+      -0.085,
+      -0.14
+     ],
+     [
+      0.0,
+      -0.005
+     ]
+    ]
+   }
+  },
+  "kind": "rifle",
+  "origin": [
+   -0.126,
+   0.063,
+   0.0
+  ],
+  "rake": 21,
+  "sockets": {
+   "Socket_Muzzle": [
+    304,
+    3,
+    0
+   ],
+   "Grip_R": [
+    -58,
+    -43,
+    0
+   ],
+   "Socket_Mag": [
+    81,
+    -73,
+    0
+   ],
+   "Socket_Optic": [
+    71,
+    54,
+    0
+   ],
+   "Grip_L": [
+    184,
+    3,
+    0
+   ],
+   "Socket_Underbarrel": [
+    196,
+    -20,
+    0
+   ],
+   "Socket_Side": [
+    192,
+    3,
+    25
+   ],
+   "Eject": [
+    144,
+    20,
+    25
+   ]
+  },
+  "remove_sockets": [
+   "Sight_Iron"
+  ]
+ },
+ "MPX": {
+  "src": "{WORK}/weapons_src/low-poly-sig-mpx/low-poly-sig-mpx.fbx",
+  "muzzle": "+X",
+  "length": 0.6,
+  "parts": {
+   "Mag": {
+    "groups": [
+     "mag",
+     "bullet",
+     "bullets"
+    ]
+   },
+   "Bolt": {
+    "groups": [
+     "charginghandle"
+    ]
+   }
+  },
+  "kind": "rifle",
+  "iron_post": true
+ },
+ "Scorpion": {
+  "src": "{WORK}/weapons_src/low-poly-cz-skorpion-evo-3/low-poly-cz-skorpion-evo-3.fbx",
+  "muzzle": "+X",
+  "length": 0.66,
+  "parts": {
+   "Mag": {
+    "groups": [
+     "mag",
+     "bullety"
+    ]
+   },
+   "Bolt": {
+    "groups": [
+     "charginghandle"
+    ]
+   }
+  },
+  "kind": "rifle",
+  "iron_post": true
+ },
+ "SR2": {
+  "src": "{WORK}/weapons_src/low-poly-sr-2-veresk/low-poly-sr-2-veresk.blend",
+  "muzzle": "+Y",
+  "length": 0.6,
+  "parts": {
+   "Mag": {
+    "objects": [
+     "sr2_magazine"
+    ]
+   },
+   "Bolt": {
+    "objects": [
+     "sr2_boltcarrier"
+    ]
+   }
+  },
+  "kind": "rifle",
+  "mat_by_object": {
+   "": "Metal_Black"
+  },
+  "origin": [
+   0.129,
+   0.039,
+   0.0
+  ],
+  "rake": 8,
+  "cut_boxes": [
+   [
+    [
+     0.225,
+     -0.05
+    ],
+    [
+     0.28,
+     0.03
+    ]
+   ]
+  ],
+  "sockets": {
+   "Socket_Muzzle": [
+    174,
+    31,
+    0
+   ],
+   "Grip_R": [
+    -53,
+    -44,
+    0
+   ],
+   "Grip_L": [
+    125,
+    31,
+    0
+   ],
+   "Socket_Underbarrel": [
+    121,
+    2,
+    0
+   ],
+   "Socket_Optic": [
+    -89,
+    72,
+    0
+   ],
+   "Eject": [
+    -41,
+    41,
+    20
+   ],
+   "Sight_Iron": [
+    -38,
+    66,
+    0
+   ],
+   "Socket_Mag": [
+    -48,
+    -92,
+    0
+   ]
+  },
+  "remove_sockets": [
+   "Socket_Side"
+  ]
+ },
+ "M249": {
+  "src": "{WORK}/weapons_src/low-poly-m249-saw/low-poly-m249-saw.fbx",
+  "muzzle": "+X",
+  "length": 1.02,
+  "parts": {
+   "Mag": {
+    "groups": [
+     "mag",
+     "bullet"
+    ]
+   },
+   "Bolt": {
+    "groups": [
+     "charginghandle"
+    ]
+   }
+  },
+  "kind": "rifle",
+  "iron_post": true,
+  "iron_post_front": 0.25
+ },
+ "MK14": {
+  "src": "{WORK}/weapons_src/low-poly-mk14-ebr/low-poly-mk14-ebr.fbx",
+  "muzzle": "+X",
+  "length": 0.89,
+  "parts": {
+   "Mag": {
+    "groups": [
+     "mag",
+     "bullet",
+     "bullets"
+    ]
+   },
+   "Bolt": {
+    "groups": [
+     "charginghandle"
+    ]
+   }
+  },
+  "kind": "rifle",
+  "remove_sockets": [
+   "Sight_Iron"
+  ]
+ },
+ "Deagle": {
+  "src": "{WORK}/weapons_src/low-poly-desert-eagle/low-poly-desert-eagle.fbx",
+  "muzzle": "+X",
+  "length": 0.27,
+  "parts": {
+   "Mag": {
+    "groups": [
+     "MAG",
+     "BULLETS"
+    ]
+   },
+   "Slide": {
+    "groups": [
+     "SLIDE"
+    ]
+   }
+  },
+  "kind": "pistol"
+ },
+ "K6S": {
+  "src": "{WORK}/weapons_src/low-poly-kimber-k6s/low-poly-kimber-k6s.blend",
+  "muzzle": "+X",
+  "length": 0.2,
+  "parts": {
+   "Mag": {
+    "groups": [
+     "bullet1",
+     "bullet2",
+     "bullet3",
+     "bullet4",
+     "bullet5",
+     "bullet6"
+    ]
+   }
+  },
+  "kind": "revolver",
+  "remove_sockets": [
+   "Socket_Optic",
+   "Socket_Underbarrel"
+  ]
+ },
+ "R870": {
+  "src": "{WORK}/weapons_src/low-poly-remington-870/low-poly-remington-870.blend",
+  "muzzle": "+X",
+  "length": 0.75,
+  "parts": {
+   "Pump": {
+    "objects": [
+     "Cylinder.007"
+    ]
+   }
+  },
+  "kind": "shotgun",
+  "mat_by_object": {
+   "Pump": "Polymer_Black"
+  },
+  "mat_default": "Metal_Black",
+  "origin": [
+   -0.286,
+   -0.007,
+   0.0
+  ],
+  "rake": 30,
+  "sockets": {
+   "Socket_Muzzle": [
+    649,
+    59,
+    0
+   ],
+   "Grip_R": [
+    -39,
+    -23,
+    0
+   ],
+   "Socket_Optic": [
+    92,
+    75,
+    0
+   ],
+   "Sight_Iron": [
+    86,
+    79,
+    0
+   ],
+   "Eject": [
+    131,
+    46,
+    20
+   ],
+   "Grip_L": [
+    351,
+    27,
+    0
+   ]
+  },
+  "remove_sockets": [
+   "Socket_Underbarrel",
+   "Socket_Side",
+   "Socket_Mag"
+  ]
+ },
+ "SVD": {
+  "src": "C:/Project/007/Assets/LowPolyWeapons/Models/SniperRifle/SniperRifle2_01.fbx",
+  "srcs": [
+   [
+    "C:/Project/007/Assets/LowPolyWeapons/Models/SniperRifle/SniperRifle2_01.fbx",
+    [
+     0,
+     0,
+     0
+    ]
+   ],
+   [
+    "C:/Project/007/Assets/LowPolyWeapons/Models/SniperRifle/SniperRifle2_01_2.fbx",
+    [
+     -0.244,
+     0.012,
+     0
+    ]
+   ],
+   [
+    "C:/Project/007/Assets/LowPolyWeapons/Models/SniperRifle/SniperRifle2_01_3.fbx",
+    [
+     0,
+     0,
+     0
+    ]
+   ],
+   [
+    "C:/Project/007/Assets/LowPolyWeapons/Models/SniperRifle/SniperRifle2_01_4.fbx",
+    [
+     -0.074,
+     0.03,
+     0
+    ]
+   ]
+  ],
+  "muzzle": "+X",
+  "length": 1.22,
+  "kind": "rifle",
+  "mat_main": true,
+  "parts": {
+   "Mag": {
+    "objects": [
+     "SniperRifle2_01_2"
+    ]
+   },
+   "Trigger": {
+    "objects": [
+     "SniperRifle2_01_4"
+    ]
+   }
+  },
+  "iron_post": true,
+  "origin": [
+   0.062,
+   0.003,
+   0.0
+  ],
+  "sockets": {
+   "Grip_R": [
+    -74,
+    -22,
+    0
+   ]
+  }
+ },
+ "AWM": {
+  "src": "C:/Project/007/Assets/LowPolyWeapons/Models/SniperRifle/SniperRifle1_01.fbx",
+  "srcs": [
+   [
+    "C:/Project/007/Assets/LowPolyWeapons/Models/SniperRifle/SniperRifle1_01.fbx",
+    [
+     0,
+     0,
+     0
+    ]
+   ],
+   [
+    "C:/Project/007/Assets/LowPolyWeapons/Models/SniperRifle/SniperRifle1_01_2.fbx",
+    [
+     -0.166,
+     0.02,
+     0
+    ]
+   ],
+   [
+    "C:/Project/007/Assets/LowPolyWeapons/Models/SniperRifle/SniperRifle1_01_3.fbx",
+    [
+     -0.052,
+     0.038,
+     0
+    ]
+   ],
+   [
+    "C:/Project/007/Assets/LowPolyWeapons/Models/SniperRifle/SniperRifle1_01_4.fbx",
+    [
+     -0.085,
+     0.085,
+     0
+    ]
+   ]
+  ],
+  "muzzle": "+X",
+  "length": 1.2,
+  "kind": "rifle",
+  "mat_main": true,
+  "parts": {
+   "Mag": {
+    "objects": [
+     "SniperRifle1_01_2"
+    ]
+   },
+   "Bolt": {
+    "objects": [
+     "SniperRifle1_01_4"
+    ]
+   }
+  },
+  "remove_sockets": [
+   "Sight_Iron"
+  ],
+  "grip_l_max": 0.17
+ },
+ "VSS": {
+  "src": "C:/Project/007/Assets/LowPolyWeapons/Models/SniperRifle/SniperRifle6_01.fbx",
+  "srcs": [
+   [
+    "C:/Project/007/Assets/LowPolyWeapons/Models/SniperRifle/SniperRifle6_01.fbx",
+    [
+     0,
+     0,
+     0
+    ]
+   ],
+   [
+    "C:/Project/007/Assets/LowPolyWeapons/Models/SniperRifle/SniperRifle6_01_2.fbx",
+    [
+     -0.152,
+     0.003,
+     0
+    ]
+   ],
+   [
+    "C:/Project/007/Assets/LowPolyWeapons/Models/SniperRifle/SniperRifle6_01_3.fbx",
+    [
+     -0.059,
+     0.045,
+     0
+    ]
+   ],
+   [
+    "C:/Project/007/Assets/LowPolyWeapons/Models/SniperRifle/SniperRifle6_01_4.fbx",
+    [
+     0,
+     0,
+     0
+    ]
+   ]
+  ],
+  "muzzle": "+X",
+  "length": 0.894,
+  "kind": "rifle",
+  "mat_main": true,
+  "parts": {
+   "Mag": {
+    "objects": [
+     "SniperRifle6_01_2"
+    ]
+   },
+   "Trigger": {
+    "objects": [
+     "SniperRifle6_01_3"
+    ]
+   }
+  },
+  "iron_post": true
+ },
+ "AXMC": {
+  "src": "C:/Project/007/Assets/LowPolyWeapons2/Models/SniperRifles/SniperRifle_02_C1.fbx",
+  "muzzle": "+X",
+  "length": 1.2,
+  "kind": "rifle",
+  "mat_main": true,
+  "parts": {
+   "Mag": {
+    "objects": [
+     "SniperRifle_02_C1_3"
+    ]
+   },
+   "Trigger": {
+    "objects": [
+     "SniperRifle_02_C1_4"
+    ]
+   }
+  },
+  "remove_sockets": [
+   "Sight_Iron"
+  ],
+  "sockets": {
+   "Socket_Underbarrel": [
+    418,
+    21,
+    0
+   ]
+  }
+ },
+ "RPG7": {
+  "src": "C:/Project/007/Assets/LowPolyWeapons2/Models/HeavyWeapons/HW_01_C1.fbx",
+  "muzzle": "+X",
+  "length": 1.3,
+  "kind": "launcher",
+  "mat_main": true,
+  "parts": {
+   "Mag": {
+    "objects": [
+     "HW_01_C1_3"
+    ]
+   },
+   "Trigger": {
+    "objects": [
+     "HW_01_C1_2"
+    ]
+   }
+  },
+  "origin": [
+   0.034,
+   0.06,
+   0.0
+  ],
+  "rake": 5,
+  "sockets": {
+   "Socket_Muzzle": [
+    163,
+    41,
+    0
+   ],
+   "Grip_R": [
+    -38,
+    -31,
+    0
+   ],
+   "Grip_L": [
+    86,
+    41,
+    0
+   ],
+   "Sight_Iron": [
+    -190,
+    126,
+    -24.5
+   ],
+   "Socket_Mag": [
+    163,
+    41,
+    0
+   ],
+   "Eject": [
+    -764,
+    41,
+    0
+   ],
+   "Socket_Butt": [
+    -284,
+    -10,
+    0
+   ]
+  },
+  "remove_sockets": [
+   "Socket_Optic",
+   "Socket_Underbarrel",
+   "Socket_Side"
+  ]
+ }
+}

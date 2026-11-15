@@ -26,7 +26,8 @@ namespace FPS
 
         void DispatchDisco(Msg m, BinaryReader r, bool fromHost)
         {
-            if (m != Msg.DiscoVolley || !fromHost) return;
+            if (m != Msg.DiscoVolley) { DispatchClasses(m, r, fromHost); return; }
+            if (!fromHost) return;
             var head = DiscoHead.Instance;
             int n = r.ReadByte();
             if (n == 0) { if (head) head.LocalWarn(); return; }

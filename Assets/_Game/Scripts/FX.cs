@@ -43,6 +43,9 @@ namespace FPS
 
         public void SetPlayer(Collider c) => player = c;
 
+        /// <summary>Spent casings and dropped magazines: Ignore Raycast, so they bounce on the world but rays skip them.</summary>
+        const int DebrisLayer = 2;
+
         void Awake()
         {
             Instance = this;
@@ -119,6 +122,9 @@ namespace FPS
             {
                 var s = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
                 s.name = "Shell";
+                // physics only: rays (shots, the weapon's wall probe) pass through casings. The probe caught the casings
+                // of a burst while strafing into them and jerked the aimed gun up
+                s.layer = DebrisLayer;
                 s.transform.SetParent(transform, false);
                 s.transform.localScale = new Vector3(0.011f, 0.0125f, 0.011f);
                 var mr = s.GetComponent<MeshRenderer>();
@@ -263,6 +269,7 @@ namespace FPS
         {
             var clone = Instantiate(mag.gameObject, mag.position, mag.rotation);
             clone.name = "DroppedMag";
+            foreach (var t in clone.GetComponentsInChildren<Transform>(true)) t.gameObject.layer = DebrisLayer;
             clone.transform.localScale = mag.lossyScale;
             var rends = clone.GetComponentsInChildren<Renderer>();
             if (rends.Length == 0) { Destroy(clone); return; }

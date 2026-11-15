@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d1cf36ecf367a894cad4ba0e68d8f596, type: 3}
+  m_Name: Weapon_RPG7
+  m_EditorClassIdentifier: Assembly-CSharp::FPS.WeaponData
+  weaponName: "\u0420\u041F\u0413-7"
+  modelId: RPG7
+  model: {fileID: 919132149155446097, guid: bb44bc6eb5707184581e4fb37ee4afaf, type: 3}
+  slots: []
+  boltPart: Bolt
+  slideCycles: 0
+  boltReciprocates: 0
+  boltTravel: 0.085
+  cycleTravel: 0.035
+  boltLiftAngle: 0
+  flashScale: 0.5
+  modelScale: 1.08
+  hipOffset: {x: 0, y: 0, z: 0}
+  shellMaterial: {fileID: 2100000, guid: d095aaa54060b6943b93da7e9cf2d1fb, type: 2}
+  shellLength: 0.071
+  shellDiameter: 0.012
+  capacity: 1

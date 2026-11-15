@@ -17,7 +17,7 @@ namespace FPS.EditorTools
     /// </summary>
     public static class MapCheck
     {
-        static readonly string[] Maps = { "Map_Port", "Map_Town", "Map_Warehouse", "Map_Plant", "Map_Village", "Map_Flooded", "Map_Disco" };
+        static readonly string[] Maps = { "Map_Port", "Map_Town", "Map_Warehouse", "Map_Plant", "Map_Village", "Map_Flooded", "Map_Disco", "Map_Downtown", "Map_Bazaar", "Map_Suburb", "Map_Depot", "Map_Station", "Map_Construction", "Map_DesertBase", "Map_Factory" };
 
         [MenuItem("Tools/FPS/Check Maps", priority = 30)]
         public static void Run()
@@ -28,7 +28,9 @@ namespace FPS.EditorTools
                 string path = "Assets/Scenes/" + m + ".unity";
                 if (!File.Exists(path)) { sb.AppendLine(m + ": NOT BUILT"); continue; }
                 EditorSceneManager.OpenScene(path);
-                CheckMap(m, sb);
+                // a scene whose asset pack is gone (missing prefabs, no NavMesh) is reported, not allowed to stop the run
+                try { CheckMap(m, sb); }
+                catch (System.Exception e) { sb.AppendLine(m + ": CHECK FAILED — " + e.GetType().Name + ": " + e.Message); }
             }
             CheckHitboxes(sb);
             string outPath = Path.Combine(Application.dataPath, "../Logs/fps_check.txt");
@@ -90,6 +92,12 @@ namespace FPS.EditorTools
                 var cr = Vector3.Cross(b - a, c - a);
                 total += cr.normalized.y < 0.8f ? 0f : cr.magnitude * 0.5f;
                 cum[i] = total;
+            }
+            if (cum.Length == 0 || total <= 0f || navSpawns.Count == 0)
+            {
+                foreach (var c in ccs) c.enabled = true;
+                sb.AppendLine($"{name}: spawns {spawns.Length} (off-nav {off}) — EMPTY NAVMESH or no spawn on it (missing asset pack?)");
+                return;
             }
             var rnd = new System.Random(3);
             int samples = 600, unreachable = 0, inProp = 0, onCover = 0, ok = 0;

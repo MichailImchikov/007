@@ -1,0 +1,84 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d1cf36ecf367a894cad4ba0e68d8f596, type: 3}
+  m_Name: Weapon_QBZ191
+  m_EditorClassIdentifier: Assembly-CSharp::FPS.WeaponData
+  weaponName: QBZ-191
+  modelId: QBZ191
+  model: {fileID: 919132149155446097, guid: f8954836f91eedd489ad737fd49e35ce, type: 3}
+  slots:
+  - slot: 0
+    socket: Socket_Optic
+    parentPart: 
+    required: 0
+    defaultAttachment: {fileID: 11400000, guid: f088974b999a7634e93a2b26ab42f96c,
+      type: 2}
+    allowed:
+    - {fileID: 11400000, guid: f088974b999a7634e93a2b26ab42f96c, type: 2}
+    - {fileID: 11400000, guid: 6a757a934e3576e4d85357594814fb3f, type: 2}
+    - {fileID: 11400000, guid: 80b5d17d7775c824e9f63dc2addfe9a1, type: 2}
+    - {fileID: 11400000, guid: 89b1635446391e447b121e843d86d880, type: 2}
+    - {fileID: 11400000, guid: 06fdd10dd6adaf94fb4c60394094caa9, type: 2}
+    - {fileID: 11400000, guid: 99c969a20684f014298778284a07021b, type: 2}
+    - {fileID: 11400000, guid: 6685f84be43c3fc42b0706ee38b55e38, type: 2}
+    - {fileID: 11400000, guid: 7d09d1823cf56f640b16e9b503fff0ee, type: 2}
+    - {fileID: 11400000, guid: 1e50811d32600e94b94d7c19ec5ba03f, type: 2}
+    - {fileID: 11400000, guid: 07a75eeabb432ea47984bd0e7c39f7d3, type: 2}
+  - slot: 1
+    socket: Socket_Muzzle
+    parentPart: 
+    required: 0
+    defaultAttachment: {fileID: 0}
+    allowed:
+    - {fileID: 11400000, guid: 51c89838c96d0a348be109bfb657dbda, type: 2}
+    - {fileID: 11400000, guid: e6b02087102b88343b9d51c983c7c2fa, type: 2}
+    - {fileID: 11400000, guid: 9accbac3500c12e4db4122985e7da01c, type: 2}
+    - {fileID: 11400000, guid: 667fef7d559078c41a7320d2f020a95f, type: 2}
+    - {fileID: 11400000, guid: b133beb534d984e4c9df19c5a6c466f5, type: 2}
+    - {fileID: 11400000, guid: 4db3a8522508a7c469e539f5ec8eb5df, type: 2}
+    - {fileID: 11400000, guid: eddf9280b72ec6c4583b074dc3a18623, type: 2}
+    - {fileID: 11400000, guid: 83cffbf8b503763499d01233c7f49fd6, type: 2}
+  - slot: 2
+    socket: Socket_Underbarrel
+    parentPart: 
+    required: 0
+    defaultAttachment: {fileID: 0}
+    allowed:
+    - {fileID: 11400000, guid: 30748c78b638f774c9e8a602e0218b9b, type: 2}
+    - {fileID: 11400000, guid: c7a3cdbdb6dd3e048a31db95815a80e8, type: 2}
+    - {fileID: 11400000, guid: 64f98c9cadb2d5b45b5e144473a9cd91, type: 2}
+    - {fileID: 11400000, guid: b588d2c10c9af7949b6188c12fd782de, type: 2}
+    - {fileID: 11400000, guid: f8c12ff9c73c05941a26321c2bbea87b, type: 2}
+    - {fileID: 11400000, guid: 6ce0162be99318041968ebce117c35d1, type: 2}
+    - {fileID: 11400000, guid: dc0d9eb6fb62a1a4086789d92175c704, type: 2}
+    - {fileID: 11400000, guid: 12c2ee9251f93194899f715fe8683b10, type: 2}
+  - slot: 3
+    socket: Socket_Side
+    parentPart: 
+    required: 0
+    defaultAttachment: {fileID: 0}
+    allowed:
+    - {fileID: 11400000, guid: b98d2a446a9cab54b828ea70bf2253ba, type: 2}
+    - {fileID: 11400000, guid: 5fa3d6a510a9fab49afc20a86799872f, type: 2}
+  boltPart: Bolt
+  slideCycles: 0
+  boltReciprocates: 0
+  boltTravel: 0.07
+  cycleTravel: 0.035
+  boltLiftAngle: 0
+  flashScale: 1
+  modelScale: 1.15
+  hipOffset: {x: 0, y: 0, z: 0}
+  shellMaterial: {fileID: 2100000, guid: d095aaa54060b6943b93da7e9cf2d1fb, type: 2}
+  shellLength: 0.071
+  shellDiameter: 0.012
+  capacity: 30

@@ -1,0 +1,526 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2a73c65f6bae61c4b9ea1ce67e407b87, type: 3}
+  m_Name: KimodoLibrary
+  m_EditorClassIdentifier: Assembly-CSharp-Editor::FPS.EditorTools.Kimodo.KimodoLibrary
+  serverUrl: http://127.0.0.1:7861
+  kimodoRoot: E:/Kimodo
+  diffusionSteps: 100
+  cfg: {x: 2, y: 2}
+  presets:
+  - enabled: 1
+    slot: Idle
+    prompt: A person stands still in a relaxed ready stance with feet shoulder width
+      apart.
+    duration: 6
+    velocity: {x: 0, y: 0}
+    constrainPath: 1
+    process: 1
+    loopLength: {x: 2, y: 4.5}
+    seed: 7
+    upperBody: 0
+    playbackSpeed: 1
+    levelHead: 1
+    reverseOf: 
+    torsoPitch: -1
+    straightLegs: 0
+    crouchHips: 0
+    crouchStride: 1
+    crouchLift: 0.1
+  - enabled: 1
+    slot: Walk_F
+    prompt: A person walks forward at a steady pace, looking straight ahead.
+    duration: 5
+    velocity: {x: 0, y: 1.45}
+    constrainPath: 1
+    process: 0
+    loopLength: {x: 0.55, y: 1.6}
+    seed: 7
+    upperBody: 0
+    playbackSpeed: 1
+    levelHead: 1
+    reverseOf: 
+    torsoPitch: -1
+    straightLegs: 0
+    crouchHips: 0
+    crouchStride: 1
+    crouchLift: 0.1
+  - enabled: 1
+    slot: Walk_B
+    prompt: A person walks backward at a steady pace, looking straight ahead.
+    duration: 5
+    velocity: {x: 0, y: -1.45}
+    constrainPath: 1
+    process: 0
+    loopLength: {x: 0.55, y: 1.6}
+    seed: 7
+    upperBody: 0
+    playbackSpeed: 1
+    levelHead: 1
+    reverseOf: 
+    torsoPitch: 8
+    straightLegs: 0
+    crouchHips: 0
+    crouchStride: 1
+    crouchLift: 0.1
+  - enabled: 1
+    slot: Walk_L
+    prompt: A person sidesteps to the left, looking straight ahead.
+    duration: 5
+    velocity: {x: -1.45, y: 0}
+    constrainPath: 1
+    process: 0
+    loopLength: {x: 0.55, y: 1.6}
+    seed: 7
+    upperBody: 0
+    playbackSpeed: 1
+    levelHead: 1
+    reverseOf: 
+    torsoPitch: 8
+    straightLegs: 0
+    crouchHips: 0
+    crouchStride: 1
+    crouchLift: 0.1
+  - enabled: 1
+    slot: Walk_R
+    prompt: A person sidesteps to the right, looking straight ahead.
+    duration: 5
+    velocity: {x: 1.45, y: 0}
+    constrainPath: 1
+    process: 0
+    loopLength: {x: 0.55, y: 1.6}
+    seed: 7
+    upperBody: 0
+    playbackSpeed: 1
+    levelHead: 1
+    reverseOf: 
+    torsoPitch: 8
+    straightLegs: 0
+    crouchHips: 0
+    crouchStride: 1
+    crouchLift: 0.1
+  - enabled: 1
+    slot: Jog_F
+    prompt: A person jogs forward, looking straight ahead.
+    duration: 5
+    velocity: {x: 0, y: 4.6}
+    constrainPath: 1
+    process: 0
+    loopLength: {x: 0.55, y: 1.6}
+    seed: 7
+    upperBody: 0
+    playbackSpeed: 1
+    levelHead: 1
+    reverseOf: 
+    torsoPitch: 12
+    straightLegs: 0
+    crouchHips: 0
+    crouchStride: 1
+    crouchLift: 0.1
+  - enabled: 1
+    slot: Jog_B
+    prompt: A person jogs backward, looking straight ahead.
+    duration: 5
+    velocity: {x: 0, y: -4.6}
+    constrainPath: 1
+    process: 0
+    loopLength: {x: 0.55, y: 1.6}
+    seed: 7
+    upperBody: 0
+    playbackSpeed: 1
+    levelHead: 1
+    reverseOf: 
+    torsoPitch: 10
+    straightLegs: 0
+    crouchHips: 0
+    crouchStride: 1
+    crouchLift: 0.1
+  - enabled: 1
+    slot: Jog_L
+    prompt: A person jogs sideways to the left, looking straight ahead.
+    duration: 5
+    velocity: {x: -4.6, y: 0}
+    constrainPath: 1
+    process: 0
+    loopLength: {x: 0.55, y: 1.6}
+    seed: 7
+    upperBody: 0
+    playbackSpeed: 1
+    levelHead: 1
+    reverseOf: 
+    torsoPitch: 10
+    straightLegs: 0
+    crouchHips: 0
+    crouchStride: 1
+    crouchLift: 0.1
+  - enabled: 1
+    slot: Jog_R
+    prompt: A person jogs sideways to the right, looking straight ahead.
+    duration: 5
+    velocity: {x: 4.6, y: 0}
+    constrainPath: 1
+    process: 0
+    loopLength: {x: 0.55, y: 1.6}
+    seed: 7
+    upperBody: 0
+    playbackSpeed: 1
+    levelHead: 1
+    reverseOf: 
+    torsoPitch: 10
+    straightLegs: 0
+    crouchHips: 0
+    crouchStride: 1
+    crouchLift: 0.1
+  - enabled: 1
+    slot: Sprint_F
+    prompt: A person sprints forward, looking straight ahead.
+    duration: 4
+    velocity: {x: 0, y: 6.2}
+    constrainPath: 1
+    process: 0
+    loopLength: {x: 0.55, y: 1.6}
+    seed: 11
+    upperBody: 0
+    playbackSpeed: 1.1935484
+    levelHead: 1
+    reverseOf: 
+    torsoPitch: 22
+    straightLegs: 0
+    crouchHips: 0
+    crouchStride: 1
+    crouchLift: 0.1
+  - enabled: 1
+    slot: Crouch_Idle
+    prompt: A person crouches low and stays still.
+    duration: 6
+    velocity: {x: 0, y: 0}
+    constrainPath: 1
+    process: 1
+    loopLength: {x: 2, y: 4.5}
+    seed: 7
+    upperBody: 0
+    playbackSpeed: 1
+    levelHead: 1
+    reverseOf: 
+    torsoPitch: 48
+    straightLegs: 0
+    crouchHips: 0.42
+    crouchStride: 0.8
+    crouchLift: 0.08
+  - enabled: 1
+    slot: Crouch_F
+    prompt: A person walks forward while crouching low, looking straight ahead.
+    duration: 5
+    velocity: {x: 0, y: 2.5}
+    constrainPath: 1
+    process: 0
+    loopLength: {x: 0.55, y: 1.6}
+    seed: 7
+    upperBody: 0
+    playbackSpeed: 1
+    levelHead: 1
+    reverseOf: 
+    torsoPitch: 48
+    straightLegs: 0
+    crouchHips: 0.42
+    crouchStride: 0.9
+    crouchLift: 0.08
+  - enabled: 1
+    slot: Crouch_B
+    prompt: (Crouch_F played backward)
+    duration: 0
+    velocity: {x: 0, y: -2.5}
+    constrainPath: 1
+    process: 0
+    loopLength: {x: 0.55, y: 1.6}
+    seed: 7
+    upperBody: 0
+    playbackSpeed: 1
+    levelHead: 1
+    reverseOf: Crouch_F
+    torsoPitch: -1
+    straightLegs: 0
+    crouchHips: 0
+    crouchStride: 1
+    crouchLift: 0.1
+  - enabled: 1
+    slot: Crouch_L
+    prompt: A person sidesteps to the left while crouching low, looking straight
+      ahead.
+    duration: 5
+    velocity: {x: -2.5, y: 0}
+    constrainPath: 1
+    process: 0
+    loopLength: {x: 0.55, y: 1.6}
+    seed: 7
+    upperBody: 0
+    playbackSpeed: 1
+    levelHead: 1
+    reverseOf: 
+    torsoPitch: 48
+    straightLegs: 0
+    crouchHips: 0.42
+    crouchStride: 0.8
+    crouchLift: 0.08
+  - enabled: 1
+    slot: Crouch_R
+    prompt: A person sidesteps to the right while crouching low, looking straight
+      ahead.
+    duration: 5
+    velocity: {x: 2.5, y: 0}
+    constrainPath: 1
+    process: 0
+    loopLength: {x: 0.55, y: 1.6}
+    seed: 7
+    upperBody: 0
+    playbackSpeed: 1
+    levelHead: 1
+    reverseOf: 
+    torsoPitch: 48
+    straightLegs: 0
+    crouchHips: 0.42
+    crouchStride: 0.8
+    crouchLift: 0.08
+  - enabled: 1
+    slot: Prone_Idle
+    prompt: A person lies on their stomach on the ground, propped on their elbows.
+    duration: 6
+    velocity: {x: 0, y: 0}
+    constrainPath: 1
+    process: 1
+    loopLength: {x: 2, y: 4.5}
+    seed: 7
+    upperBody: 0
+    playbackSpeed: 1
+    levelHead: 1
+    reverseOf: 
+    torsoPitch: -1
+    straightLegs: 1
+    crouchHips: 0
+    crouchStride: 1
+    crouchLift: 0.1
+  - enabled: 1
+    slot: Prone_F
+    prompt: A person lying on their stomach crawls forward.
+    duration: 8
+    velocity: {x: 0, y: 0.3}
+    constrainPath: 0
+    process: 0
+    loopLength: {x: 1, y: 3}
+    seed: 3
+    upperBody: 0
+    playbackSpeed: 2
+    levelHead: 1
+    reverseOf: 
+    torsoPitch: -1
+    straightLegs: 0
+    crouchHips: 0
+    crouchStride: 1
+    crouchLift: 0.1
+  - enabled: 1
+    slot: Prone_B
+    prompt: (Prone_F played backward)
+    duration: 0
+    velocity: {x: 0, y: -0.3}
+    constrainPath: 1
+    process: 0
+    loopLength: {x: 0.55, y: 1.6}
+    seed: 7
+    upperBody: 0
+    playbackSpeed: 1
+    levelHead: 1
+    reverseOf: Prone_F
+    torsoPitch: -1
+    straightLegs: 0
+    crouchHips: 0
+    crouchStride: 1
+    crouchLift: 0.1
+  - enabled: 1
+    slot: Prone_L
+    prompt: A person lying on their stomach crawls to the left.
+    duration: 6
+    velocity: {x: -0.5, y: 0}
+    constrainPath: 1
+    process: 0
+    loopLength: {x: 0.9, y: 2.6}
+    seed: 7
+    upperBody: 0
+    playbackSpeed: 2.3
+    levelHead: 1
+    reverseOf: 
+    torsoPitch: -1
+    straightLegs: 0
+    crouchHips: 0
+    crouchStride: 1
+    crouchLift: 0.1
+  - enabled: 1
+    slot: Prone_R
+    prompt: A person lying on their stomach crawls to the right.
+    duration: 6
+    velocity: {x: 0.5, y: 0}
+    constrainPath: 1
+    process: 0
+    loopLength: {x: 0.9, y: 2.6}
+    seed: 7
+    upperBody: 0
+    playbackSpeed: 2.3
+    levelHead: 1
+    reverseOf: 
+    torsoPitch: -1
+    straightLegs: 0
+    crouchHips: 0
+    crouchStride: 1
+    crouchLift: 0.1
+  - enabled: 1
+    slot: Jump
+    prompt: A person jumps up in place.
+    duration: 2.5
+    velocity: {x: 0, y: 0}
+    constrainPath: 0
+    process: 4
+    loopLength: {x: 0.55, y: 1.6}
+    seed: 7
+    upperBody: 0
+    playbackSpeed: 1
+    levelHead: 1
+    reverseOf: 
+    torsoPitch: -1
+    straightLegs: 0
+    crouchHips: 0
+    crouchStride: 1
+    crouchLift: 0.1
+  - enabled: 0
+    slot: Slide
+    prompt: A person runs forward and slides feet first on the ground.
+    duration: 2.5
+    velocity: {x: 0, y: 0}
+    constrainPath: 0
+    process: 2
+    loopLength: {x: 0.55, y: 1.6}
+    seed: 7
+    upperBody: 0
+    playbackSpeed: 1
+    levelHead: 1
+    reverseOf: 
+    torsoPitch: -1
+    straightLegs: 0
+    crouchHips: 0
+    crouchStride: 1
+    crouchLift: 0.1
+  - enabled: 1
+    slot: Vault
+    prompt: A person vaults over a low wall using one hand.
+    duration: 2.2
+    velocity: {x: 0, y: 0}
+    constrainPath: 0
+    process: 3
+    loopLength: {x: 0.55, y: 1.6}
+    seed: 7
+    upperBody: 0
+    playbackSpeed: 1
+    levelHead: 1
+    reverseOf: 
+    torsoPitch: -1
+    straightLegs: 0
+    crouchHips: 0
+    crouchStride: 1
+    crouchLift: 0.1
+  - enabled: 1
+    slot: Mantle
+    prompt: A person climbs up onto a high ledge.
+    duration: 2.4
+    velocity: {x: 0, y: 0}
+    constrainPath: 0
+    process: 3
+    loopLength: {x: 0.55, y: 1.6}
+    seed: 7
+    upperBody: 0
+    playbackSpeed: 1
+    levelHead: 1
+    reverseOf: 
+    torsoPitch: -1
+    straightLegs: 0
+    crouchHips: 0
+    crouchStride: 1
+    crouchLift: 0.1
+  - enabled: 1
+    slot: Death_B
+    prompt: A person gets shot and falls backward onto the ground.
+    duration: 3
+    velocity: {x: 0, y: 0}
+    constrainPath: 0
+    process: 2
+    loopLength: {x: 0.55, y: 1.6}
+    seed: 7
+    upperBody: 0
+    playbackSpeed: 1
+    levelHead: 1
+    reverseOf: 
+    torsoPitch: -1
+    straightLegs: 0
+    crouchHips: 0
+    crouchStride: 1
+    crouchLift: 0.1
+  - enabled: 1
+    slot: Death_F
+    prompt: A person gets shot and collapses forward onto the ground.
+    duration: 3
+    velocity: {x: 0, y: 0}
+    constrainPath: 0
+    process: 2
+    loopLength: {x: 0.55, y: 1.6}
+    seed: 7
+    upperBody: 0
+    playbackSpeed: 1
+    levelHead: 1
+    reverseOf: 
+    torsoPitch: -1
+    straightLegs: 0
+    crouchHips: 0
+    crouchStride: 1
+    crouchLift: 0.1
+  - enabled: 1
+    slot: Throw
+    prompt: A person throws overhand with the right arm.
+    duration: 1.6
+    velocity: {x: 0, y: 0}
+    constrainPath: 0
+    process: 2
+    loopLength: {x: 0.55, y: 1.6}
+    seed: 7
+    upperBody: 1
+    playbackSpeed: 1
+    levelHead: 1
+    reverseOf: 
+    torsoPitch: -1
+    straightLegs: 0
+    crouchHips: 0
+    crouchStride: 1
+    crouchLift: 0.1
+  - enabled: 1
+    slot: Knife
+    prompt: A person slashes forward with the right hand.
+    duration: 1.2
+    velocity: {x: 0, y: 0}
+    constrainPath: 0
+    process: 2
+    loopLength: {x: 0.55, y: 1.6}
+    seed: 7
+    upperBody: 1
+    playbackSpeed: 1
+    levelHead: 1
+    reverseOf: 
+    torsoPitch: -1
+    straightLegs: 0
+    crouchHips: 0
+    crouchStride: 1
+    crouchLift: 0.1

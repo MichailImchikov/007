@@ -102,10 +102,16 @@ namespace FPS
             }
         }
 
+        /// <summary>Automated tests: move as if the keys were held (zero = off).</summary>
+        public static Vector2 ForceMove;
+        /// <summary>Automated tests: hold the trigger / crouch / sprint as if the keys were held.</summary>
+        public static bool ForceFire, ForceCrouch, ForceSprint;
+
         public static Vector2 Move
         {
             get
             {
+                if (ForceMove != Vector2.zero) return Vector2.ClampMagnitude(ForceMove, 1f);
                 if (!Enabled) return Vector2.zero;
                 var v = RawMove;
                 return Inverted ? -v : v;
@@ -162,7 +168,7 @@ namespace FPS
             else aimOn = false;
         }
 
-        public static bool FireHeld => Enabled && (H(BindAction.Fire) || (G != null && G.rightTrigger.isPressed));
+        public static bool FireHeld => ForceFire || (Enabled && (H(BindAction.Fire) || (G != null && G.rightTrigger.isPressed)));
         public static bool FirePressed => Enabled && (P(BindAction.Fire) || (G != null && G.rightTrigger.wasPressedThisFrame));
 
         /// <summary>Automated tests (ADS screenshots): aim as if the button were held.</summary>
@@ -183,6 +189,7 @@ namespace FPS
         {
             get
             {
+                if (ForceSprint) return true;
                 if (!Enabled) return false;
                 if (GameSettings.SprintToggle) { UpdateLatches(); return sprintOn; }
                 return H(BindAction.Sprint) || (G != null && G.leftStickButton.isPressed);
@@ -192,7 +199,7 @@ namespace FPS
         public static bool ReloadPressed => Enabled && (P(BindAction.Reload) || (G != null && G.buttonWest.wasPressedThisFrame));
         public static bool JumpPressed => Enabled && (P(BindAction.Jump) || (G != null && G.buttonSouth.wasPressedThisFrame));
         public static bool JumpHeld => Enabled && (H(BindAction.Jump) || (G != null && G.buttonSouth.isPressed));
-        public static bool CrouchHeld => Enabled && !GameSettings.CrouchHoldIsToggle && H(BindAction.CrouchHold);
+        public static bool CrouchHeld => ForceCrouch || (Enabled && !GameSettings.CrouchHoldIsToggle && H(BindAction.CrouchHold));
         public static bool CrouchHoldPressed => Enabled && !GameSettings.CrouchHoldIsToggle && P(BindAction.CrouchHold);
         public static bool CrouchTogglePressed => Enabled && (P(BindAction.CrouchToggle) || (GameSettings.CrouchHoldIsToggle && P(BindAction.CrouchHold))
                                                               || (G != null && G.buttonEast.wasPressedThisFrame));
@@ -204,8 +211,23 @@ namespace FPS
         public static bool GrenadePressed => Enabled && (P(BindAction.Grenade) || (G != null && G.rightShoulder.wasPressedThisFrame));
         public static bool GrenadeHeld => H(BindAction.Grenade) || (G != null && G.rightShoulder.isPressed);
         public static bool PickupPressed => Enabled && (P(BindAction.Pickup) || (G != null && G.buttonNorth.wasPressedThisFrame));
+        /// <summary>The pickup key held: plant / defuse the bomb.</summary>
+        public static bool InteractHeld => ForceInteractHeld || (Enabled && (H(BindAction.Pickup) || (G != null && G.buttonNorth.isPressed)));
+        public static bool ForceInteractHeld;
         public static bool Slot1Pressed => Enabled && P(BindAction.Primary);
         public static bool Slot2Pressed => Enabled && P(BindAction.Secondary);
+        /// <summary>The class key (3): the class ability, the engineer's launcher; held next to a fallen ally — a medic's revive.</summary>
+        public static bool ClassAbilityPressed
+        {
+            get
+            {
+                if (ForceClassPress) { ForceClassPress = false; return true; }
+                return Enabled && P(BindAction.ClassAbility);
+            }
+        }
+        public static bool ClassAbilityHeld => ForceClassHeld || (Enabled && H(BindAction.ClassAbility));
+        /// <summary>Tests: one press of the class key (consumed when read) / the key held.</summary>
+        public static bool ForceClassPress, ForceClassHeld;
         public static bool AbilityHeld => Enabled && (H(BindAction.Ability) || (G != null && G.selectButton.isPressed));
         public static bool AbilityPressed => Enabled && (P(BindAction.Ability) || (G != null && G.selectButton.wasPressedThisFrame));
         public static bool SwapPressed => Enabled && ((M != null && Mathf.Abs(M.scroll.ReadValue().y) > 0.1f) || (G != null && G.leftShoulder.wasPressedThisFrame));
@@ -213,5 +235,7 @@ namespace FPS
         public static bool ScoreboardHeld => H(BindAction.Scoreboard) || (G != null && G.startButton.isPressed);
         /// <summary>Melee key held — held long enough it toggles the flashlight.</summary>
         public static bool FlashlightHeld => Enabled && (H(BindAction.Melee) || (G != null && G.rightStickButton.isPressed));
+        /// <summary>Switches the weapon's laser sight on / off (T).</summary>
+        public static bool LaserTogglePressed => Enabled && P(BindAction.Laser);
     }
 }

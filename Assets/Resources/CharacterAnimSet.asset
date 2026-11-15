@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 21e84f2cd46d02c468200ad663a458de, type: 3}
+  m_Name: CharacterAnimSet
+  m_EditorClassIdentifier: Assembly-CSharp::FPS.CharacterAnimSet
+  controller: {fileID: 9100000, guid: 85a4adb48ea280143812da4d0c93551c, type: 2}
+  armsMask: {fileID: 31900000, guid: 071b403863d9d7f40a989925a1c23269, type: 2}
+  upperBodyMask: {fileID: 31900000, guid: fff0ff40e78a36f46b2292e376ac2b0d, type: 2}
+  fingersMask: {fileID: 31900000, guid: bebe3086c3a72904984b318dbe808791, type: 2}
+  rifleHold: {fileID: 11400000, guid: 959984731f872f34db0afdb4e49faca8, type: 2}
+  pistolHold: {fileID: 11400000, guid: b1cf8b276cc7c6d4a97e14325ae20067, type: 2}
+  unarmedHold: {fileID: 0}
+  reloadRifle: {fileID: 7400000, guid: 5624ef018e6f3fc47980891b569a94da, type: 2}
+  throwGrenade: {fileID: 7400000, guid: 74768b5dcce6769458f4a05269f77b3f, type: 2}
+  punch: {fileID: 7400000, guid: e68e6ca679376f24bb8a9ed0d615cb94, type: 2}
+  knifeSlash: {fileID: 7400000, guid: cb427d028c54427419cac1ea5838d856, type: 2}
+  restEyeHeight: 1.7419243
+  eyeOffset: {x: 0, y: 0.085, z: 0.105}
+  speeds: {x: 1.45, y: 4.6, z: 7.4, w: 2.5}
+  proneSpeed: 1.15

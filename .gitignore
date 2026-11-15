@@ -59,6 +59,9 @@ Thumbs.db
 
 /_Backup/
 
+# Kimodo raw generations (BVH / NPZ); the imported clips live in Assets/_Game/Animation/Kimodo
+/Tools/Kimodo/Output/
+
 # Asset Store packages (re-import from Asset Store, too large for GitHub)
 /[Aa]ssets/Flooded_Grounds/
 /[Aa]ssets/Flooded_Grounds.meta

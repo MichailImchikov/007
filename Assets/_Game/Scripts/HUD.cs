@@ -21,6 +21,8 @@ namespace FPS
         Camera cam;
 
         readonly RectTransform[] cross = new RectTransform[4];
+        RectTransform crossRoot;
+        Vector2 crossPos;
         readonly RectTransform[] hit = new RectTransform[4];
         readonly Image[] hitImg = new Image[4];
         Text ammoText, reserveText, modeText, weaponText, slotsText, grenadeText, statsText, lightText, promptText, speedText, fpsText, sprintText;
@@ -122,6 +124,7 @@ namespace FPS
 
             // ---- crosshair
             var center = Rect("Crosshair", transform, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(10, 10));
+            crossRoot = center;
             crossGroup = center.gameObject.AddComponent<CanvasGroup>();
             crossGroup.blocksRaycasts = false;
             Color cc = new Color(1f, 1f, 1f, 0.92f);
@@ -188,6 +191,7 @@ namespace FPS
             lightText.enabled = false;
             RefreshKeys();
             GameSettings.Changed += RefreshKeys;
+            ComicFX.Ensure(); // kill streak / speed comic effects under the HUD
         }
 
         void OnDestroy()
@@ -285,11 +289,15 @@ namespace FPS
             scopeAlpha = Mathf.MoveTowards(scopeAlpha, scopeOn ? 1f : 0f, dt * 12f);
             scopeGroup.alpha = scopeAlpha;
 
-            // dynamic crosshair: gap matches actual bullet spread on screen
+            // crosshair: where the barrel points (bullets fly along it, no random spread), its gap only a shotgun's
+            // pellet pattern
             float sf = Mathf.Max(0.01f, canvas.scaleFactor);
             float px = Mathf.Tan(weapon.CurrentSpread * Mathf.Deg2Rad) / Mathf.Tan(cam.fieldOfView * 0.5f * Mathf.Deg2Rad) * (Screen.height * 0.5f) / sf;
-            if (weapon.pellets > 1) px += Mathf.Tan(weapon.pelletSpread * Mathf.Deg2Rad) / Mathf.Tan(cam.fieldOfView * 0.5f * Mathf.Deg2Rad) * (Screen.height * 0.5f) / sf;
-            gap = Anim.Damp(gap, 5f + px, 22f, dt);
+            gap = Anim.Damp(gap, 4f + px, 22f, dt);
+            Vector3 sp = cam.WorldToScreenPoint(weapon.AimPoint());
+            Vector2 target = sp.z > 0.05f ? new Vector2(sp.x - Screen.width * 0.5f, sp.y - Screen.height * 0.5f) / sf : Vector2.zero;
+            crossPos = Vector2.Lerp(crossPos, target, 1f - Mathf.Exp(-30f * dt));
+            crossRoot.anchoredPosition = crossPos;
             bool busy = weapon.IsBusy || (motor && ((motor.IsSprinting && motor.Speed01 > 0.45f) || motor.IsVaulting)) || (melee && melee.Busy) || (loadout && loadout.Throwing);
             float targetAlpha = (1f - weapon.AimBlend) * (busy ? 0.2f : 1f);
             crossAlpha = Anim.Damp(crossAlpha, targetAlpha, 18f, dt);

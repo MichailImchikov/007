@@ -1,0 +1,61 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d1cf36ecf367a894cad4ba0e68d8f596, type: 3}
+  m_Name: Weapon_Glock17
+  m_EditorClassIdentifier: Assembly-CSharp::FPS.WeaponData
+  weaponName: Glock 17
+  modelId: Glock17
+  model: {fileID: 919132149155446097, guid: 71848a2cfe951e540a5b453b5d4ab8f3, type: 3}
+  slots:
+  - slot: 0
+    socket: Socket_Optic
+    parentPart: Slide
+    required: 0
+    defaultAttachment: {fileID: 0}
+    allowed:
+    - {fileID: 11400000, guid: 58dc1033439e314448c6c1a9b09c8b61, type: 2}
+  - slot: 1
+    socket: Socket_Muzzle
+    parentPart: 
+    required: 0
+    defaultAttachment: {fileID: 0}
+    allowed:
+    - {fileID: 11400000, guid: c61dee370c3f1cd4eaefcb30c6d979bb, type: 2}
+    - {fileID: 11400000, guid: 49c2f5ec4abb6644cbc6d57e1709e45f, type: 2}
+    - {fileID: 11400000, guid: 294fdc14f79e09145836c63bfee6e70f, type: 2}
+  - slot: 2
+    socket: Socket_Underbarrel
+    parentPart: 
+    required: 0
+    defaultAttachment: {fileID: 0}
+    allowed:
+    - {fileID: 11400000, guid: 87d0527a619fe2f449243812d22064bf, type: 2}
+  - slot: 4
+    socket: Socket_Mag
+    parentPart: 
+    required: 0
+    defaultAttachment: {fileID: 0}
+    allowed:
+    - {fileID: 11400000, guid: 802c111d62554944496eb6521690050e, type: 2}
+  boltPart: Slide
+  slideCycles: 1
+  boltReciprocates: 0
+  boltTravel: 0.05
+  cycleTravel: 0.04
+  boltLiftAngle: 0
+  flashScale: 0.7
+  modelScale: 1
+  hipOffset: {x: 0, y: 0, z: 0}
+  shellMaterial: {fileID: 2100000, guid: d095aaa54060b6943b93da7e9cf2d1fb, type: 2}
+  shellLength: 0.071
+  shellDiameter: 0.012
+  capacity: 17

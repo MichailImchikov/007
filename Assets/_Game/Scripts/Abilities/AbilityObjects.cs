@@ -19,6 +19,47 @@ namespace FPS
 
         public bool Flying => flying;
 
+        // the blast (the butt rocket's by default; a launcher sets its own)
+        float blastRadius = 6.5f, blastDamage = 125f, blastPush = 11f;
+        string blastName = "Ягодичная ракета";
+
+        public void SetBlast(float radius, float damage, float push, string weaponName)
+        {
+            blastRadius = radius; blastDamage = damage; blastPush = push; blastName = weaponName;
+        }
+
+        /// <summary>
+        /// A launcher's grenade: a copy of the weapon's loaded rocket model (its "magazine" part) with the procedural
+        /// rocket's exhaust flame and glow; falls back to the procedural rocket when the weapon has no rocket part.
+        /// </summary>
+        public static RocketProjectile CreateLauncherRocket(Transform rocketPart)
+        {
+            var r = Create(1.2f);
+            r.name = "LauncherRocket";
+            if (!rocketPart) return r;
+            // hide the procedural body, keep its flame
+            foreach (var rend in r.GetComponentsInChildren<Renderer>(true))
+                if (!rend.transform.IsChildOf(r.flame)) rend.enabled = false;
+            var copy = Instantiate(rocketPart.gameObject, r.transform);
+            copy.name = "RocketModel";
+            copy.SetActive(true);
+            foreach (var c in copy.GetComponentsInChildren<Collider>(true)) Destroy(c);
+            foreach (var rend in copy.GetComponentsInChildren<Renderer>(true))
+            {
+                rend.enabled = true;
+                rend.gameObject.layer = 0;
+                rend.shadowCastingMode = ShadowCastingMode.On;
+            }
+            // the part's axes are the weapon's (forward = the bore), so it flies nose first
+            copy.layer = 0;
+            copy.transform.localRotation = Quaternion.identity;
+            copy.transform.localScale = rocketPart.lossyScale;
+            // the copy's pivot is the rocket's seat in the tube (its rear): the warhead sits ahead of it
+            copy.transform.localPosition = Vector3.zero;
+            r.flame.localPosition = new Vector3(0f, 0f, -0.05f);
+            return r;
+        }
+
         public static RocketProjectile Create(float scale)
         {
             var go = new GameObject("ButtRocket");
@@ -101,7 +142,7 @@ namespace FPS
         void Explode(Vector3 p)
         {
             flying = false;
-            if (!visualOnly) Explosions.Detonate(p, 6.5f, 125f, 11f, owner, "Ягодичная ракета", transform);
+            if (!visualOnly) Explosions.Detonate(p, blastRadius, blastDamage, blastPush, owner, blastName, transform);
             Destroy(gameObject);
         }
     }

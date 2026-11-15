@@ -1,0 +1,51 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 964a63dbb02ae074d85a453a22a283be, type: 3}
+  m_Name: Suppressor_9mm
+  m_EditorClassIdentifier: Assembly-CSharp::FPS.AttachmentData
+  id: Suppressor_9mm
+  displayName: "\u0413\u043B\u0443\u0448\u0438\u0442\u0435\u043B\u044C 9 \u043C\u043C"
+  description: "\u041A\u043E\u043C\u043F\u0430\u043A\u0442\u043D\u044B\u0439 \u0433\u043B\u0443\u0448\u0438\u0442\u0435\u043B\u044C
+    \u0434\u043B\u044F \u041F\u041F: \u043F\u043E\u0447\u0442\u0438 \u0431\u0435\u0441\u0448\u0443\u043C\u043D\u043E,
+    \u0447\u0443\u0442\u044C \u043C\u0435\u043D\u044C\u0448\u0435 \u0434\u0430\u043B\u044C\u043D\u043E\u0441\u0442\u044C."
+  slot: 1
+  prefab: {fileID: 919132149155446097, guid: 364af4636e4628440b0464ef172cf90d, type: 3}
+  compatible:
+  - MPX
+  - Scorpion
+  - Vector
+  - SR2
+  - Glock17
+  recoilMul: 0.92
+  hipSpreadMul: 1
+  adsSpreadMul: 1
+  adsTimeMul: 1.05
+  moveSpeedMul: 1
+  reloadTimeMul: 1
+  rangeMul: 0.88
+  damageMul: 1
+  magnification: 1
+  adsFov: 0
+  aimDistance: 0
+  scoped: 0
+  opaqueSightLine: 0
+  addReticle: 0
+  reticleMaterial: {fileID: 0}
+  suppressed: 1
+  flashMul: 0.2
+  volumeMul: 0.33
+  noiseMul: 0.3
+  muzzleLength: 0.1575
+  magCapacity: 0
+  laser: 0
+  flashlight: 0
+  foregrip: 0

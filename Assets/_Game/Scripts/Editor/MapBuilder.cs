@@ -35,6 +35,14 @@ namespace FPS.EditorTools
             BuildVillage();
             BuildFlooded();
             BuildDisco();
+            BuildPackDowntown();
+            BuildPackBazaar();
+            BuildPackSuburb();
+            BuildPackDepot();
+            BuildPackStation();
+            BuildPackConstruction();
+            BuildPackDesertBase();
+            BuildFactory();
             if (!AssetDatabase.LoadAssetAtPath<SceneAsset>(ScenePath)) Build();
             SetBuildScenes();
             EditorSceneManager.OpenScene("Assets/Scenes/MainMenu.unity");

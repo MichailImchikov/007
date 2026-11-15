@@ -60,6 +60,8 @@ namespace FPS
 
         public static void Apply(WeaponController w)
         {
+            // modular Blender weapons (Resources/Weapons WeaponData): their own model + attachments replace the procedural gun
+            if (WeaponAssembler.Apply(w)) return;
             if (!w || !w.model || w.model.Find("ImportedModel")) return;
             var e = WeaponModelDB.Get(w.weaponName);
             if (e == null) return;

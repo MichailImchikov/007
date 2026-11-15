@@ -196,7 +196,15 @@ namespace FPS
 
         void OnKill(KillEvent e)
         {
-            string Col(Combatant c) => c ? (c.isPlayer ? "<color=#ffd84a>" + c.displayName + "</color>" : c.human ? "<color=#9fd3ff>" + c.displayName + "</color>" : c.displayName) : "?";
+            string Col(Combatant c)
+            {
+                if (!c) return "?";
+                if (c.isPlayer) return "<color=#ffd84a>" + c.displayName + "</color>";
+                // team game: allies blue, enemies red
+                var rel = Teams.RelationColor(c);
+                if (rel.HasValue) return "<color=#" + ColorUtility.ToHtmlStringRGB(rel.Value) + ">" + c.displayName + "</color>";
+                return c.human ? "<color=#9fd3ff>" + c.displayName + "</color>" : c.displayName;
+            }
             string line;
             if (!e.killer && e.weapon == DiscoClub.RocketWeapon) line = "<color=#ff4a3a>ГОЛОВА</color>  <color=#aaaaaa>[ракета]</color>  " + Col(e.victim);
             else if (!e.killer || e.killer == e.victim) line = Col(e.victim) + "  <color=#aaaaaa>[" + e.weapon + "]</color>  самоубийство";
@@ -219,6 +227,8 @@ namespace FPS
         }
 
         string FormatTime(float s) { int m = Mathf.FloorToInt(s / 60f); int sec = Mathf.FloorToInt(s % 60f); return $"{m:00}:{sec:00}"; }
+
+        static string TeamHex(int team) => ColorUtility.ToHtmlStringRGB(Teams.ColorOf(team));
 
         void Update()
         {
@@ -246,7 +256,11 @@ namespace FPS
                 {
                     var k = ph.LastKiller;
                     string by = !k ? (ph.LastKillerWeapon == DiscoClub.RocketWeapon ? "Вас накрыла ракета Головы" : "") : k.isPlayer ? "Вы подорвались сами" : $"Убийца: <b>{k.displayName}</b>  [{ph.LastKillerWeapon}]";
-                    string resp = mm && mm.Ended ? "" : $"\nВозрождение через {Mathf.CeilToInt(ph.RespawnIn)}";
+                    // (a team game's wait for a medic is shown by ClassHUD)
+                    string resp = mm && mm.Ended || ph.AwaitingRevive ? "" : $"\nВозрождение через {Mathf.CeilToInt(ph.RespawnIn)}";
+                    // one life per round: no countdown, the next round brings everybody back
+                    string dead = ObjectiveMode.Current && !(mm && mm.Ended) && !ph.AwaitingRevive ? ObjectiveMode.Current.DeadLine(ph.GetComponent<Combatant>()) : null;
+                    if (dead != null) resp = "\n" + dead;
                     string kit = mm && mm.Ended ? "" : ph.loadout && ph.loadout.ChoicePending
                         ? $"\n<size=20><color=#FFBD42>Следующая жизнь: {PlayerLoadout.Primary} · {PlayerLoadout.Secondary} · {PlayerLoadout.Melee}</color></size>"
                         : "\n<size=20><color=#FFFFFF90>Esc → Снаряжение — сменить оружие</color></size>";
@@ -293,7 +307,12 @@ namespace FPS
                 timerText.color = mm.TimeLeft < 30f ? new Color(1f, 0.4f, 0.3f) : Color.white;
                 var me = ph ? ph.GetComponent<Combatant>() : null;
                 var lead = mm.Leader;
-                scoreText.text = $"{mm.mapName}  ·  Вы: <b>{(me ? me.kills : 0)}</b>  ·  Лидер: {(lead ? lead.displayName : "-")} ({(lead ? lead.kills : 0)})  ·  до {MatchSettings.killLimit}";
+                if (ObjectiveMode.Current)
+                    scoreText.text = $"{mm.mapName}  ·  " + ObjectiveMode.Current.ScoreLine(me ? me.team : 0);
+                else if (Teams.Active)
+                    scoreText.text = $"{mm.mapName}  ·  <color=#{TeamHex(0)}><b>{Teams.Names[0].ToUpperInvariant()} {Teams.Score(0)}</b></color> : <color=#{TeamHex(1)}><b>{Teams.Score(1)} {Teams.Names[1].ToUpperInvariant()}</b></color>  ·  до {Teams.KillLimit}  ·  Вы: <b>{(me ? me.kills : 0)}</b>";
+                else
+                    scoreText.text = $"{mm.mapName}  ·  Вы: <b>{(me ? me.kills : 0)}</b>  ·  Лидер: {(lead ? lead.displayName : "-")} ({(lead ? lead.kills : 0)})  ·  до {MatchSettings.killLimit}";
             }
 
             // scoreboard (Tab) and end screen
@@ -303,17 +322,24 @@ namespace FPS
             endGroup.alpha = Mathf.MoveTowards(endGroup.alpha, ended ? 1f : 0f, dt * 2f);
             if (dm && (boardGroup.alpha > 0f))
             {
-                boardTitle.text = "DEATHMATCH — " + mm.mapName;
-                var rows = Combatant.All.Where(x => x).OrderByDescending(x => x.kills).ThenBy(x => x.deaths).ToList();
+                bool teams = Teams.Active;
+                boardTitle.text = (teams ? $"{(ObjectiveMode.Current ? ObjectiveMode.Current.Title : "КОМАНДНЫЙ БОЙ")} — {mm.mapName}   <color=#{TeamHex(0)}>{Teams.Score(0)}</color> : <color=#{TeamHex(1)}>{Teams.Score(1)}</color>" : "DEATHMATCH — " + mm.mapName);
+                // internet game: the join code for friends
+                if (NetOnline.Code != null) boardTitle.text += $"\n<size=22><color=#FFBD42>код игры: {NetOnline.Code}</color></size>";
+                // team game: the teams one after the other (own team first), each by kills
+                var me = ph ? ph.GetComponent<Combatant>() : null;
+                int myTeam = me ? me.team : 0;
+                var rows = Combatant.All.Where(x => x).OrderBy(x => teams ? (x.team == myTeam ? 0 : 1) : 0).ThenByDescending(x => x.kills).ThenBy(x => x.deaths).ToList();
                 var sn = new System.Text.StringBuilder("<color=#999999>Игрок</color>\n");
                 var sk = new System.Text.StringBuilder("<color=#999999>Убийства</color>\n");
                 var sd = new System.Text.StringBuilder("<color=#999999>Смерти</color>\n");
                 int n = 1;
                 foreach (var r in rows)
                 {
-                    string pre = r.isPlayer ? "<color=#ffd84a><b>" : !r.alive ? "<color=#888888>" : "";
-                    string post = r.isPlayer ? "</b></color>" : !r.alive ? "</color>" : "";
-                    sn.Append(pre).Append(n).Append(".  ").Append(r.displayName).Append(post).Append('\n');
+                    string pre = r.isPlayer ? "<color=#ffd84a><b>" : !r.alive ? "<color=#888888>" : teams && r.team >= 0 ? "<color=#" + TeamHex(r.team) + ">" : "";
+                    string post = r.isPlayer ? "</b></color>" : !r.alive || (teams && r.team >= 0) ? "</color>" : "";
+                    string cls = "  <size=16><color=#AAAAAA>" + ClassDB.Get(r.playerClass).name + "</color></size>";
+                    sn.Append(pre).Append(n).Append(".  ").Append(r.displayName).Append(post).Append(cls).Append('\n');
                     sk.Append(pre).Append(r.kills).Append(post).Append('\n');
                     sd.Append(pre).Append(r.deaths).Append(post).Append('\n');
                     n++;
@@ -325,9 +351,19 @@ namespace FPS
             if (ended)
             {
                 var w = mm.Winner;
-                endTitle.text = w && w.isPlayer ? "ПОБЕДА!" : "МАТЧ ОКОНЧЕН";
-                endSub.text = (w ? "Победитель: " + w.displayName + " — " + w.kills + " убийств.   " : "") +
-                              $"Enter — сыграть снова · Esc — меню · авто-рестарт через {Mathf.CeilToInt(25f - (Time.unscaledTime - mm.EndTime))}";
+                string again = $"Enter — сыграть снова · Esc — меню · авто-рестарт через {Mathf.CeilToInt(25f - (Time.unscaledTime - mm.EndTime))}";
+                if (Teams.Active)
+                {
+                    var me = ph ? ph.GetComponent<Combatant>() : null;
+                    int wt = mm.WinnerTeam;
+                    endTitle.text = wt < 0 ? "НИЧЬЯ" : me && me.team == wt ? "ПОБЕДА!" : "ПОРАЖЕНИЕ";
+                    endSub.text = (ObjectiveMode.Current ? ObjectiveMode.Current.EndReason(wt) : $"{Teams.Names[0]} {Teams.Score(0)} : {Teams.Score(1)} {Teams.Names[1]}") + ".   " + again;
+                }
+                else
+                {
+                    endTitle.text = w && w.isPlayer ? "ПОБЕДА!" : "МАТЧ ОКОНЧЕН";
+                    endSub.text = (w ? "Победитель: " + w.displayName + " — " + w.kills + " убийств.   " : "") + again;
+                }
             }
         }
     }

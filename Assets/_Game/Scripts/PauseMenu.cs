@@ -53,8 +53,7 @@ namespace FPS
 
             var title = UIKit.Label(col, "ПАУЗА", 76, TextAnchor.LowerLeft, UIKit.TextC, true, FontStyle.Bold);
             title.rectTransform.SetTop(110f, 96f, 90f);
-            string mapName = MatchManager.Instance ? MatchManager.Instance.mapName : SceneManager.GetActiveScene().name == "ShootingRange" ? "Полигон" : "";
-            var sub = UIKit.Label(col, (mapName + (Net.Active ? "   ·   сетевая игра" : MatchManager.Instance ? "   ·   deathmatch" : "")).ToUpperInvariant(), 20, TextAnchor.UpperLeft, UIKit.Accent, true);
+            sub = UIKit.Label(col, SubLine(), 20, TextAnchor.UpperLeft, UIKit.Accent, true);
             sub.rectTransform.SetTop(212f, 30f, 94f);
 
             float y = 300f;
@@ -110,6 +109,19 @@ namespace FPS
             return b;
         }
 
+        Text sub;
+
+        /// <summary>Map · mode · how the game is played (an internet game shows its join code for friends).</summary>
+        static string SubLine()
+        {
+            string mapName = MatchManager.Instance ? MatchManager.Instance.mapName : SceneManager.GetActiveScene().name == "ShootingRange" ? "Полигон" : "";
+            string mode = MatchManager.Instance ? "   ·   " + ObjectiveMode.ModeTitle(MatchSettings.mode) : "";
+            string net = !Net.Active ? "" : NetGame.I.Online
+                ? "   ·   интернет" + (NetOnline.Code != null ? "   ·   код игры: " + NetOnline.Code : "")
+                : "   ·   локальная сеть";
+            return (mapName + mode + net).ToUpperInvariant();
+        }
+
         void SetOpen(bool o)
         {
             open = o;
@@ -117,7 +129,7 @@ namespace FPS
             group.blocksRaycasts = o;
             group.interactable = o;
             if (!o) MenuPanel.CloseAll();
-            else RefreshNote();
+            else { RefreshNote(); if (sub) sub.text = SubLine(); }
             bool matchOver = MatchManager.Instance && MatchManager.Instance.Ended;
             if (!matchOver && !Net.Active) Time.timeScale = o ? 0f : 1f; // a network match never pauses
             Cursor.lockState = o ? CursorLockMode.None : CursorLockMode.Locked;

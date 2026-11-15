@@ -1,0 +1,50 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 964a63dbb02ae074d85a453a22a283be, type: 3}
+  m_Name: Pistol_LaserLight
+  m_EditorClassIdentifier: Assembly-CSharp::FPS.AttachmentData
+  id: Pistol_LaserLight
+  displayName: "\u041B\u0426\u0423 + \u0444\u043E\u043D\u0430\u0440\u044C"
+  description: "\u041B\u0430\u0437\u0435\u0440 \u0438 \u0444\u043E\u043D\u0430\u0440\u044C
+    \u043F\u043E\u0434 \u0441\u0442\u0432\u043E\u043B\u043E\u043C \u043F\u0438\u0441\u0442\u043E\u043B\u0435\u0442\u0430:
+    \u0442\u043E\u0447\u043D\u0435\u0435 \u043E\u0442 \u0431\u0435\u0434\u0440\u0430,
+    \u0441\u0432\u0435\u0442\u0438\u0442 \u0442\u0443\u0434\u0430, \u043A\u0443\u0434\u0430
+    \u0441\u043C\u043E\u0442\u0440\u0438\u0442 \u0441\u0442\u0432\u043E\u043B."
+  slot: 2
+  prefab: {fileID: 919132149155446097, guid: 1c40cd0542a3c774d8de6c5e21e858c2, type: 3}
+  compatible:
+  - Glock17
+  - Deagle
+  recoilMul: 1
+  hipSpreadMul: 0.8
+  adsSpreadMul: 1
+  adsTimeMul: 1.03
+  moveSpeedMul: 1
+  reloadTimeMul: 1
+  rangeMul: 1
+  damageMul: 1
+  magnification: 1
+  adsFov: 0
+  aimDistance: 0
+  scoped: 0
+  opaqueSightLine: 0
+  addReticle: 0
+  reticleMaterial: {fileID: 0}
+  suppressed: 0
+  flashMul: 1
+  volumeMul: 1
+  noiseMul: 1
+  muzzleLength: 0
+  magCapacity: 0
+  laser: 1
+  flashlight: 1
+  foregrip: 0

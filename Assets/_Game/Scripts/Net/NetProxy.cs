@@ -225,7 +225,8 @@ namespace FPS
             if (!plate) return;
             var cam = Camera.main;
             // disco: no nameplates — players hide in the crowd of mannequins
-            bool want = alive && cam && !s.Has(CharState.Invisible) && !s.Has(CharState.Chicken) && !DiscoClub.HideNameplates;
+            // team games: no world nameplates at all — enemies stay nameless, teammates are named by TeamNameplates
+            bool want = alive && cam && !s.Has(CharState.Invisible) && !s.Has(CharState.Chicken) && !DiscoClub.HideNameplates && !Teams.Active;
             if (want)
             {
                 Vector3 top = combatant.Head + Vector3.up * 0.42f * Mathf.Max(1f, s.headScale);
@@ -255,12 +256,8 @@ namespace FPS
 
         static Sfx ShotSound(byte w)
         {
-            switch (w)
-            {
-                case 2: return Sfx.ShotShotgun;
-                case 3: return Sfx.ShotSniper;
-                case 4: return Sfx.ShotPistol;
-            }
+            // w is the catalog index of the shooter's weapon
+            if (w < WeaponCatalog.All.Length) return WeaponCatalog.All[w].sfx;
             return Sfx.Shot;
         }
 
@@ -314,6 +311,7 @@ namespace FPS
         public DamageResult TakeDamage(DamageInfo info)
         {
             if (!combatant.alive || latest.Has(CharState.Protected) || latest.execV >= 0f) return default;
+            if (Teams.Friendly(info.attacker, combatant)) return default; // no friendly fire in team games
             NetGame.SendDamage(combatant, info);
             // predict the result for hitmarkers / kill sounds; corrected by the next snapshots
             predictedHealth -= info.amount / 100f;

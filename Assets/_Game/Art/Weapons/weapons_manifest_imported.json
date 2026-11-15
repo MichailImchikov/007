@@ -1,0 +1,6483 @@
+{
+ "generator": "imported packs (Blender conversion, see Animation/README)",
+ "units": "meters",
+ "coordinates": "Unity local space of the imported prefab root: +X right, +Y up, +Z forward (muzzle).",
+ "assets": [
+  {
+   "id": "AKM",
+   "kind": "weapon",
+   "slot": null,
+   "file": "Assets/_Game/Art/Weapons/Models/AKM.fbx",
+   "triangles": 3626,
+   "dimensions": [
+    0.06327,
+    0.246,
+    0.88
+   ],
+   "boundsMin": [
+    -0.02187,
+    -0.1498,
+    -0.35944
+   ],
+   "boundsMax": [
+    0.0414,
+    0.0962,
+    0.52056
+   ],
+   "meshes": {
+    "Body": {
+     "origin": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "triangles": 3001,
+     "materials": [
+      "Metal_Black"
+     ],
+     "boundsMin": [
+      -0.02187,
+      -0.08768,
+      -0.35944
+     ],
+     "boundsMax": [
+      0.02404,
+      0.0962,
+      0.52056
+     ]
+    },
+    "Bolt": {
+     "origin": [
+      0.0,
+      0.06329,
+      0.02471
+     ],
+     "triangles": 156,
+     "materials": [
+      "Metal_Black"
+     ],
+     "boundsMin": [
+      -0.01443,
+      0.04875,
+      0.02471
+     ],
+     "boundsMax": [
+      0.0414,
+      0.07784,
+      0.14815
+     ]
+    },
+    "IronSights": {
+     "origin": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "triangles": 196,
+     "materials": [
+      "Metal_Black"
+     ],
+     "boundsMin": [
+      -0.01373,
+      0.08388,
+      0.0996
+     ],
+     "boundsMax": [
+      0.01316,
+      0.09241,
+      0.15016
+     ]
+    },
+    "Mag": {
+     "origin": [
+      0.0,
+      0.0356,
+      0.07366
+     ],
+     "triangles": 273,
+     "materials": [
+      "Metal_Black"
+     ],
+     "boundsMin": [
+      -0.01349,
+      -0.1498,
+      0.00519
+     ],
+     "boundsMax": [
+      0.0136,
+      0.0396,
+      0.14214
+     ]
+    }
+   },
+   "sockets": {
+    "Socket_Muzzle": {
+     "position": [
+      0.0,
+      0.042,
+      0.52056
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Grip_R": {
+     "position": [
+      0.0,
+      -0.03,
+      -0.062
+     ],
+     "forward": [
+      0.0,
+      -0.93969,
+      -0.34202
+     ],
+     "up": [
+      0.0,
+      -0.34202,
+      0.93969
+     ]
+    },
+    "Socket_Mag": {
+     "position": [
+      0.0,
+      0.0356,
+      0.07366
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Socket_Optic": {
+     "position": [
+      0.0,
+      0.08222,
+      0.06366
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Grip_L": {
+     "position": [
+      0.0,
+      0.042,
+      0.30108
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Socket_Underbarrel": {
+     "position": [
+      0.0,
+      0.016,
+      0.321
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Socket_Side": {
+     "position": [
+      0.00795,
+      0.042,
+      0.36108
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Eject": {
+     "position": [
+      0.02115,
+      0.046,
+      0.028
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Sight_Iron": {
+     "position": [
+      0.0,
+      0.08841,
+      0.0996
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    }
+   },
+   "mag_insert": [
+    0.0,
+    1.0,
+    0.0
+   ],
+   "source": "low-poly-akm.blend",
+   "capacity": 30,
+   "moving": {
+    "Bolt": {
+     "travel": 0.07
+    }
+   }
+  },
+  {
+   "id": "HK416",
+   "kind": "weapon",
+   "slot": null,
+   "file": "Assets/_Game/Art/Weapons/Models/HK416.fbx",
+   "triangles": 9253,
+   "dimensions": [
+    0.06742,
+    0.27603,
+    0.84
+   ],
+   "boundsMin": [
+    -0.02772,
+    -0.16198,
+    -0.35566
+   ],
+   "boundsMax": [
+    0.03971,
+    0.11405,
+    0.48434
+   ],
+   "meshes": {
+    "Body": {
+     "origin": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "triangles": 7169,
+     "materials": [
+      "Polymer_Black",
+      "Metal_Dark",
+      "Polymer_Black",
+      "Polymer_Black",
+      "Metal_Dark",
+      "Polymer_Black",
+      "Polymer_Black",
+      "Metal_Dark",
+      "Metal_Dark",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black"
+     ],
+     "boundsMin": [
+      -0.02772,
+      -0.115,
+      -0.35566
+     ],
+     "boundsMax": [
+      0.03971,
+      0.11405,
+      0.48434
+     ]
+    },
+    "Bolt": {
+     "origin": [
+      0.0,
+      0.06615,
+      -0.11097
+     ],
+     "triangles": 348,
+     "materials": [
+      "Polymer_Black",
+      "Metal_Dark",
+      "Polymer_Black",
+      "Polymer_Black",
+      "Metal_Dark",
+      "Polymer_Black",
+      "Polymer_Black",
+      "Metal_Dark",
+      "Metal_Dark",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black"
+     ],
+     "boundsMin": [
+      -0.02197,
+      0.06019,
+      -0.11097
+     ],
+     "boundsMax": [
+      0.01927,
+      0.0721,
+      0.04498
+     ]
+    },
+    "IronSights": {
+     "origin": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "triangles": 392,
+     "materials": [
+      "Polymer_Black",
+      "Metal_Dark",
+      "Polymer_Black",
+      "Polymer_Black",
+      "Metal_Dark",
+      "Polymer_Black",
+      "Polymer_Black",
+      "Metal_Dark",
+      "Metal_Dark",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black"
+     ],
+     "boundsMin": [
+      -0.00741,
+      0.05405,
+      0.32412
+     ],
+     "boundsMax": [
+      0.00742,
+      0.11083,
+      0.3327
+     ]
+    },
+    "Mag": {
+     "origin": [
+      0.0,
+      0.02928,
+      0.04681
+     ],
+     "triangles": 1344,
+     "materials": [
+      "Polymer_Black",
+      "Metal_Dark",
+      "Polymer_Black",
+      "Polymer_Black",
+      "Metal_Dark",
+      "Polymer_Black",
+      "Polymer_Black",
+      "Metal_Dark",
+      "Metal_Dark",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black"
+     ],
+     "boundsMin": [
+      -0.01292,
+      -0.16198,
+      0.00441
+     ],
+     "boundsMax": [
+      0.01292,
+      0.03328,
+      0.0892
+     ]
+    }
+   },
+   "sockets": {
+    "Socket_Muzzle": {
+     "position": [
+      0.0,
+      0.042,
+      0.48434
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Grip_R": {
+     "position": [
+      0.0,
+      -0.03,
+      -0.062
+     ],
+     "forward": [
+      0.0,
+      -0.93969,
+      -0.34202
+     ],
+     "up": [
+      0.0,
+      -0.34202,
+      0.93969
+     ]
+    },
+    "Socket_Mag": {
+     "position": [
+      0.0,
+      0.02928,
+      0.04681
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Socket_Optic": {
+     "position": [
+      0.0,
+      0.07993,
+      0.03681
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Grip_L": {
+     "position": [
+      0.0,
+      0.042,
+      0.25516
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Socket_Underbarrel": {
+     "position": [
+      0.0,
+      0.01069,
+      0.27516
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Socket_Side": {
+     "position": [
+      0.02772,
+      0.042,
+      0.31516
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Eject": {
+     "position": [
+      0.02903,
+      0.046,
+      0.028
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Sight_Iron": {
+     "position": [
+      0.0,
+      0.10855,
+      -0.01319
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    }
+   },
+   "mag_insert": [
+    0.0,
+    1.0,
+    0.0
+   ],
+   "source": "low-poly-hk416.fbx",
+   "capacity": 30,
+   "moving": {
+    "Bolt": {
+     "travel": 0.07
+    }
+   }
+  },
+  {
+   "id": "MK47",
+   "kind": "weapon",
+   "slot": null,
+   "file": "Assets/_Game/Art/Weapons/Models/MK47.fbx",
+   "triangles": 9135,
+   "dimensions": [
+    0.04976,
+    0.26886,
+    0.88
+   ],
+   "boundsMin": [
+    -0.02499,
+    -0.1676,
+    -0.35429
+   ],
+   "boundsMax": [
+    0.02477,
+    0.10126,
+    0.52571
+   ],
+   "meshes": {
+    "Body": {
+     "origin": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "triangles": 8323,
+     "materials": [
+      "Metal_Worn",
+      "Metal_Dark",
+      "Metal_Dark",
+      "Polymer_Black",
+      "Polymer_Black",
+      "Metal_Dark",
+      "Metal_Dark",
+      "Metal_Worn",
+      "Metal_Worn"
+     ],
+     "boundsMin": [
+      -0.02107,
+      -0.11412,
+      -0.35429
+     ],
+     "boundsMax": [
+      0.02297,
+      0.07916,
+      0.52571
+     ]
+    },
+    "Bolt": {
+     "origin": [
+      0.0,
+      0.05909,
+      -0.10405
+     ],
+     "triangles": 188,
+     "materials": [
+      "Metal_Dark"
+     ],
+     "boundsMin": [
+      -0.02499,
+      0.05344,
+      -0.10405
+     ],
+     "boundsMax": [
+      0.02477,
+      0.06474,
+      0.04901
+     ]
+    },
+    "IronSights": {
+     "origin": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "triangles": 308,
+     "materials": [
+      "Metal_Dark",
+      "Metal_Worn",
+      "Metal_Worn"
+     ],
+     "boundsMin": [
+      -0.00485,
+      0.06964,
+      -0.07351
+     ],
+     "boundsMax": [
+      0.00485,
+      0.10126,
+      0.39859
+     ]
+    },
+    "Mag": {
+     "origin": [
+      0.0,
+      0.02968,
+      0.08154
+     ],
+     "triangles": 316,
+     "materials": [
+      "Metal_Dark",
+      "Polymer_Tan"
+     ],
+     "boundsMin": [
+      -0.01733,
+      -0.1676,
+      0.00324
+     ],
+     "boundsMax": [
+      0.01669,
+      0.03368,
+      0.15984
+     ]
+    }
+   },
+   "sockets": {
+    "Socket_Muzzle": {
+     "position": [
+      0.0,
+      0.042,
+      0.52571
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Grip_R": {
+     "position": [
+      0.0,
+      -0.03,
+      -0.062
+     ],
+     "forward": [
+      0.0,
+      -0.93969,
+      -0.34202
+     ],
+     "up": [
+      0.0,
+      -0.34202,
+      0.93969
+     ]
+    },
+    "Socket_Mag": {
+     "position": [
+      0.0,
+      0.02968,
+      0.08154
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Socket_Optic": {
+     "position": [
+      0.0,
+      0.069,
+      0.07154
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Grip_L": {
+     "position": [
+      0.0,
+      0.042,
+      0.31351
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Socket_Underbarrel": {
+     "position": [
+      0.0,
+      0.01848,
+      0.33351
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Socket_Side": {
+     "position": [
+      0.02107,
+      0.042,
+      0.37351
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Eject": {
+     "position": [
+      0.02059,
+      0.046,
+      0.028
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Sight_Iron": {
+     "position": [
+      0.0,
+      0.09726,
+      -0.07351
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    }
+   },
+   "mag_insert": [
+    0.0,
+    1.0,
+    0.0
+   ],
+   "source": "low-poly-mk-47-mutant.blend",
+   "capacity": 30,
+   "moving": {
+    "Bolt": {
+     "travel": 0.075
+    }
+   }
+  },
+  {
+   "id": "QBZ191",
+   "kind": "weapon",
+   "slot": null,
+   "file": "Assets/_Game/Art/Weapons/Models/QBZ191.fbx",
+   "triangles": 11401,
+   "dimensions": [
+    0.06879,
+    0.31793,
+    0.9
+   ],
+   "boundsMin": [
+    -0.02668,
+    -0.19191,
+    -0.39979
+   ],
+   "boundsMax": [
+    0.04211,
+    0.12602,
+    0.50021
+   ],
+   "meshes": {
+    "Body": {
+     "origin": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "triangles": 8635,
+     "materials": [
+      "Polymer_Black",
+      "Polymer_Black",
+      "Polymer_Black",
+      "Polymer_Black",
+      "Polymer_Black",
+      "Polymer_Black",
+      "Polymer_Black",
+      "Metal_Dark",
+      "Polymer_Black",
+      "Polymer_Black",
+      "Metal_Dark",
+      "Metal_Dark"
+     ],
+     "boundsMin": [
+      -0.02668,
+      -0.12963,
+      -0.39979
+     ],
+     "boundsMax": [
+      0.02744,
+      0.09616,
+      0.50021
+     ]
+    },
+    "Bolt": {
+     "origin": [
+      0.0,
+      0.04765,
+      0.01855
+     ],
+     "triangles": 258,
+     "materials": [
+      "Polymer_Black",
+      "Polymer_Black",
+      "Polymer_Black",
+      "Polymer_Black",
+      "Polymer_Black",
+      "Polymer_Black",
+      "Polymer_Black",
+      "Metal_Dark",
+      "Polymer_Black",
+      "Polymer_Black",
+      "Metal_Dark",
+      "Metal_Dark"
+     ],
+     "boundsMin": [
+      -0.00822,
+      0.03088,
+      0.01855
+     ],
+     "boundsMax": [
+      0.04211,
+      0.06441,
+      0.11003
+     ]
+    },
+    "IronSights": {
+     "origin": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "triangles": 390,
+     "materials": [
+      "Polymer_Black",
+      "Polymer_Black",
+      "Polymer_Black",
+      "Polymer_Black",
+      "Polymer_Black",
+      "Polymer_Black",
+      "Polymer_Black",
+      "Metal_Dark",
+      "Polymer_Black",
+      "Polymer_Black",
+      "Metal_Dark",
+      "Metal_Dark"
+     ],
+     "boundsMin": [
+      -0.01061,
+      0.08458,
+      -0.11209
+     ],
+     "boundsMax": [
+      0.01061,
+      0.12602,
+      0.32895
+     ]
+    },
+    "Mag": {
+     "origin": [
+      0.0,
+      0.03212,
+      0.09194
+     ],
+     "triangles": 2118,
+     "materials": [
+      "Polymer_Black",
+      "Polymer_Black",
+      "Polymer_Black",
+      "Polymer_Black",
+      "Polymer_Black",
+      "Polymer_Black",
+      "Polymer_Black",
+      "Metal_Dark",
+      "Polymer_Black",
+      "Polymer_Black",
+      "Metal_Dark",
+      "Metal_Dark"
+     ],
+     "boundsMin": [
+      -0.01585,
+      -0.19191,
+      0.01556
+     ],
+     "boundsMax": [
+      0.01585,
+      0.03612,
+      0.16831
+     ]
+    }
+   },
+   "sockets": {
+    "Socket_Muzzle": {
+     "position": [
+      0.0,
+      0.042,
+      0.50021
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Grip_R": {
+     "position": [
+      0.0,
+      -0.03,
+      -0.062
+     ],
+     "forward": [
+      0.0,
+      -0.93969,
+      -0.34202
+     ],
+     "up": [
+      0.0,
+      -0.34202,
+      0.93969
+     ]
+    },
+    "Socket_Mag": {
+     "position": [
+      0.0,
+      0.03212,
+      0.09194
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Socket_Optic": {
+     "position": [
+      0.0,
+      0.08126,
+      0.08194
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Grip_L": {
+     "position": [
+      0.0,
+      0.042,
+      0.30771
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Socket_Underbarrel": {
+     "position": [
+      0.0,
+      0.00576,
+      0.32771
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Socket_Side": {
+     "position": [
+      0.02501,
+      0.042,
+      0.36771
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Eject": {
+     "position": [
+      0.02744,
+      0.046,
+      0.028
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Sight_Iron": {
+     "position": [
+      0.0,
+      0.1198,
+      -0.11209
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    }
+   },
+   "mag_insert": [
+    0.0,
+    1.0,
+    0.0
+   ],
+   "source": "low-poly-qbz-192.blend",
+   "capacity": 30,
+   "moving": {
+    "Bolt": {
+     "travel": 0.07
+    }
+   }
+  },
+  {
+   "id": "MK18",
+   "kind": "weapon",
+   "slot": null,
+   "file": "Assets/_Game/Art/Weapons/Models/MK18.fbx",
+   "triangles": 9390,
+   "dimensions": [
+    0.06082,
+    0.24969,
+    0.7
+   ],
+   "boundsMin": [
+    -0.02813,
+    -0.14582,
+    -0.32469
+   ],
+   "boundsMax": [
+    0.03269,
+    0.10387,
+    0.37531
+   ],
+   "meshes": {
+    "Body": {
+     "origin": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "triangles": 8532,
+     "materials": [
+      "Metal_Worn",
+      "Metal_Dark",
+      "Metal_Dark",
+      "Metal_Worn",
+      "Polymer_Black"
+     ],
+     "boundsMin": [
+      -0.02813,
+      -0.10659,
+      -0.32469
+     ],
+     "boundsMax": [
+      0.03269,
+      0.07953,
+      0.37531
+     ]
+    },
+    "Bolt": {
+     "origin": [
+      0.0,
+      0.06093,
+      -0.12365
+     ],
+     "triangles": 180,
+     "materials": [
+      "Metal_Dark"
+     ],
+     "boundsMin": [
+      -0.02593,
+      0.05325,
+      -0.12365
+     ],
+     "boundsMax": [
+      0.02555,
+      0.06861,
+      0.04324
+     ]
+    },
+    "IronSights": {
+     "origin": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "triangles": 304,
+     "materials": [
+      "Metal_Dark",
+      "Metal_Worn",
+      "Metal_Worn"
+     ],
+     "boundsMin": [
+      -0.00496,
+      0.07054,
+      -0.0769
+     ],
+     "boundsMax": [
+      0.00496,
+      0.10387,
+      0.31085
+     ]
+    },
+    "Mag": {
+     "origin": [
+      0.0,
+      0.02449,
+      0.04152
+     ],
+     "triangles": 374,
+     "materials": [
+      "Metal_Worn",
+      "Polymer_Black"
+     ],
+     "boundsMin": [
+      -0.01257,
+      -0.14582,
+      -0.00184
+     ],
+     "boundsMax": [
+      0.01172,
+      0.02849,
+      0.08488
+     ]
+    }
+   },
+   "sockets": {
+    "Socket_Muzzle": {
+     "position": [
+      0.0,
+      0.042,
+      0.37531
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Grip_R": {
+     "position": [
+      0.0,
+      -0.03,
+      -0.062
+     ],
+     "forward": [
+      0.0,
+      -0.93969,
+      -0.34202
+     ],
+     "up": [
+      0.0,
+      -0.34202,
+      0.93969
+     ]
+    },
+    "Socket_Mag": {
+     "position": [
+      0.0,
+      0.02449,
+      0.04152
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Socket_Optic": {
+     "position": [
+      0.0,
+      0.07039,
+      0.03152
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Grip_L": {
+     "position": [
+      0.0,
+      0.042,
+      0.20686
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Socket_Underbarrel": {
+     "position": [
+      0.0,
+      0.01373,
+      0.22686
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Socket_Side": {
+     "position": [
+      0.02388,
+      0.042,
+      0.26686
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Eject": {
+     "position": [
+      0.02998,
+      0.046,
+      0.028
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Sight_Iron": {
+     "position": [
+      0.0,
+      0.09987,
+      -0.0769
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    }
+   },
+   "mag_insert": [
+    0.0,
+    1.0,
+    0.0
+   ],
+   "source": "low-poly-mk18-mod1.blend",
+   "capacity": 30,
+   "moving": {
+    "Bolt": {
+     "travel": 0.065
+    }
+   }
+  },
+  {
+   "id": "HoneyBadger",
+   "kind": "weapon",
+   "slot": null,
+   "file": "Assets/_Game/Art/Weapons/Models/HoneyBadger.fbx",
+   "triangles": 11053,
+   "dimensions": [
+    0.0519,
+    0.25195,
+    0.74
+   ],
+   "boundsMin": [
+    -0.02489,
+    -0.13847,
+    -0.3161
+   ],
+   "boundsMax": [
+    0.02702,
+    0.11348,
+    0.4239
+   ],
+   "meshes": {
+    "Body": {
+     "origin": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "triangles": 9101,
+     "materials": [
+      "Metal_Dark",
+      "Polymer_Black",
+      "Polymer_Tan",
+      "Metal_Worn",
+      "Metal_Dark",
+      "Polymer_Black",
+      "Metal_Dark",
+      "Metal_Worn",
+      "Polymer_Tan",
+      "Metal_Dark",
+      "Polymer_Tan",
+      "Metal_Dark",
+      "Metal_Worn",
+      "Metal_Worn",
+      "Metal_Dark",
+      "Metal_Dark",
+      "Metal_Dark",
+      "Polymer_Black",
+      "Metal_Dark"
+     ],
+     "boundsMin": [
+      -0.02489,
+      -0.09802,
+      -0.3161
+     ],
+     "boundsMax": [
+      0.02702,
+      0.11348,
+      0.4239
+     ]
+    },
+    "Bolt": {
+     "origin": [
+      0.0,
+      0.06416,
+      -0.12027
+     ],
+     "triangles": 536,
+     "materials": [
+      "Metal_Dark",
+      "Polymer_Black",
+      "Polymer_Tan",
+      "Metal_Worn",
+      "Metal_Dark",
+      "Polymer_Black",
+      "Metal_Dark",
+      "Metal_Worn",
+      "Polymer_Tan",
+      "Metal_Dark",
+      "Polymer_Tan",
+      "Metal_Dark",
+      "Metal_Worn",
+      "Metal_Worn",
+      "Metal_Dark",
+      "Metal_Dark",
+      "Metal_Dark",
+      "Polymer_Black",
+      "Metal_Dark"
+     ],
+     "boundsMin": [
+      -0.02278,
+      0.05775,
+      -0.12027
+     ],
+     "boundsMax": [
+      0.02278,
+      0.07056,
+      0.03024
+     ]
+    },
+    "Mag": {
+     "origin": [
+      0.0,
+      0.03016,
+      0.03041
+     ],
+     "triangles": 1416,
+     "materials": [
+      "Metal_Dark",
+      "Polymer_Black",
+      "Polymer_Tan",
+      "Metal_Worn",
+      "Metal_Dark",
+      "Polymer_Black",
+      "Metal_Dark",
+      "Metal_Worn",
+      "Polymer_Tan",
+      "Metal_Dark",
+      "Polymer_Tan",
+      "Metal_Dark",
+      "Metal_Worn",
+      "Metal_Worn",
+      "Metal_Dark",
+      "Metal_Dark",
+      "Metal_Dark",
+      "Polymer_Black",
+      "Metal_Dark"
+     ],
+     "boundsMin": [
+      -0.01138,
+      -0.13847,
+      -0.00934
+     ],
+     "boundsMax": [
+      0.01138,
+      0.03416,
+      0.07015
+     ]
+    }
+   },
+   "sockets": {
+    "Socket_Muzzle": {
+     "position": [
+      0.0,
+      0.042,
+      0.4239
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Grip_R": {
+     "position": [
+      0.0,
+      -0.03,
+      -0.062
+     ],
+     "forward": [
+      0.0,
+      -0.93969,
+      -0.34202
+     ],
+     "up": [
+      0.0,
+      -0.34202,
+      0.93969
+     ]
+    },
+    "Socket_Mag": {
+     "position": [
+      0.0,
+      0.03016,
+      0.03041
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Socket_Optic": {
+     "position": [
+      0.0,
+      0.07143,
+      0.02041
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Grip_L": {
+     "position": [
+      0.0,
+      0.042,
+      0.21872
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Socket_Underbarrel": {
+     "position": [
+      0.0,
+      0.02135,
+      0.23872
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Socket_Side": {
+     "position": [
+      0.02,
+      0.042,
+      0.27872
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Eject": {
+     "position": [
+      0.02355,
+      0.046,
+      0.028
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Sight_Iron": {
+     "position": [
+      0.0,
+      0.10975,
+      -0.02959
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    }
+   },
+   "mag_insert": [
+    0.0,
+    1.0,
+    0.0
+   ],
+   "source": "low-poly-aac-honey-badger.fbx",
+   "capacity": 30,
+   "moving": {
+    "Bolt": {
+     "travel": 0.065
+    }
+   }
+  },
+  {
+   "id": "Vector",
+   "kind": "weapon",
+   "slot": null,
+   "file": "Assets/_Game/Art/Weapons/Models/Vector.fbx",
+   "triangles": 6477,
+   "dimensions": [
+    0.0601,
+    0.25148,
+    0.62
+   ],
+   "boundsMin": [
+    -0.03326,
+    -0.19688,
+    -0.31583
+   ],
+   "boundsMax": [
+    0.02685,
+    0.0546,
+    0.30417
+   ],
+   "meshes": {
+    "Body": {
+     "origin": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "triangles": 6133,
+     "materials": [
+      "Metal_Dark",
+      "Polymer_Black",
+      "Metal_Dark",
+      "Polymer_Black",
+      "Polymer_Black",
+      "Polymer_Black",
+      "Polymer_Black",
+      "Metal_Dark",
+      "Metal_Dark",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Polymer_Black"
+     ],
+     "boundsMin": [
+      -0.03326,
+      -0.12158,
+      -0.31583
+     ],
+     "boundsMax": [
+      0.02685,
+      0.0546,
+      0.30417
+     ]
+    },
+    "Mag": {
+     "origin": [
+      0.0,
+      -0.073,
+      0.081
+     ],
+     "triangles": 344,
+     "materials": [
+      "Metal_Dark",
+      "Polymer_Black",
+      "Metal_Dark",
+      "Polymer_Black",
+      "Polymer_Black",
+      "Polymer_Black",
+      "Polymer_Black",
+      "Metal_Dark",
+      "Metal_Dark",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Polymer_Black"
+     ],
+     "boundsMin": [
+      -0.0176,
+      -0.19688,
+      0.04681
+     ],
+     "boundsMax": [
+      0.0176,
+      -0.00166,
+      0.14006
+     ]
+    }
+   },
+   "sockets": {
+    "Socket_Muzzle": {
+     "position": [
+      0.0,
+      0.003,
+      0.304
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Grip_R": {
+     "position": [
+      0.0,
+      -0.043,
+      -0.058
+     ],
+     "forward": [
+      0.0,
+      -0.93358,
+      -0.35837
+     ],
+     "up": [
+      0.0,
+      -0.35837,
+      0.93358
+     ]
+    },
+    "Socket_Mag": {
+     "position": [
+      0.0,
+      -0.073,
+      0.081
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Socket_Optic": {
+     "position": [
+      0.0,
+      0.054,
+      0.071
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Grip_L": {
+     "position": [
+      0.0,
+      0.003,
+      0.184
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Socket_Underbarrel": {
+     "position": [
+      0.0,
+      -0.02,
+      0.196
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Socket_Side": {
+     "position": [
+      0.025,
+      0.003,
+      0.192
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Eject": {
+     "position": [
+      0.025,
+      0.02,
+      0.144
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    }
+   },
+   "mag_insert": [
+    0.0,
+    1.0,
+    0.0
+   ],
+   "source": "low-poly-kriss-vector.fbx",
+   "capacity": 25
+  },
+  {
+   "id": "MPX",
+   "kind": "weapon",
+   "slot": null,
+   "file": "Assets/_Game/Art/Weapons/Models/MPX.fbx",
+   "triangles": 11149,
+   "dimensions": [
+    0.04776,
+    0.27975,
+    0.6
+   ],
+   "boundsMin": [
+    -0.02388,
+    -0.15835,
+    -0.3272
+   ],
+   "boundsMax": [
+    0.02388,
+    0.1214,
+    0.2728
+   ],
+   "meshes": {
+    "Body": {
+     "origin": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "triangles": 9453,
+     "materials": [
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black"
+     ],
+     "boundsMin": [
+      -0.02388,
+      -0.09994,
+      -0.3272
+     ],
+     "boundsMax": [
+      0.02388,
+      0.1214,
+      0.2728
+     ]
+    },
+    "Bolt": {
+     "origin": [
+      0.0,
+      0.06941,
+      -0.11637
+     ],
+     "triangles": 374,
+     "materials": [
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black"
+     ],
+     "boundsMin": [
+      -0.0237,
+      0.0646,
+      -0.11637
+     ],
+     "boundsMax": [
+      0.02378,
+      0.07422,
+      -0.00327
+     ]
+    },
+    "Mag": {
+     "origin": [
+      0.0,
+      0.03291,
+      0.05951
+     ],
+     "triangles": 1322,
+     "materials": [
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black"
+     ],
+     "boundsMin": [
+      -0.01133,
+      -0.15835,
+      0.01385
+     ],
+     "boundsMax": [
+      0.01133,
+      0.03691,
+      0.10516
+     ]
+    }
+   },
+   "sockets": {
+    "Socket_Muzzle": {
+     "position": [
+      0.0,
+      0.042,
+      0.2728
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Grip_R": {
+     "position": [
+      0.0,
+      -0.03,
+      -0.062
+     ],
+     "forward": [
+      0.0,
+      -0.93969,
+      -0.34202
+     ],
+     "up": [
+      0.0,
+      -0.34202,
+      0.93969
+     ]
+    },
+    "Socket_Mag": {
+     "position": [
+      0.0,
+      0.03291,
+      0.05951
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Socket_Optic": {
+     "position": [
+      0.0,
+      0.07919,
+      0.04951
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Grip_L": {
+     "position": [
+      0.0,
+      0.042,
+      0.17557
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Socket_Underbarrel": {
+     "position": [
+      0.0,
+      0.0084,
+      0.19557
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Socket_Side": {
+     "position": [
+      0.02324,
+      0.042,
+      0.23557
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Eject": {
+     "position": [
+      0.02324,
+      0.046,
+      0.028
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Sight_Iron": {
+     "position": [
+      0.0,
+      0.11765,
+      -0.00049
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    }
+   },
+   "mag_insert": [
+    0.0,
+    1.0,
+    0.0
+   ],
+   "source": "low-poly-sig-mpx.fbx",
+   "capacity": 30,
+   "moving": {
+    "Bolt": {
+     "travel": 0.06
+    }
+   }
+  },
+  {
+   "id": "Scorpion",
+   "kind": "weapon",
+   "slot": null,
+   "file": "Assets/_Game/Art/Weapons/Models/Scorpion.fbx",
+   "triangles": 6313,
+   "dimensions": [
+    0.07629,
+    0.27827,
+    0.66
+   ],
+   "boundsMin": [
+    -0.04641,
+    -0.16066,
+    -0.36988
+   ],
+   "boundsMax": [
+    0.02987,
+    0.11762,
+    0.29012
+   ],
+   "meshes": {
+    "Body": {
+     "origin": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "triangles": 5333,
+     "materials": [
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black"
+     ],
+     "boundsMin": [
+      -0.02987,
+      -0.11308,
+      -0.36988
+     ],
+     "boundsMax": [
+      0.02987,
+      0.11762,
+      0.29012
+     ]
+    },
+    "Bolt": {
+     "origin": [
+      0.0,
+      0.0761,
+      0.0506
+     ],
+     "triangles": 204,
+     "materials": [
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black"
+     ],
+     "boundsMin": [
+      -0.04641,
+      0.07249,
+      0.0506
+     ],
+     "boundsMax": [
+      -0.00582,
+      0.07971,
+      0.17474
+     ]
+    },
+    "Mag": {
+     "origin": [
+      0.0,
+      0.04158,
+      0.0565
+     ],
+     "triangles": 776,
+     "materials": [
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black"
+     ],
+     "boundsMin": [
+      -0.01488,
+      -0.16066,
+      0.01403
+     ],
+     "boundsMax": [
+      0.01488,
+      0.04558,
+      0.09897
+     ]
+    }
+   },
+   "sockets": {
+    "Socket_Muzzle": {
+     "position": [
+      0.0,
+      0.042,
+      0.29012
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Grip_R": {
+     "position": [
+      0.0,
+      -0.03,
+      -0.062
+     ],
+     "forward": [
+      0.0,
+      -0.93969,
+      -0.34202
+     ],
+     "up": [
+      0.0,
+      -0.34202,
+      0.93969
+     ]
+    },
+    "Socket_Mag": {
+     "position": [
+      0.0,
+      0.04158,
+      0.0565
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Socket_Optic": {
+     "position": [
+      0.0,
+      0.09678,
+      0.0465
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Grip_L": {
+     "position": [
+      0.0,
+      0.042,
+      0.17925
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Socket_Underbarrel": {
+     "position": [
+      0.0,
+      0.00915,
+      0.19925
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Socket_Side": {
+     "position": [
+      0.02659,
+      0.042,
+      0.23925
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Eject": {
+     "position": [
+      0.02234,
+      0.046,
+      0.028
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Sight_Iron": {
+     "position": [
+      0.0,
+      0.10945,
+      -0.0035
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    }
+   },
+   "mag_insert": [
+    0.0,
+    1.0,
+    0.0
+   ],
+   "source": "low-poly-cz-skorpion-evo-3.fbx",
+   "capacity": 30,
+   "moving": {
+    "Bolt": {
+     "travel": 0.06
+    }
+   }
+  },
+  {
+   "id": "SR2",
+   "kind": "weapon",
+   "slot": null,
+   "file": "Assets/_Game/Art/Weapons/Models/SR2.fbx",
+   "triangles": 1978,
+   "dimensions": [
+    0.04638,
+    0.23766,
+    0.6
+   ],
+   "boundsMin": [
+    -0.02319,
+    -0.15884,
+    -0.42592
+   ],
+   "boundsMax": [
+    0.02319,
+    0.07883,
+    0.17408
+   ],
+   "meshes": {
+    "Body": {
+     "origin": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "triangles": 1836,
+     "materials": [
+      "Metal_Black"
+     ],
+     "boundsMin": [
+      -0.02319,
+      -0.09197,
+      -0.42592
+     ],
+     "boundsMax": [
+      0.02319,
+      0.07883,
+      0.17408
+     ]
+    },
+    "Bolt": {
+     "origin": [
+      0.0,
+      0.05089,
+      -0.07833
+     ],
+     "triangles": 86,
+     "materials": [
+      "Metal_Black"
+     ],
+     "boundsMin": [
+      -0.01272,
+      0.03716,
+      -0.07833
+     ],
+     "boundsMax": [
+      0.01804,
+      0.06462,
+      -0.03208
+     ]
+    },
+    "Mag": {
+     "origin": [
+      0.0,
+      -0.092,
+      -0.048
+     ],
+     "triangles": 56,
+     "materials": [
+      "Metal_Black"
+     ],
+     "boundsMin": [
+      -0.01123,
+      -0.15884,
+      -0.06603
+     ],
+     "boundsMax": [
+      0.01123,
+      -0.04313,
+      -0.03171
+     ]
+    }
+   },
+   "sockets": {
+    "Socket_Muzzle": {
+     "position": [
+      0.0,
+      0.031,
+      0.174
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Grip_R": {
+     "position": [
+      0.0,
+      -0.044,
+      -0.053
+     ],
+     "forward": [
+      0.0,
+      -0.99027,
+      -0.13917
+     ],
+     "up": [
+      0.0,
+      -0.13917,
+      0.99027
+     ]
+    },
+    "Socket_Mag": {
+     "position": [
+      0.0,
+      -0.092,
+      -0.048
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Socket_Optic": {
+     "position": [
+      0.0,
+      0.072,
+      -0.089
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Grip_L": {
+     "position": [
+      0.0,
+      0.031,
+      0.125
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Socket_Underbarrel": {
+     "position": [
+      0.0,
+      0.002,
+      0.121
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Eject": {
+     "position": [
+      0.02,
+      0.041,
+      -0.041
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Sight_Iron": {
+     "position": [
+      0.0,
+      0.066,
+      -0.038
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    }
+   },
+   "mag_insert": [
+    0.0,
+    1.0,
+    0.0
+   ],
+   "source": "low-poly-sr-2-veresk.blend",
+   "capacity": 30,
+   "moving": {
+    "Bolt": {
+     "travel": 0.05
+    }
+   }
+  },
+  {
+   "id": "M249",
+   "kind": "weapon",
+   "slot": null,
+   "file": "Assets/_Game/Art/Weapons/Models/M249.fbx",
+   "triangles": 12281,
+   "dimensions": [
+    0.2054,
+    0.2986,
+    1.02
+   ],
+   "boundsMin": [
+    -0.09929,
+    -0.15985,
+    -0.41302
+   ],
+   "boundsMax": [
+    0.10611,
+    0.13876,
+    0.60698
+   ],
+   "meshes": {
+    "Body": {
+     "origin": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "triangles": 7669,
+     "materials": [
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black"
+     ],
+     "boundsMin": [
+      -0.05109,
+      -0.12525,
+      -0.41302
+     ],
+     "boundsMax": [
+      0.08424,
+      0.13876,
+      0.60698
+     ]
+    },
+    "Bolt": {
+     "origin": [
+      0.0,
+      0.04419,
+      0.00171
+     ],
+     "triangles": 204,
+     "materials": [
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black"
+     ],
+     "boundsMin": [
+      -0.00439,
+      0.02983,
+      0.00171
+     ],
+     "boundsMax": [
+      0.05893,
+      0.05855,
+      0.093
+     ]
+    },
+    "Mag": {
+     "origin": [
+      0.0,
+      0.05738,
+      0.05752
+     ],
+     "triangles": 4408,
+     "materials": [
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black"
+     ],
+     "boundsMin": [
+      -0.09929,
+      -0.15985,
+      0.01302
+     ],
+     "boundsMax": [
+      0.10611,
+      0.06138,
+      0.10203
+     ]
+    }
+   },
+   "sockets": {
+    "Socket_Muzzle": {
+     "position": [
+      0.0,
+      0.042,
+      0.60698
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Grip_R": {
+     "position": [
+      0.0,
+      -0.03,
+      -0.062
+     ],
+     "forward": [
+      0.0,
+      -0.93969,
+      -0.34202
+     ],
+     "up": [
+      0.0,
+      -0.34202,
+      0.93969
+     ]
+    },
+    "Socket_Mag": {
+     "position": [
+      0.0,
+      0.05738,
+      0.05752
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Socket_Optic": {
+     "position": [
+      0.0,
+      0.09362,
+      0.04752
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Grip_L": {
+     "position": [
+      0.0,
+      0.042,
+      0.31411
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Socket_Underbarrel": {
+     "position": [
+      0.0,
+      -0.01413,
+      0.33411
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Socket_Side": {
+     "position": [
+      0.01403,
+      0.042,
+      0.37411
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Eject": {
+     "position": [
+      0.02603,
+      0.046,
+      0.028
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Sight_Iron": {
+     "position": [
+      0.0,
+      0.1076,
+      -0.00248
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    }
+   },
+   "mag_insert": [
+    0.0,
+    1.0,
+    0.0
+   ],
+   "source": "low-poly-m249-saw.fbx",
+   "capacity": 100,
+   "moving": {
+    "Bolt": {
+     "travel": 0.09
+    }
+   }
+  },
+  {
+   "id": "Deagle",
+   "kind": "weapon",
+   "slot": null,
+   "file": "Assets/_Game/Art/Weapons/Models/Deagle.fbx",
+   "triangles": 4299,
+   "dimensions": [
+    0.04031,
+    0.15074,
+    0.27
+   ],
+   "boundsMin": [
+    -0.02015,
+    -0.09594,
+    -0.13756
+   ],
+   "boundsMax": [
+    0.02015,
+    0.0548,
+    0.13244
+   ],
+   "meshes": {
+    "Body": {
+     "origin": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "triangles": 2275,
+     "materials": [
+      "Polymer_Black",
+      "Polymer_Black",
+      "Polymer_Black",
+      "Polymer_Black",
+      "Polymer_Black",
+      "Metal_Dark",
+      "Polymer_Black",
+      "Polymer_Tan",
+      "Polymer_Tan",
+      "Polymer_Tan",
+      "Metal_Dark"
+     ],
+     "boundsMin": [
+      -0.02015,
+      -0.09311,
+      -0.13756
+     ],
+     "boundsMax": [
+      0.02015,
+      0.0543,
+      0.13244
+     ]
+    },
+    "Mag": {
+     "origin": [
+      0.0,
+      0.02621,
+      -0.06864
+     ],
+     "triangles": 732,
+     "materials": [
+      "Polymer_Black",
+      "Polymer_Black",
+      "Polymer_Black",
+      "Polymer_Black",
+      "Polymer_Black",
+      "Metal_Dark",
+      "Polymer_Black",
+      "Polymer_Tan",
+      "Polymer_Tan",
+      "Polymer_Tan",
+      "Metal_Dark"
+     ],
+     "boundsMin": [
+      -0.01275,
+      -0.09594,
+      -0.10075
+     ],
+     "boundsMax": [
+      0.01275,
+      0.03021,
+      -0.03653
+     ]
+    },
+    "Slide": {
+     "origin": [
+      0.0,
+      0.03398,
+      -0.11256
+     ],
+     "triangles": 1292,
+     "materials": [
+      "Polymer_Black",
+      "Polymer_Black",
+      "Polymer_Black",
+      "Polymer_Black",
+      "Polymer_Black",
+      "Metal_Dark",
+      "Polymer_Black",
+      "Polymer_Tan",
+      "Polymer_Tan",
+      "Polymer_Tan",
+      "Metal_Dark"
+     ],
+     "boundsMin": [
+      -0.01432,
+      0.01317,
+      -0.11256
+     ],
+     "boundsMax": [
+      0.01432,
+      0.0548,
+      0.10308
+     ]
+    }
+   },
+   "sockets": {
+    "Socket_Muzzle": {
+     "position": [
+      0.0,
+      0.04,
+      0.13244
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Grip_R": {
+     "position": [
+      0.0,
+      -0.026,
+      -0.05
+     ],
+     "forward": [
+      0.0,
+      -0.93969,
+      -0.34202
+     ],
+     "up": [
+      0.0,
+      -0.34202,
+      0.93969
+     ]
+    },
+    "Socket_Mag": {
+     "position": [
+      0.0,
+      0.02621,
+      -0.06864
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Socket_Optic": {
+     "position": [
+      0.0,
+      0.04989,
+      -0.05656
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Grip_L": {
+     "position": [
+      -0.015,
+      -0.026,
+      -0.05
+     ],
+     "forward": [
+      0.0,
+      -0.93969,
+      -0.34202
+     ],
+     "up": [
+      0.0,
+      -0.34202,
+      0.93969
+     ]
+    },
+    "Socket_Underbarrel": {
+     "position": [
+      0.0,
+      0.01,
+      0.09244
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Eject": {
+     "position": [
+      0.01296,
+      0.044,
+      0.01
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Sight_Iron": {
+     "position": [
+      0.0,
+      0.06189,
+      -0.11656
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    }
+   },
+   "mag_insert": [
+    0.0,
+    1.0,
+    0.0
+   ],
+   "source": "low-poly-desert-eagle.fbx",
+   "capacity": 7,
+   "moving": {
+    "Slide": {
+     "travel": 0.045
+    }
+   },
+   "socket_parent_hint": {
+    "Socket_Optic": "Slide"
+   }
+  },
+  {
+   "id": "K6S",
+   "kind": "weapon",
+   "slot": null,
+   "file": "Assets/_Game/Art/Weapons/Models/K6S.fbx",
+   "triangles": 2885,
+   "dimensions": [
+    0.03187,
+    0.1213,
+    0.2
+   ],
+   "boundsMin": [
+    -0.01594,
+    -0.06356,
+    -0.09828
+   ],
+   "boundsMax": [
+    0.01594,
+    0.05774,
+    0.10172
+   ],
+   "meshes": {
+    "Body": {
+     "origin": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "triangles": 1829,
+     "materials": [
+      "Metal_Worn",
+      "Polymer_Black",
+      "Polymer_Tan",
+      "Polymer_Tan",
+      "Metal_Worn",
+      "Metal_Worn",
+      "Polymer_Black",
+      "Polymer_Black"
+     ],
+     "boundsMin": [
+      -0.01594,
+      -0.06356,
+      -0.09828
+     ],
+     "boundsMax": [
+      0.01594,
+      0.05774,
+      0.10172
+     ]
+    },
+    "Mag": {
+     "origin": [
+      0.0,
+      0.04181,
+      -0.00513
+     ],
+     "triangles": 1056,
+     "materials": [
+      "Metal_Worn",
+      "Polymer_Black",
+      "Polymer_Tan",
+      "Polymer_Tan",
+      "Metal_Worn",
+      "Metal_Worn",
+      "Polymer_Black",
+      "Polymer_Black"
+     ],
+     "boundsMin": [
+      -0.01222,
+      0.01759,
+      -0.02374
+     ],
+     "boundsMax": [
+      0.01222,
+      0.04581,
+      0.01348
+     ]
+    }
+   },
+   "sockets": {
+    "Socket_Muzzle": {
+     "position": [
+      0.0,
+      0.04,
+      0.10172
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Grip_R": {
+     "position": [
+      0.0,
+      -0.026,
+      -0.05
+     ],
+     "forward": [
+      0.0,
+      -0.93969,
+      -0.34202
+     ],
+     "up": [
+      0.0,
+      -0.34202,
+      0.93969
+     ]
+    },
+    "Socket_Mag": {
+     "position": [
+      0.0,
+      0.04181,
+      -0.00513
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Grip_L": {
+     "position": [
+      -0.015,
+      -0.026,
+      -0.05
+     ],
+     "forward": [
+      0.0,
+      -0.93969,
+      -0.34202
+     ],
+     "up": [
+      0.0,
+      -0.34202,
+      0.93969
+     ]
+    },
+    "Eject": {
+     "position": [
+      0.01594,
+      0.044,
+      0.01
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Sight_Iron": {
+     "position": [
+      0.0,
+      0.0689,
+      -0.09828
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    }
+   },
+   "mag_insert": [
+    0.0,
+    1.0,
+    0.0
+   ],
+   "source": "low-poly-kimber-k6s.blend",
+   "capacity": 6
+  },
+  {
+   "id": "R870",
+   "kind": "weapon",
+   "slot": null,
+   "file": "Assets/_Game/Art/Weapons/Models/R870.fbx",
+   "triangles": 1190,
+   "dimensions": [
+    0.04718,
+    0.17286,
+    0.75
+   ],
+   "boundsMin": [
+    -0.02359,
+    -0.09537,
+    -0.09995
+   ],
+   "boundsMax": [
+    0.02359,
+    0.07749,
+    0.65005
+   ],
+   "meshes": {
+    "Body": {
+     "origin": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "triangles": 1146,
+     "materials": [
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black"
+     ],
+     "boundsMin": [
+      -0.01721,
+      -0.09537,
+      -0.09995
+     ],
+     "boundsMax": [
+      0.0191,
+      0.07749,
+      0.65005
+     ]
+    },
+    "Pump": {
+     "origin": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "triangles": 44,
+     "materials": [
+      "Polymer_Black"
+     ],
+     "boundsMin": [
+      -0.02359,
+      0.00569,
+      0.26421
+     ],
+     "boundsMax": [
+      0.02359,
+      0.04597,
+      0.44368
+     ]
+    }
+   },
+   "sockets": {
+    "Socket_Muzzle": {
+     "position": [
+      0.0,
+      0.059,
+      0.649
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Grip_R": {
+     "position": [
+      0.0,
+      -0.023,
+      -0.039
+     ],
+     "forward": [
+      0.0,
+      -0.86603,
+      -0.5
+     ],
+     "up": [
+      0.0,
+      -0.5,
+      0.86603
+     ]
+    },
+    "Socket_Optic": {
+     "position": [
+      0.0,
+      0.075,
+      0.092
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Grip_L": {
+     "position": [
+      0.0,
+      0.027,
+      0.351
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Eject": {
+     "position": [
+      0.02,
+      0.046,
+      0.131
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Sight_Iron": {
+     "position": [
+      0.0,
+      0.079,
+      0.086
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    }
+   },
+   "mag_insert": [
+    0.0,
+    1.0,
+    0.0
+   ],
+   "source": "low-poly-remington-870.blend",
+   "capacity": 6,
+   "moving": {
+    "Pump": {
+     "travel": 0.09
+    }
+   }
+  },
+  {
+   "id": "SVD",
+   "kind": "weapon",
+   "slot": null,
+   "file": "Assets/_Game/Art/Weapons/Models/SVD.fbx",
+   "triangles": 3875,
+   "dimensions": [
+    0.0485,
+    0.16946,
+    1.22
+   ],
+   "boundsMin": [
+    -0.01634,
+    -0.07538,
+    -0.32553
+   ],
+   "boundsMax": [
+    0.03216,
+    0.09408,
+    0.89447
+   ],
+   "meshes": {
+    "Body": {
+     "origin": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "triangles": 3467,
+     "materials": [
+      "SVD_Main"
+     ],
+     "boundsMin": [
+      -0.01634,
+      -0.07327,
+      -0.32553
+     ],
+     "boundsMax": [
+      0.03216,
+      0.09408,
+      0.89447
+     ]
+    },
+    "Mag": {
+     "origin": [
+      0.0,
+      0.03988,
+      0.13316
+     ],
+     "triangles": 380,
+     "materials": [
+      "SVD_Main"
+     ],
+     "boundsMin": [
+      -0.01298,
+      -0.07538,
+      0.0925
+     ],
+     "boundsMax": [
+      0.01298,
+      0.04388,
+      0.17382
+     ]
+    },
+    "Trigger": {
+     "origin": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "triangles": 28,
+     "materials": [
+      "SVD_Main"
+     ],
+     "boundsMin": [
+      -0.00365,
+      -0.01329,
+      -0.01028
+     ],
+     "boundsMax": [
+      0.00365,
+      0.02485,
+      0.00181
+     ]
+    }
+   },
+   "sockets": {
+    "Socket_Muzzle": {
+     "position": [
+      0.0,
+      0.05018,
+      0.89447
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Grip_R": {
+     "position": [
+      0.0,
+      -0.022,
+      -0.074
+     ],
+     "forward": [
+      0.0,
+      -0.93969,
+      -0.34202
+     ],
+     "up": [
+      0.0,
+      -0.34202,
+      0.93969
+     ]
+    },
+    "Socket_Mag": {
+     "position": [
+      0.0,
+      0.03988,
+      0.13316
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Socket_Optic": {
+     "position": [
+      0.0,
+      0.08076,
+      0.12316
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Grip_L": {
+     "position": [
+      0.0,
+      0.05018,
+      0.47382
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Socket_Underbarrel": {
+     "position": [
+      0.0,
+      0.03234,
+      0.49382
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Socket_Side": {
+     "position": [
+      0.0056,
+      0.05018,
+      0.53382
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Eject": {
+     "position": [
+      0.01711,
+      0.05418,
+      0.07867
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Sight_Iron": {
+     "position": [
+      0.0,
+      0.09208,
+      0.07316
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    }
+   },
+   "mag_insert": [
+    0.0,
+    1.0,
+    0.0
+   ],
+   "source": "SniperRifle2_01.fbx",
+   "capacity": 10
+  },
+  {
+   "id": "AWM",
+   "kind": "weapon",
+   "slot": null,
+   "file": "Assets/_Game/Art/Weapons/Models/AWM.fbx",
+   "triangles": 2630,
+   "dimensions": [
+    0.07321,
+    0.16312,
+    1.2
+   ],
+   "boundsMin": [
+    -0.02143,
+    -0.09977,
+    -0.3688
+   ],
+   "boundsMax": [
+    0.05178,
+    0.06335,
+    0.8312
+   ],
+   "meshes": {
+    "Body": {
+     "origin": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "triangles": 2218,
+     "materials": [
+      "AWM_Main"
+     ],
+     "boundsMin": [
+      -0.02143,
+      -0.09977,
+      -0.3688
+     ],
+     "boundsMax": [
+      0.02143,
+      0.06335,
+      0.8312
+     ]
+    },
+    "Bolt": {
+     "origin": [
+      0.0,
+      0.0191,
+      -0.04114
+     ],
+     "triangles": 168,
+     "materials": [
+      "AWM_Main"
+     ],
+     "boundsMin": [
+      0.0,
+      -0.00542,
+      -0.04114
+     ],
+     "boundsMax": [
+      0.05178,
+      0.04363,
+      0.0022
+     ]
+    },
+    "Mag": {
+     "origin": [
+      0.0,
+      0.02448,
+      0.06974
+     ],
+     "triangles": 244,
+     "materials": [
+      "AWM_Main"
+     ],
+     "boundsMin": [
+      -0.01642,
+      -0.07086,
+      0.02269
+     ],
+     "boundsMax": [
+      0.01642,
+      0.02848,
+      0.11678
+     ]
+    }
+   },
+   "sockets": {
+    "Socket_Muzzle": {
+     "position": [
+      4e-05,
+      0.042,
+      0.8312
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Grip_R": {
+     "position": [
+      0.0,
+      -0.03,
+      -0.062
+     ],
+     "forward": [
+      0.0,
+      -0.93969,
+      -0.34202
+     ],
+     "up": [
+      0.0,
+      -0.34202,
+      0.93969
+     ]
+    },
+    "Socket_Mag": {
+     "position": [
+      0.0,
+      0.02448,
+      0.06974
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Socket_Optic": {
+     "position": [
+      0.0,
+      0.06335,
+      0.05974
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Grip_L": {
+     "position": [
+      0.0,
+      0.042,
+      0.28678
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Socket_Underbarrel": {
+     "position": [
+      0.0,
+      0.017,
+      0.30678
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Socket_Side": {
+     "position": [
+      0.01786,
+      0.042,
+      0.34678
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Eject": {
+     "position": [
+      0.01786,
+      0.046,
+      0.028
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    }
+   },
+   "mag_insert": [
+    0.0,
+    1.0,
+    0.0
+   ],
+   "source": "SniperRifle1_01.fbx",
+   "capacity": 5,
+   "moving": {
+    "Bolt": {
+     "travel": 0.08
+    }
+   }
+  },
+  {
+   "id": "VSS",
+   "kind": "weapon",
+   "slot": null,
+   "file": "Assets/_Game/Art/Weapons/Models/VSS.fbx",
+   "triangles": 2874,
+   "dimensions": [
+    0.0699,
+    0.16619,
+    0.894
+   ],
+   "boundsMin": [
+    -0.03112,
+    -0.09675,
+    -0.38552
+   ],
+   "boundsMax": [
+    0.03878,
+    0.06943,
+    0.50848
+   ],
+   "meshes": {
+    "Body": {
+     "origin": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "triangles": 2642,
+     "materials": [
+      "VSS_Main"
+     ],
+     "boundsMin": [
+      -0.03112,
+      -0.09675,
+      -0.38552
+     ],
+     "boundsMax": [
+      0.03878,
+      0.06943,
+      0.50848
+     ]
+    },
+    "Mag": {
+     "origin": [
+      0.0,
+      0.02791,
+      0.06833
+     ],
+     "triangles": 204,
+     "materials": [
+      "VSS_Main"
+     ],
+     "boundsMin": [
+      -0.01477,
+      -0.08523,
+      0.02576
+     ],
+     "boundsMax": [
+      0.01477,
+      0.03191,
+      0.11091
+     ]
+    },
+    "Trigger": {
+     "origin": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "triangles": 28,
+     "materials": [
+      "VSS_Main"
+     ],
+     "boundsMin": [
+      -0.00432,
+      -0.01549,
+      -0.0256
+     ],
+     "boundsMax": [
+      0.00432,
+      0.02118,
+      -0.00902
+     ]
+    }
+   },
+   "sockets": {
+    "Socket_Muzzle": {
+     "position": [
+      0.0,
+      0.042,
+      0.50848
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Grip_R": {
+     "position": [
+      0.0,
+      -0.03,
+      -0.062
+     ],
+     "forward": [
+      0.0,
+      -0.93969,
+      -0.34202
+     ],
+     "up": [
+      0.0,
+      -0.34202,
+      0.93969
+     ]
+    },
+    "Socket_Mag": {
+     "position": [
+      0.0,
+      0.02791,
+      0.06833
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Socket_Optic": {
+     "position": [
+      0.0,
+      0.06943,
+      0.05833
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Grip_L": {
+     "position": [
+      0.0,
+      0.042,
+      0.27789
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Socket_Underbarrel": {
+     "position": [
+      0.0,
+      0.01484,
+      0.29789
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Socket_Side": {
+     "position": [
+      0.02,
+      0.042,
+      0.33789
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Eject": {
+     "position": [
+      0.01996,
+      0.046,
+      0.028
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Sight_Iron": {
+     "position": [
+      0.0,
+      0.06724,
+      0.00833
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    }
+   },
+   "mag_insert": [
+    0.0,
+    1.0,
+    0.0
+   ],
+   "source": "SniperRifle6_01.fbx",
+   "capacity": 20
+  },
+  {
+   "id": "AXMC",
+   "kind": "weapon",
+   "slot": null,
+   "file": "Assets/_Game/Art/Weapons/Models/AXMC.fbx",
+   "triangles": 9618,
+   "dimensions": [
+    0.07994,
+    0.17389,
+    1.2
+   ],
+   "boundsMin": [
+    -0.04392,
+    -0.09607,
+    -0.4266
+   ],
+   "boundsMax": [
+    0.03602,
+    0.07782,
+    0.7734
+   ],
+   "meshes": {
+    "Body": {
+     "origin": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "triangles": 9538,
+     "materials": [
+      "AXMC_Main"
+     ],
+     "boundsMin": [
+      -0.04392,
+      -0.09607,
+      -0.4266
+     ],
+     "boundsMax": [
+      0.03602,
+      0.07782,
+      0.7734
+     ]
+    },
+    "Mag": {
+     "origin": [
+      0.0,
+      0.016,
+      0.07281
+     ],
+     "triangles": 60,
+     "materials": [
+      "AXMC_Main"
+     ],
+     "boundsMin": [
+      -0.01632,
+      -0.09264,
+      0.01979
+     ],
+     "boundsMax": [
+      0.01632,
+      0.02,
+      0.12584
+     ]
+    },
+    "Trigger": {
+     "origin": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "triangles": 20,
+     "materials": [
+      "AXMC_Main"
+     ],
+     "boundsMin": [
+      -0.00413,
+      -0.02713,
+      -0.0219
+     ],
+     "boundsMax": [
+      0.00413,
+      0.00465,
+      -0.01321
+     ]
+    }
+   },
+   "sockets": {
+    "Socket_Muzzle": {
+     "position": [
+      0.0,
+      0.042,
+      0.7734
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Grip_R": {
+     "position": [
+      0.0,
+      -0.03,
+      -0.062
+     ],
+     "forward": [
+      0.0,
+      -0.93969,
+      -0.34202
+     ],
+     "up": [
+      0.0,
+      -0.34202,
+      0.93969
+     ]
+    },
+    "Socket_Mag": {
+     "position": [
+      0.0,
+      0.016,
+      0.07281
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Socket_Optic": {
+     "position": [
+      0.0,
+      0.0764,
+      0.06281
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Grip_L": {
+     "position": [
+      0.0,
+      0.042,
+      0.39782
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Socket_Underbarrel": {
+     "position": [
+      0.0,
+      0.021,
+      0.418
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Socket_Side": {
+     "position": [
+      0.02448,
+      0.042,
+      0.45782
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Eject": {
+     "position": [
+      0.02448,
+      0.046,
+      0.028
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    }
+   },
+   "mag_insert": [
+    0.0,
+    1.0,
+    0.0
+   ],
+   "source": "SniperRifle_02_C1.fbx",
+   "capacity": 5
+  },
+  {
+   "id": "RPG7",
+   "kind": "weapon",
+   "slot": null,
+   "file": "Assets/_Game/Art/Weapons/Models/RPG7.fbx",
+   "triangles": 2890,
+   "dimensions": [
+    0.11599,
+    0.23162,
+    1.3
+   ],
+   "boundsMin": [
+    -0.05799,
+    -0.10385,
+    -0.76791
+   ],
+   "boundsMax": [
+    0.05799,
+    0.12777,
+    0.53209
+   ],
+   "meshes": {
+    "Body": {
+     "origin": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "triangles": 2594,
+     "materials": [
+      "RPG7_Main"
+     ],
+     "boundsMin": [
+      -0.05799,
+      -0.10385,
+      -0.76791
+     ],
+     "boundsMax": [
+      0.05799,
+      0.12777,
+      0.16377
+     ]
+    },
+    "Mag": {
+     "origin": [
+      0.0,
+      0.041,
+      0.163
+     ],
+     "triangles": 268,
+     "materials": [
+      "RPG7_Main"
+     ],
+     "boundsMin": [
+      -0.04152,
+      0.00243,
+      -0.38296
+     ],
+     "boundsMax": [
+      0.04152,
+      0.08548,
+      0.53209
+     ]
+    },
+    "Trigger": {
+     "origin": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "triangles": 28,
+     "materials": [
+      "RPG7_Main"
+     ],
+     "boundsMin": [
+      -0.00409,
+      -0.01176,
+      -0.00582
+     ],
+     "boundsMax": [
+      0.00409,
+      0.01404,
+      0.01226
+     ]
+    }
+   },
+   "sockets": {
+    "Socket_Muzzle": {
+     "position": [
+      0.0,
+      0.041,
+      0.163
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Grip_R": {
+     "position": [
+      0.0,
+      -0.031,
+      -0.038
+     ],
+     "forward": [
+      0.0,
+      -0.99619,
+      -0.08716
+     ],
+     "up": [
+      0.0,
+      -0.08716,
+      0.99619
+     ]
+    },
+    "Socket_Mag": {
+     "position": [
+      0.0,
+      0.041,
+      0.163
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Grip_L": {
+     "position": [
+      0.0,
+      0.041,
+      0.086
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Eject": {
+     "position": [
+      0.0,
+      0.041,
+      -0.764
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Sight_Iron": {
+     "position": [
+      -0.0245,
+      0.126,
+      -0.19
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    },
+    "Socket_Butt": {
+     "position": [
+      0.0,
+      -0.01,
+      -0.284
+     ],
+     "forward": [
+      0.0,
+      0.0,
+      1.0
+     ],
+     "up": [
+      0.0,
+      1.0,
+      0.0
+     ]
+    }
+   },
+   "mag_insert": [
+    0.0,
+    1.0,
+    0.0
+   ],
+   "source": "HW_01_C1.fbx",
+   "capacity": 1
+  },
+  {
+   "id": "Grip_Angled_AFG",
+   "kind": "attachment",
+   "slot": "Underbarrel",
+   "file": "Assets/_Game/Art/Weapons/Attachments/Grip_Angled_AFG.fbx",
+   "compatible": [
+    "HK416",
+    "MK18",
+    "QBZ191",
+    "MK47",
+    "AKM",
+    "HoneyBadger",
+    "Vector",
+    "MPX",
+    "Scorpion",
+    "SR2",
+    "M249",
+    "M4A1",
+    "AK12",
+    "M14EBR"
+   ],
+   "dimensions": [
+    0.04112,
+    0.07102,
+    0.15915
+   ],
+   "boundsMin": [
+    -0.02056,
+    -0.07102,
+    -0.12023
+   ],
+   "boundsMax": [
+    0.02056,
+    0.0,
+    0.03891
+   ],
+   "meshes": {
+    "Body": {
+     "materials": [
+      "Metal_Black",
+      "Metal_Dark",
+      "Glass_Lens",
+      "Metal_Worn",
+      "Polymer_Red",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black"
+     ],
+     "triangles": 824
+    }
+   },
+   "sockets": {
+    "Grip_L": {
+     "position": [
+      0.0,
+      -0.02,
+      0.0
+     ]
+    }
+   }
+  },
+  {
+   "id": "Grip_Angled_Ergo",
+   "kind": "attachment",
+   "slot": "Underbarrel",
+   "file": "Assets/_Game/Art/Weapons/Attachments/Grip_Angled_Ergo.fbx",
+   "compatible": [
+    "HK416",
+    "MK18",
+    "QBZ191",
+    "MK47",
+    "AKM",
+    "HoneyBadger",
+    "Vector",
+    "MPX",
+    "Scorpion",
+    "SR2",
+    "M249",
+    "M4A1",
+    "AK12",
+    "M14EBR"
+   ],
+   "dimensions": [
+    0.02459,
+    0.06665,
+    0.06693
+   ],
+   "boundsMin": [
+    -0.0123,
+    -0.06665,
+    -0.03917
+   ],
+   "boundsMax": [
+    0.0123,
+    0.0,
+    0.02775
+   ],
+   "meshes": {
+    "Body": {
+     "materials": [
+      "Metal_Black",
+      "Metal_Dark",
+      "Glass_Lens",
+      "Metal_Worn",
+      "Polymer_Red",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black"
+     ],
+     "triangles": 624
+    }
+   },
+   "sockets": {
+    "Grip_L": {
+     "position": [
+      0.0,
+      -0.035,
+      0.0
+     ]
+    }
+   }
+  },
+  {
+   "id": "Grip_Angled_Stop",
+   "kind": "attachment",
+   "slot": "Underbarrel",
+   "file": "Assets/_Game/Art/Weapons/Attachments/Grip_Angled_Stop.fbx",
+   "compatible": [
+    "HK416",
+    "MK18",
+    "QBZ191",
+    "MK47",
+    "AKM",
+    "HoneyBadger",
+    "Vector",
+    "MPX",
+    "Scorpion",
+    "SR2",
+    "M249",
+    "M4A1",
+    "AK12",
+    "M14EBR"
+   ],
+   "dimensions": [
+    0.02189,
+    0.05515,
+    0.14471
+   ],
+   "boundsMin": [
+    -0.01094,
+    -0.05515,
+    -0.07235
+   ],
+   "boundsMax": [
+    0.01094,
+    0.0,
+    0.07235
+   ],
+   "meshes": {
+    "Body": {
+     "materials": [
+      "Metal_Black",
+      "Metal_Dark",
+      "Glass_Lens",
+      "Metal_Worn",
+      "Polymer_Red",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black"
+     ],
+     "triangles": 514
+    }
+   },
+   "sockets": {
+    "Grip_L": {
+     "position": [
+      0.0,
+      -0.015,
+      0.02
+     ]
+    }
+   }
+  },
+  {
+   "id": "Grip_Vertical_RK0",
+   "kind": "attachment",
+   "slot": "Underbarrel",
+   "file": "Assets/_Game/Art/Weapons/Attachments/Grip_Vertical_RK0.fbx",
+   "compatible": [
+    "HK416",
+    "MK18",
+    "QBZ191",
+    "MK47",
+    "AKM",
+    "HoneyBadger",
+    "Vector",
+    "MPX",
+    "Scorpion",
+    "SR2",
+    "M249",
+    "M4A1",
+    "AK12",
+    "M14EBR"
+   ],
+   "dimensions": [
+    0.03152,
+    0.06933,
+    0.04466
+   ],
+   "boundsMin": [
+    -0.01576,
+    -0.06933,
+    -0.02233
+   ],
+   "boundsMax": [
+    0.01576,
+    0.0,
+    0.02233
+   ],
+   "meshes": {
+    "Body": {
+     "materials": [
+      "Polymer_Black"
+     ],
+     "triangles": 302
+    }
+   },
+   "sockets": {
+    "Grip_L": {
+     "position": [
+      0.0,
+      -0.03,
+      0.0
+     ]
+    }
+   }
+  },
+  {
+   "id": "Grip_Vertical_RK2",
+   "kind": "attachment",
+   "slot": "Underbarrel",
+   "file": "Assets/_Game/Art/Weapons/Attachments/Grip_Vertical_RK2.fbx",
+   "compatible": [
+    "HK416",
+    "MK18",
+    "QBZ191",
+    "MK47",
+    "AKM",
+    "HoneyBadger",
+    "Vector",
+    "MPX",
+    "Scorpion",
+    "SR2",
+    "M249",
+    "M4A1",
+    "AK12",
+    "M14EBR"
+   ],
+   "dimensions": [
+    0.03152,
+    0.11408,
+    0.04466
+   ],
+   "boundsMin": [
+    -0.01576,
+    -0.11408,
+    -0.02233
+   ],
+   "boundsMax": [
+    0.01576,
+    0.0,
+    0.02233
+   ],
+   "meshes": {
+    "Body": {
+     "materials": [
+      "Polymer_Black"
+     ],
+     "triangles": 446
+    }
+   },
+   "sockets": {
+    "Grip_L": {
+     "position": [
+      0.0,
+      -0.05,
+      0.0
+     ]
+    }
+   }
+  },
+  {
+   "id": "Grip_Vertical_Tactical",
+   "kind": "attachment",
+   "slot": "Underbarrel",
+   "file": "Assets/_Game/Art/Weapons/Attachments/Grip_Vertical_Tactical.fbx",
+   "compatible": [
+    "HK416",
+    "MK18",
+    "QBZ191",
+    "MK47",
+    "AKM",
+    "HoneyBadger",
+    "Vector",
+    "MPX",
+    "Scorpion",
+    "SR2",
+    "M249",
+    "M4A1",
+    "AK12",
+    "M14EBR"
+   ],
+   "dimensions": [
+    0.02773,
+    0.07875,
+    0.04757
+   ],
+   "boundsMin": [
+    -0.01387,
+    -0.07875,
+    -0.02379
+   ],
+   "boundsMax": [
+    0.01387,
+    0.0,
+    0.02379
+   ],
+   "meshes": {
+    "Body": {
+     "materials": [
+      "Metal_Black",
+      "Metal_Dark",
+      "Glass_Lens",
+      "Metal_Worn",
+      "Polymer_Red",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black"
+     ],
+     "triangles": 1448
+    }
+   },
+   "sockets": {
+    "Grip_L": {
+     "position": [
+      0.0,
+      -0.04,
+      0.0
+     ]
+    }
+   }
+  },
+  {
+   "id": "Mag_AK_Ext",
+   "kind": "attachment",
+   "slot": "Magazine",
+   "file": "Assets/_Game/Art/Weapons/Attachments/Mag_AK_Ext.fbx",
+   "compatible": [
+    "AKM",
+    "MK47"
+   ],
+   "dimensions": [
+    0.0353,
+    0.30329,
+    0.13936
+   ],
+   "boundsMin": [
+    -0.01789,
+    -0.30329,
+    -0.02943
+   ],
+   "boundsMax": [
+    0.01741,
+    0.0,
+    0.10993
+   ],
+   "meshes": {
+    "Body": {
+     "materials": [
+      "Metal_Black",
+      "Metal_Dark",
+      "Glass_Lens",
+      "Metal_Worn",
+      "Polymer_Red",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black"
+     ],
+     "triangles": 796
+    }
+   },
+   "sockets": {},
+   "capacity": 45
+  },
+  {
+   "id": "Mag_AR_Coupled",
+   "kind": "attachment",
+   "slot": "Magazine",
+   "file": "Assets/_Game/Art/Weapons/Attachments/Mag_AR_Coupled.fbx",
+   "compatible": [
+    "M4A1",
+    "HK416",
+    "MK18"
+   ],
+   "dimensions": [
+    0.03191,
+    0.20098,
+    0.10269
+   ],
+   "boundsMin": [
+    -0.0166,
+    -0.20098,
+    -0.02614
+   ],
+   "boundsMax": [
+    0.0153,
+    0.0,
+    0.07655
+   ],
+   "meshes": {
+    "Body": {
+     "materials": [
+      "Metal_Black",
+      "Metal_Dark",
+      "Glass_Lens",
+      "Metal_Worn",
+      "Polymer_Red",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black"
+     ],
+     "triangles": 1478
+    }
+   },
+   "sockets": {},
+   "capacity": 60
+  },
+  {
+   "id": "Mag_AR_Drum",
+   "kind": "attachment",
+   "slot": "Magazine",
+   "file": "Assets/_Game/Art/Weapons/Attachments/Mag_AR_Drum.fbx",
+   "compatible": [
+    "M4A1",
+    "HK416",
+    "MK18"
+   ],
+   "dimensions": [
+    0.12497,
+    0.25177,
+    0.15428
+   ],
+   "boundsMin": [
+    -0.06271,
+    -0.25177,
+    -0.03158
+   ],
+   "boundsMax": [
+    0.06226,
+    0.0,
+    0.1227
+   ],
+   "meshes": {
+    "Body": {
+     "materials": [
+      "Metal_Black",
+      "Metal_Dark",
+      "Glass_Lens",
+      "Metal_Worn",
+      "Polymer_Red",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black"
+     ],
+     "triangles": 1068
+    }
+   },
+   "sockets": {},
+   "capacity": 60
+  },
+  {
+   "id": "Muzzle_Brake762",
+   "kind": "attachment",
+   "slot": "Muzzle",
+   "file": "Assets/_Game/Art/Weapons/Attachments/Muzzle_Brake762.fbx",
+   "compatible": [
+    "AKM",
+    "MK47",
+    "AK12",
+    "SVD",
+    "M14EBR",
+    "AWM",
+    "AXMC"
+   ],
+   "dimensions": [
+    0.02053,
+    0.02053,
+    0.052
+   ],
+   "boundsMin": [
+    -0.01027,
+    -0.01027,
+    0.0
+   ],
+   "boundsMax": [
+    0.01027,
+    0.01027,
+    0.052
+   ],
+   "meshes": {
+    "Body": {
+     "materials": [
+      "Metal_Black",
+      "Metal_Black"
+     ],
+     "triangles": 440
+    }
+   },
+   "sockets": {
+    "Socket_Muzzle": {
+     "position": [
+      0.0,
+      0.0,
+      0.052
+     ]
+    }
+   },
+   "muzzleLength": 0.052
+  },
+  {
+   "id": "Muzzle_BrakeHex",
+   "kind": "attachment",
+   "slot": "Muzzle",
+   "file": "Assets/_Game/Art/Weapons/Attachments/Muzzle_BrakeHex.fbx",
+   "compatible": [
+    "AKM",
+    "HK416",
+    "MK47",
+    "QBZ191",
+    "MK18",
+    "M4A1",
+    "AK12",
+    "M14EBR",
+    "M249",
+    "SVD",
+    "AWM",
+    "AXMC"
+   ],
+   "dimensions": [
+    0.0225,
+    0.0225,
+    0.06675
+   ],
+   "boundsMin": [
+    -0.01125,
+    -0.01125,
+    0.0
+   ],
+   "boundsMax": [
+    0.01125,
+    0.01125,
+    0.06675
+   ],
+   "meshes": {
+    "Body": {
+     "materials": [
+      "Metal_Black",
+      "Metal_Dark",
+      "Glass_Lens",
+      "Metal_Worn",
+      "Polymer_Red",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black"
+     ],
+     "triangles": 544
+    }
+   },
+   "sockets": {
+    "Socket_Muzzle": {
+     "position": [
+      0.0,
+      0.0,
+      0.06675
+     ]
+    }
+   },
+   "muzzleLength": 0.06675
+  },
+  {
+   "id": "Muzzle_Comp",
+   "kind": "attachment",
+   "slot": "Muzzle",
+   "file": "Assets/_Game/Art/Weapons/Attachments/Muzzle_Comp.fbx",
+   "compatible": [
+    "AKM",
+    "HK416",
+    "MK47",
+    "QBZ191",
+    "MK18",
+    "M4A1",
+    "AK12",
+    "M14EBR",
+    "M249"
+   ],
+   "dimensions": [
+    0.02079,
+    0.017,
+    0.06675
+   ],
+   "boundsMin": [
+    -0.01039,
+    -0.0085,
+    0.0
+   ],
+   "boundsMax": [
+    0.01039,
+    0.0085,
+    0.06675
+   ],
+   "meshes": {
+    "Body": {
+     "materials": [
+      "Metal_Black",
+      "Metal_Dark",
+      "Glass_Lens",
+      "Metal_Worn",
+      "Polymer_Red",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black"
+     ],
+     "triangles": 700
+    }
+   },
+   "sockets": {
+    "Socket_Muzzle": {
+     "position": [
+      0.0,
+      0.0,
+      0.06675
+     ]
+    }
+   },
+   "muzzleLength": 0.06675
+  },
+  {
+   "id": "Muzzle_Linear",
+   "kind": "attachment",
+   "slot": "Muzzle",
+   "file": "Assets/_Game/Art/Weapons/Attachments/Muzzle_Linear.fbx",
+   "compatible": [
+    "AKM",
+    "HK416",
+    "MK47",
+    "QBZ191",
+    "MK18",
+    "M4A1",
+    "AK12",
+    "M14EBR",
+    "M249"
+   ],
+   "dimensions": [
+    0.02139,
+    0.02106,
+    0.06674
+   ],
+   "boundsMin": [
+    -0.01069,
+    -0.01057,
+    0.0
+   ],
+   "boundsMax": [
+    0.01069,
+    0.01049,
+    0.06674
+   ],
+   "meshes": {
+    "Body": {
+     "materials": [
+      "Metal_Black",
+      "Metal_Dark",
+      "Glass_Lens",
+      "Metal_Worn",
+      "Polymer_Red",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black"
+     ],
+     "triangles": 530
+    }
+   },
+   "sockets": {
+    "Socket_Muzzle": {
+     "position": [
+      0.0,
+      0.0,
+      0.06674
+     ]
+    }
+   },
+   "muzzleLength": 0.06674
+  },
+  {
+   "id": "Optic_ACOG",
+   "kind": "attachment",
+   "slot": "Optic",
+   "file": "Assets/_Game/Art/Weapons/Attachments/Optic_ACOG.fbx",
+   "compatible": [
+    "AKM",
+    "HK416",
+    "MK47",
+    "QBZ191",
+    "MK18",
+    "M4A1",
+    "AK12",
+    "M14EBR",
+    "M249",
+    "SVD",
+    "VSS",
+    "AWM",
+    "AXMC",
+    "HoneyBadger",
+    "MPX",
+    "Scorpion"
+   ],
+   "dimensions": [
+    0.05618,
+    0.07608,
+    0.16248
+   ],
+   "boundsMin": [
+    -0.02873,
+    0.0,
+    -0.11622
+   ],
+   "boundsMax": [
+    0.02744,
+    0.07608,
+    0.04627
+   ],
+   "meshes": {
+    "Body": {
+     "materials": [
+      "Metal_Black",
+      "Polymer_Red"
+     ],
+     "triangles": 4192
+    },
+    "Lens_Rear": {
+     "materials": [
+      "Glass_Lens"
+     ],
+     "triangles": 22
+    }
+   },
+   "sockets": {
+    "Sight_Point": {
+     "position": [
+      0.0,
+      0.05023,
+      -0.11222
+     ]
+    }
+   },
+   "magnification": 4.0
+  },
+  {
+   "id": "Optic_HoloEXPS",
+   "kind": "attachment",
+   "slot": "Optic",
+   "file": "Assets/_Game/Art/Weapons/Attachments/Optic_HoloEXPS.fbx",
+   "compatible": [
+    "AKM",
+    "HK416",
+    "MK47",
+    "QBZ191",
+    "MK18",
+    "HoneyBadger",
+    "Vector",
+    "MPX",
+    "Scorpion",
+    "SR2",
+    "M249",
+    "M4A1",
+    "AK12",
+    "M14EBR",
+    "SVD",
+    "VSS"
+   ],
+   "dimensions": [
+    0.06388,
+    0.07238,
+    0.14587
+   ],
+   "boundsMin": [
+    -0.03194,
+    0.0,
+    -0.0743
+   ],
+   "boundsMax": [
+    0.03194,
+    0.07238,
+    0.07157
+   ],
+   "meshes": {
+    "Body": {
+     "materials": [
+      "Metal_Dark",
+      "Metal_Black",
+      "Metal_Black"
+     ],
+     "triangles": 3290
+    },
+    "Lens_Rear": {
+     "materials": [
+      "Glass_Lens"
+     ],
+     "triangles": 72
+    }
+   },
+   "sockets": {
+    "Sight_Point": {
+     "position": [
+      0.0,
+      0.0491,
+      -0.0558
+     ]
+    }
+   },
+   "magnification": 1.0
+  },
+  {
+   "id": "Optic_HoloRed",
+   "kind": "attachment",
+   "slot": "Optic",
+   "file": "Assets/_Game/Art/Weapons/Attachments/Optic_HoloRed.fbx",
+   "compatible": [
+    "AKM",
+    "HK416",
+    "MK47",
+    "QBZ191",
+    "MK18",
+    "HoneyBadger",
+    "Vector",
+    "MPX",
+    "Scorpion",
+    "SR2",
+    "M249",
+    "M4A1",
+    "AK12",
+    "M14EBR",
+    "SVD",
+    "VSS"
+   ],
+   "dimensions": [
+    0.08607,
+    0.08131,
+    0.13616
+   ],
+   "boundsMin": [
+    -0.04973,
+    0.0,
+    -0.06808
+   ],
+   "boundsMax": [
+    0.03634,
+    0.08131,
+    0.06808
+   ],
+   "meshes": {
+    "Body": {
+     "materials": [
+      "Metal_Black",
+      "Metal_Dark",
+      "Glass_Lens",
+      "Metal_Worn",
+      "Polymer_Red",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black"
+     ],
+     "triangles": 1874
+    },
+    "Lens_Rear": {
+     "materials": [
+      "Glass_Lens"
+     ],
+     "triangles": 22
+    }
+   },
+   "sockets": {
+    "Sight_Point": {
+     "position": [
+      0.0,
+      0.05654,
+      0.03226
+     ]
+    }
+   },
+   "magnification": 1.0
+  },
+  {
+   "id": "Optic_MiniDot",
+   "kind": "attachment",
+   "slot": "Optic",
+   "file": "Assets/_Game/Art/Weapons/Attachments/Optic_MiniDot.fbx",
+   "compatible": [
+    "AKM",
+    "HK416",
+    "MK47",
+    "QBZ191",
+    "MK18",
+    "HoneyBadger",
+    "Vector",
+    "MPX",
+    "Scorpion",
+    "SR2",
+    "M249",
+    "M4A1",
+    "AK12",
+    "M14EBR",
+    "SVD",
+    "VSS"
+   ],
+   "dimensions": [
+    0.03569,
+    0.07368,
+    0.06749
+   ],
+   "boundsMin": [
+    -0.01679,
+    0.0,
+    -0.03311
+   ],
+   "boundsMax": [
+    0.0189,
+    0.07368,
+    0.03438
+   ],
+   "meshes": {
+    "Body": {
+     "materials": [
+      "Metal_Black",
+      "Metal_Dark",
+      "Glass_Lens",
+      "Metal_Worn",
+      "Polymer_Red",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black"
+     ],
+     "triangles": 584
+    },
+    "Lens_Rear": {
+     "materials": [
+      "Glass_Lens"
+     ],
+     "triangles": 6
+    },
+    "Lens_Front": {
+     "materials": [
+      "Glass_Lens"
+     ],
+     "triangles": 6
+    }
+   },
+   "sockets": {
+    "Sight_Point": {
+     "position": [
+      0.0,
+      0.05171,
+      -0.03166
+     ]
+    }
+   },
+   "magnification": 1.0
+  },
+  {
+   "id": "Optic_OKP7",
+   "kind": "attachment",
+   "slot": "Optic",
+   "file": "Assets/_Game/Art/Weapons/Attachments/Optic_OKP7.fbx",
+   "compatible": [
+    "AKM",
+    "HK416",
+    "MK47",
+    "QBZ191",
+    "MK18",
+    "HoneyBadger",
+    "Vector",
+    "MPX",
+    "Scorpion",
+    "SR2",
+    "M249",
+    "M4A1",
+    "AK12",
+    "M14EBR",
+    "SVD",
+    "VSS"
+   ],
+   "dimensions": [
+    0.04443,
+    0.08465,
+    0.1021
+   ],
+   "boundsMin": [
+    -0.02704,
+    0.0,
+    -0.0515
+   ],
+   "boundsMax": [
+    0.01739,
+    0.08465,
+    0.05061
+   ],
+   "meshes": {
+    "Body": {
+     "materials": [
+      "Metal_Black"
+     ],
+     "triangles": 2659
+    },
+    "Lens_Rear": {
+     "materials": [
+      "Glass_Lens"
+     ],
+     "triangles": 124
+    }
+   },
+   "sockets": {
+    "Sight_Point": {
+     "position": [
+      0.0,
+      0.068,
+      -0.03799
+     ]
+    }
+   },
+   "magnification": 1.0
+  },
+  {
+   "id": "Optic_Scope6x",
+   "kind": "attachment",
+   "slot": "Optic",
+   "file": "Assets/_Game/Art/Weapons/Attachments/Optic_Scope6x.fbx",
+   "compatible": [
+    "AKM",
+    "HK416",
+    "MK47",
+    "QBZ191",
+    "MK18",
+    "M4A1",
+    "AK12",
+    "M14EBR",
+    "M249",
+    "SVD",
+    "VSS",
+    "AWM",
+    "AXMC"
+   ],
+   "dimensions": [
+    0.05758,
+    0.0944,
+    0.33373
+   ],
+   "boundsMin": [
+    -0.02866,
+    0.0,
+    -0.20489
+   ],
+   "boundsMax": [
+    0.02891,
+    0.0944,
+    0.12884
+   ],
+   "meshes": {
+    "Body": {
+     "materials": [
+      "Metal_Black",
+      "Metal_Dark",
+      "Glass_Lens",
+      "Metal_Worn",
+      "Polymer_Red",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black"
+     ],
+     "triangles": 1990
+    },
+    "Lens_Rear": {
+     "materials": [
+      "Glass_Lens"
+     ],
+     "triangles": 4
+    },
+    "Lens_Front": {
+     "materials": [
+      "Glass_Lens"
+     ],
+     "triangles": 4
+    }
+   },
+   "sockets": {
+    "Sight_Point": {
+     "position": [
+      0.0,
+      0.0275,
+      -0.18844
+     ]
+    }
+   },
+   "magnification": 6.0
+  },
+  {
+   "id": "Suppressor_762",
+   "kind": "attachment",
+   "slot": "Muzzle",
+   "file": "Assets/_Game/Art/Weapons/Attachments/Suppressor_762.fbx",
+   "compatible": [
+    "AKM",
+    "MK47",
+    "SVD",
+    "M14EBR",
+    "AK12"
+   ],
+   "dimensions": [
+    0.0517,
+    0.0517,
+    0.187
+   ],
+   "boundsMin": [
+    -0.02585,
+    -0.02585,
+    0.0
+   ],
+   "boundsMax": [
+    0.02585,
+    0.02585,
+    0.187
+   ],
+   "meshes": {
+    "Body": {
+     "materials": [
+      "Metal_Black",
+      "Metal_Black"
+     ],
+     "triangles": 160
+    }
+   },
+   "sockets": {
+    "Socket_Muzzle": {
+     "position": [
+      0.0,
+      0.0,
+      0.187
+     ]
+    }
+   },
+   "muzzleLength": 0.187
+  },
+  {
+   "id": "Suppressor_9mm",
+   "kind": "attachment",
+   "slot": "Muzzle",
+   "file": "Assets/_Game/Art/Weapons/Attachments/Suppressor_9mm.fbx",
+   "compatible": [
+    "MPX",
+    "Scorpion",
+    "Vector",
+    "SR2",
+    "Glock17"
+   ],
+   "dimensions": [
+    0.03225,
+    0.03225,
+    0.1575
+   ],
+   "boundsMin": [
+    -0.01613,
+    -0.01612,
+    0.0
+   ],
+   "boundsMax": [
+    0.01613,
+    0.01613,
+    0.1575
+   ],
+   "meshes": {
+    "Body": {
+     "materials": [
+      "Metal_Black",
+      "Metal_Black"
+     ],
+     "triangles": 144
+    }
+   },
+   "sockets": {
+    "Socket_Muzzle": {
+     "position": [
+      0.0,
+      0.0,
+      0.1575
+     ]
+    }
+   },
+   "muzzleLength": 0.1575
+  },
+  {
+   "id": "Suppressor_Flow",
+   "kind": "attachment",
+   "slot": "Muzzle",
+   "file": "Assets/_Game/Art/Weapons/Attachments/Suppressor_Flow.fbx",
+   "compatible": [
+    "AKM",
+    "HK416",
+    "MK47",
+    "QBZ191",
+    "MK18",
+    "M4A1",
+    "AK12",
+    "M14EBR",
+    "M249"
+   ],
+   "dimensions": [
+    0.02061,
+    0.0384,
+    0.17196
+   ],
+   "boundsMin": [
+    -0.0103,
+    -0.0192,
+    0.0
+   ],
+   "boundsMax": [
+    0.01031,
+    0.0192,
+    0.17196
+   ],
+   "meshes": {
+    "Body": {
+     "materials": [
+      "Metal_Black",
+      "Metal_Dark",
+      "Glass_Lens",
+      "Metal_Worn",
+      "Polymer_Red",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black"
+     ],
+     "triangles": 436
+    }
+   },
+   "sockets": {
+    "Socket_Muzzle": {
+     "position": [
+      0.0,
+      0.0,
+      0.17196
+     ]
+    }
+   },
+   "muzzleLength": 0.17196
+  },
+  {
+   "id": "Suppressor_Long",
+   "kind": "attachment",
+   "slot": "Muzzle",
+   "file": "Assets/_Game/Art/Weapons/Attachments/Suppressor_Long.fbx",
+   "compatible": [
+    "AKM",
+    "HK416",
+    "MK47",
+    "QBZ191",
+    "MK18",
+    "M4A1",
+    "AK12",
+    "M14EBR",
+    "M249",
+    "SVD"
+   ],
+   "dimensions": [
+    0.03748,
+    0.03748,
+    0.17274
+   ],
+   "boundsMin": [
+    -0.01874,
+    -0.01874,
+    0.0
+   ],
+   "boundsMax": [
+    0.01874,
+    0.01874,
+    0.17274
+   ],
+   "meshes": {
+    "Body": {
+     "materials": [
+      "Metal_Black",
+      "Metal_Dark",
+      "Glass_Lens",
+      "Metal_Worn",
+      "Polymer_Red",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black",
+      "Metal_Black"
+     ],
+     "triangles": 422
+    }
+   },
+   "sockets": {
+    "Socket_Muzzle": {
+     "position": [
+      0.0,
+      0.0,
+      0.17274
+     ]
+    }
+   },
+   "muzzleLength": 0.17274
+  }
+ ],
+ "compat_add": {
+  "Optic_RedDot": [
+   "AKM",
+   "HK416",
+   "MK47",
+   "QBZ191",
+   "MK18",
+   "HoneyBadger",
+   "Vector",
+   "MPX",
+   "Scorpion",
+   "SR2",
+   "M249",
+   "SVD",
+   "VSS"
+  ],
+  "Optic_Holo": [
+   "AKM",
+   "HK416",
+   "MK47",
+   "QBZ191",
+   "MK18",
+   "HoneyBadger",
+   "Vector",
+   "MPX",
+   "Scorpion",
+   "SR2",
+   "M249",
+   "SVD",
+   "VSS"
+  ],
+  "Optic_Prism4x": [
+   "AKM",
+   "HK416",
+   "MK47",
+   "QBZ191",
+   "MK18",
+   "M249",
+   "SVD",
+   "VSS",
+   "HoneyBadger"
+  ],
+  "Optic_Scope8x": [
+   "AWM",
+   "AXMC",
+   "SVD",
+   "VSS",
+   "HK416",
+   "MK47",
+   "QBZ191",
+   "AKM"
+  ],
+  "Optic_PistolDot": [
+   "Deagle"
+  ],
+  "Muzzle_FlashHider": [
+   "HK416",
+   "MK18",
+   "QBZ191",
+   "M249",
+   "MK47",
+   "AKM"
+  ],
+  "Muzzle_Brake": [
+   "HK416",
+   "MK18",
+   "QBZ191",
+   "MK47",
+   "AKM",
+   "AWM",
+   "AXMC",
+   "SVD"
+  ],
+  "Muzzle_PistolComp": [
+   "Deagle",
+   "MPX",
+   "Scorpion"
+  ],
+  "Suppressor_Rifle": [
+   "HK416",
+   "MK18",
+   "QBZ191",
+   "MK47",
+   "AKM",
+   "M249"
+  ],
+  "Suppressor_Pistol": [
+   "MPX",
+   "Scorpion",
+   "Vector",
+   "SR2"
+  ],
+  "Suppressor_Sniper": [
+   "AWM",
+   "AXMC",
+   "SVD"
+  ],
+  "Grip_Vertical": [
+   "HK416",
+   "MK18",
+   "QBZ191",
+   "MK47",
+   "AKM",
+   "HoneyBadger",
+   "Vector",
+   "MPX",
+   "Scorpion",
+   "SR2",
+   "M249"
+  ],
+  "Grip_Angled": [
+   "HK416",
+   "MK18",
+   "QBZ191",
+   "MK47",
+   "AKM",
+   "HoneyBadger",
+   "Vector",
+   "MPX",
+   "Scorpion",
+   "SR2",
+   "M249"
+  ],
+  "Bipod": [
+   "AWM",
+   "AXMC",
+   "SVD",
+   "M249",
+   "MK47"
+  ],
+  "Laser_Module": [
+   "AKM",
+   "HK416",
+   "MK47",
+   "QBZ191",
+   "MK18",
+   "HoneyBadger",
+   "Vector",
+   "MPX",
+   "Scorpion",
+   "M249",
+   "SVD",
+   "AWM",
+   "VSS",
+   "AXMC"
+  ],
+  "Flashlight": [
+   "AKM",
+   "HK416",
+   "MK47",
+   "QBZ191",
+   "MK18",
+   "HoneyBadger",
+   "Vector",
+   "MPX",
+   "Scorpion",
+   "M249",
+   "SVD",
+   "AWM",
+   "VSS",
+   "AXMC"
+  ],
+  "Pistol_LaserLight": [
+   "Deagle"
+  ]
+ }
+}

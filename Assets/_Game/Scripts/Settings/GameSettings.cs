@@ -9,7 +9,8 @@ namespace FPS
     public enum BindAction
     {
         MoveForward, MoveBack, MoveLeft, MoveRight, Jump, Sprint, CrouchHold, CrouchToggle, Prone, LeanLeft, LeanRight,
-        Fire, Aim, Reload, FireMode, Primary, Secondary, Melee, Grenade, Pickup, Ability, Scoreboard, Hints,
+        Fire, Aim, Reload, FireMode, Primary, Secondary, Melee, Grenade, Pickup, Ability, Laser, Scoreboard, Hints,
+        ClassAbility,
     }
 
     /// <summary>
@@ -27,6 +28,33 @@ namespace FPS
         public static float Sensitivity = 1f;
         /// <summary>Extra multiplier while aiming down sights.</summary>
         public static float AdsSensitivity = 1f;
+        /// <summary>
+        /// Aiming keeps the feel relative to what is on screen — Call of Duty's "Relative" ADS sensitivity (monitor
+        /// distance matching): with any sight or optic, moving the aim to a point <see cref="AdsCoefficient"/> × half the
+        /// screen height away takes the same mouse movement as from the hip, so the turn slows with the sight's zoom and an
+        /// optic's magnification. Off: the same turn (degrees) per mouse movement aimed and from the hip.
+        /// </summary>
+        public static bool AdsRelative = true;
+        /// <summary>
+        /// Monitor distance coefficient, in half screen heights: 1.33 — Call of Duty's default (the edge of a 4:3 screen),
+        /// 0 — matched at the crosshair, 1.78 — the edge of a 16:9 screen.
+        /// </summary>
+        public static float AdsCoefficient = 1.33f;
+
+        /// <summary>
+        /// Look multiplier while fully aimed: a view of vertical FOV <paramref name="aimFov"/>, magnified
+        /// <paramref name="magnification"/> times by an optic's eyepiece, against the hip FOV. Relative mode:
+        /// atan(c·tan(aim/2) / magnification) / atan(c·tan(hip/2)); c = 0 gives the plain zoom ratio.
+        /// </summary>
+        public static float AdsLookScale(float hipFov, float aimFov, float magnification)
+        {
+            if (!AdsRelative) return 1f;
+            float tanHip = Mathf.Tan(Mathf.Clamp(hipFov, 1f, 170f) * 0.5f * Mathf.Deg2Rad);
+            float tanAim = Mathf.Tan(Mathf.Clamp(aimFov, 1f, 170f) * 0.5f * Mathf.Deg2Rad) / Mathf.Max(1f, magnification);
+            float c = Mathf.Max(0f, AdsCoefficient);
+            float k = c < 0.001f ? tanAim / tanHip : Mathf.Atan(c * tanAim) / Mathf.Atan(c * tanHip);
+            return Mathf.Clamp(k, 0.01f, 2f);
+        }
         public static bool InvertY;
         /// <summary>true: Shift switches sprint on (until you stop running); false: hold Shift.</summary>
         public static bool SprintToggle;
@@ -39,6 +67,10 @@ namespace FPS
         public static bool Fullscreen = true;
         public static bool VSync = true;
         public static bool ShowFps;
+        /// <summary>Minimap in the bottom-left corner.</summary>
+        public static bool MiniMapOn = true;
+        /// <summary>true: the minimap turns with the view (forward is up); false: north is always up.</summary>
+        public static bool MiniMapRotate = true;
         public static int CrosshairColor; // index in CrosshairColors
 
         public static readonly Color[] CrosshairColors =
@@ -52,14 +84,16 @@ namespace FPS
         {
             (int)Key.W, (int)Key.S, (int)Key.A, (int)Key.D, (int)Key.Space, (int)Key.LeftShift, (int)Key.LeftCtrl, (int)Key.C, (int)Key.Z,
             (int)Key.Q, (int)Key.E, MouseBase + 0, MouseBase + 1, (int)Key.R, (int)Key.B, (int)Key.Digit1, (int)Key.Digit2,
-            (int)Key.F, (int)Key.G, (int)Key.X, (int)Key.V, (int)Key.Tab, (int)Key.H,
+            (int)Key.F, (int)Key.G, (int)Key.X, (int)Key.V, (int)Key.T, (int)Key.Tab, (int)Key.H,
+            (int)Key.Digit3,
         };
 
         public static readonly string[] ActionNames =
         {
             "Вперёд", "Назад", "Влево", "Вправо", "Прыжок", "Бег", "Присесть (зажатие)", "Присесть (переключение)", "Лечь",
             "Выглянуть влево", "Выглянуть вправо", "Стрельба", "Прицеливание", "Перезарядка", "Режим огня", "Основное оружие", "Пистолет",
-            "Нож / фонарик (держать)", "Граната", "Подобрать", "Способность", "Таблица счёта", "Подсказки",
+            "Нож / фонарик (держать)", "Граната", "Подобрать", "Способность", "Лазерный целеуказатель", "Таблица счёта", "Подсказки",
+            "Способность класса / РПГ",
         };
 
         static readonly int[] binds = (int[])Defaults.Clone();
@@ -78,6 +112,8 @@ namespace FPS
             loaded = true;
             Sensitivity = PlayerPrefs.GetFloat(P + "sens", 1f);
             AdsSensitivity = PlayerPrefs.GetFloat(P + "adsSens", 1f);
+            AdsRelative = PlayerPrefs.GetInt(P + "adsRelative", 1) == 1;
+            AdsCoefficient = Mathf.Clamp(PlayerPrefs.GetFloat(P + "adsCoef", 1.33f), 0f, 3f);
             InvertY = PlayerPrefs.GetInt(P + "invertY", 0) == 1;
             SprintToggle = PlayerPrefs.GetInt(P + "sprintToggle", 0) == 1;
             AimToggle = PlayerPrefs.GetInt(P + "aimToggle", 0) == 1;
@@ -87,6 +123,8 @@ namespace FPS
             Fullscreen = PlayerPrefs.GetInt(P + "fullscreen", Screen.fullScreen ? 1 : 0) == 1;
             VSync = PlayerPrefs.GetInt(P + "vsync", 1) == 1;
             ShowFps = PlayerPrefs.GetInt(P + "fps", 0) == 1;
+            MiniMapOn = PlayerPrefs.GetInt(P + "minimap", 1) == 1;
+            MiniMapRotate = PlayerPrefs.GetInt(P + "minimapRotate", 1) == 1;
             CrosshairColor = Mathf.Clamp(PlayerPrefs.GetInt(P + "xhair", 0), 0, CrosshairColors.Length - 1);
             int n = Enum.GetValues(typeof(BindAction)).Length;
             for (int i = 0; i < n; i++) binds[i] = PlayerPrefs.GetInt("fps.bind." + (BindAction)i, Defaults[i]);
@@ -97,6 +135,8 @@ namespace FPS
         {
             PlayerPrefs.SetFloat(P + "sens", Sensitivity);
             PlayerPrefs.SetFloat(P + "adsSens", AdsSensitivity);
+            PlayerPrefs.SetInt(P + "adsRelative", AdsRelative ? 1 : 0);
+            PlayerPrefs.SetFloat(P + "adsCoef", AdsCoefficient);
             PlayerPrefs.SetInt(P + "invertY", InvertY ? 1 : 0);
             PlayerPrefs.SetInt(P + "sprintToggle", SprintToggle ? 1 : 0);
             PlayerPrefs.SetInt(P + "aimToggle", AimToggle ? 1 : 0);
@@ -106,6 +146,8 @@ namespace FPS
             PlayerPrefs.SetInt(P + "fullscreen", Fullscreen ? 1 : 0);
             PlayerPrefs.SetInt(P + "vsync", VSync ? 1 : 0);
             PlayerPrefs.SetInt(P + "fps", ShowFps ? 1 : 0);
+            PlayerPrefs.SetInt(P + "minimap", MiniMapOn ? 1 : 0);
+            PlayerPrefs.SetInt(P + "minimapRotate", MiniMapRotate ? 1 : 0);
             PlayerPrefs.SetInt(P + "xhair", CrosshairColor);
             for (int i = 0; i < binds.Length; i++) PlayerPrefs.SetInt("fps.bind." + (BindAction)i, binds[i]);
             PlayerPrefs.Save();
@@ -131,8 +173,8 @@ namespace FPS
 
         public static void ResetAll()
         {
-            Sensitivity = 1f; AdsSensitivity = 1f; InvertY = false; SprintToggle = false; AimToggle = false; CrouchHoldIsToggle = false;
-            Fov = 64f; Volume = 0.9f; VSync = true; ShowFps = false; CrosshairColor = 0;
+            Sensitivity = 1f; AdsSensitivity = 1f; AdsRelative = true; AdsCoefficient = 1.33f; InvertY = false; SprintToggle = false; AimToggle = false; CrouchHoldIsToggle = false;
+            Fov = 64f; Volume = 0.9f; VSync = true; ShowFps = false; MiniMapOn = true; MiniMapRotate = true; CrosshairColor = 0;
             ResetBinds();
         }
 

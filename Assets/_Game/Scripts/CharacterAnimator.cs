@@ -33,6 +33,12 @@ namespace FPS
         public float lookYaw;              // head look around (bots), degrees
         public bool reloading;             // weapon reload (skinned bodies play the reload clip, the support hand leaves the gun)
 
+        [Header("Movement actions (skinned bodies: clips)")]
+        public bool sliding;               // slide (crouch while sprinting)
+        public float vault = -1f;          // 0..1 vault / mantle progress, <0 none
+        public bool mantle;                // the vault is a climb onto a ledge
+        public float verticalSpeed;        // m/s, + = up (jump / fall)
+
         [Header("Ability poses")]
         public float bentOver;             // 0..1 bent over, butt to the enemy (rocket)
         public bool swordHold;             // parry sword in the right hand

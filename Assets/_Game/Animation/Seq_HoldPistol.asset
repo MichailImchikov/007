@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 09b5715ccb7b508478e44f9172e90518, type: 3}
+  m_Name: Seq_HoldPistol
+  m_EditorClassIdentifier: Assembly-CSharp::FPS.Animation.AnimSequence
+  clip: {fileID: 7400000, guid: 09ef5415947275f42ac7831ed70bcd09, type: 2}
+  mask: {fileID: 31900000, guid: 071b403863d9d7f40a989925a1c23269, type: 2}
+  blendTime:
+    blendIn: 0.2
+    blendOut: 0.2
+  playRate: 1
+  poseTime: 0
+  loop: 0
+  spineEuler: {x: 0, y: 0, z: 0}
+  curves: []

@@ -6,38 +6,43 @@ using UnityEngine.UI;
 namespace FPS
 {
     /// <summary>
-    /// Loadout window. Three slots (tabs on top): primary — split into categories, secondary (pistols) and melee.
-    /// Left: a grid of weapon cards of the current category; right: details and stat bars (hover previews).
+    /// Loadout window. On top the soldier class (ClassDB: its own weapons, passives and class ability), then three slots
+    /// (tabs): primary and secondary — the class's weapons only (the assault class may take a shotgun as the secondary) —
+    /// and melee. Left: a grid of weapon cards; right: details and stat bars (hover previews). Modular weapons
+    /// (WeaponData) show their attachments and a "Модули" button (AttachmentsPanel) for the selected one.
     /// From the main menu it applies to the next match; during a match — on the next respawn.
     /// </summary>
     public static class LoadoutPanel
     {
         static readonly string[] GunStats = { "Урон", "Скорострельность", "Дальность", "Контроль", "Мобильность" };
         static readonly string[] MeleeStats = { "Урон", "Скорость", "Дальность" };
-        static readonly WeaponCategory[] PrimaryCats = { WeaponCategory.Assault, WeaponCategory.Marksman, WeaponCategory.SMG, WeaponCategory.Shotgun };
 
         enum Slot { Primary, Secondary, Melee }
 
         public static MenuPanel Open(Transform canvas, bool inMatch, Action onClose = null)
         {
-            var panel = MenuPanel.Create(canvas, "Снаряжение", new Vector2(1440f, 860f), out var body);
+            var panel = MenuPanel.Create(canvas, "Снаряжение", new Vector2(1440f, 900f), out var body);
             panel.onClose = onClose;
 
             Slot slot = Slot.Primary;
-            WeaponCategory cat = PlayerLoadout.Info(PlayerLoadout.Primary).category;
 
-            // ---- slot tabs (top), each shows the current choice
+            // ---- class bar (very top): four classes, the chosen one highlighted
+            var classBar = UIKit.Rect("Classes", body);
+            classBar.SetTop(0f, 70f);
+            var classFx = new UIButtonFx[ClassDB.All.Length];
+
+            // ---- slot tabs, each shows the current choice
             var tabBar = UIKit.Rect("SlotTabs", body);
-            tabBar.SetTop(0f, 74f);
+            tabBar.SetTop(80f, 74f);
             var slotFx = new UIButtonFx[3];
             var slotSub = new Text[3];
             string[] slotNames = { "ОСНОВНОЕ", "ВТОРИЧНОЕ", "БЛИЖНИЙ БОЙ" };
 
-            // ---- category chips + card grid (left)
+            // ---- header + card grid (left)
             var left = UIKit.Rect("Left", body);
             UIKit.Span(left, 0f, 0f, 0.46f, 1f);
             left.offsetMin = new Vector2(0f, 84f);
-            left.offsetMax = new Vector2(0f, -90f);
+            left.offsetMax = new Vector2(0f, -164f);
             var chips = UIKit.Rect("Categories", left);
             chips.SetTop(0f, 46f);
             var grid = UIKit.Rect("Grid", left);
@@ -47,9 +52,10 @@ namespace FPS
             var right = UIKit.Panel(body, "Details", UIKit.Card, 12).rectTransform;
             UIKit.Span(right, 0.48f, 0f, 1f, 1f);
             right.offsetMin = new Vector2(0f, 84f);
-            right.offsetMax = new Vector2(0f, -90f);
+            right.offsetMax = new Vector2(0f, -164f);
             var title = UIKit.Label(right, "", 50, TextAnchor.UpperLeft, UIKit.TextC, true);
             title.rectTransform.SetTop(24f, 64f, 32f);
+            title.rectTransform.offsetMax = new Vector2(-250f, title.rectTransform.offsetMax.y); // room for the "Модули" button
             var kind = UIKit.Label(right, "", 22, TextAnchor.UpperLeft, UIKit.Accent, true);
             kind.rectTransform.SetTop(88f, 30f, 34f);
             var desc = UIKit.Label(right, "", 21, TextAnchor.UpperLeft, UIKit.TextDim);
@@ -58,7 +64,7 @@ namespace FPS
             var bars = new Image[GunStats.Length];
             for (int i = 0; i < GunStats.Length; i++)
             {
-                float y = 206f + i * 46f;
+                float y = 206f + i * 42f;
                 statNames[i] = UIKit.Label(right, GunStats[i], 21, TextAnchor.MiddleLeft);
                 statNames[i].rectTransform.SetTop(y, 30f, 34f);
                 var holder = UIKit.Rect("BarHolder", right);
@@ -68,14 +74,30 @@ namespace FPS
                 UIKit.Fill(bars[i].transform.parent as RectTransform);
             }
             var mag = UIKit.Label(right, "", 21, TextAnchor.UpperLeft, UIKit.TextDim);
-            mag.rectTransform.SetTop(442f, 30f, 34f);
+            mag.rectTransform.SetTop(414f, 30f, 34f);
+            // attachments of the shown weapon (modular weapons: WeaponData)
+            var mods = UIKit.Label(right, "", 19, TextAnchor.UpperLeft, UIKit.TextC);
+            mods.rectTransform.SetTop(450f, 30f, 34f);
             var kit = UIKit.Label(right, "", 19, TextAnchor.UpperLeft, UIKit.TextC);
-            kit.rectTransform.SetTop(486f, 90f, 34f);
+            kit.rectTransform.SetTop(490f, 70f, 34f);
 
             var cards = new List<(UIButtonFx fx, string name)>();
             var chipFx = new List<UIButtonFx>();
 
             string Current() => slot == Slot.Primary ? PlayerLoadout.Primary : slot == Slot.Secondary ? PlayerLoadout.Secondary : PlayerLoadout.Melee;
+
+            // "Модули" (top right of the details): attachments of the selected weapon
+            Action showCurrent = null;
+            var modsButton = UIKit.Button(right, "Модули  ›", () =>
+            {
+                string w = Current();
+                if (slot != Slot.Melee && WeaponDataDB.Get(w))
+                    AttachmentsPanel.Open(canvas, w, inMatch, () => showCurrent?.Invoke(), () => showCurrent?.Invoke());
+            }, UIKit.Style.Primary, 22);
+            var mbr = (RectTransform)modsButton.transform;
+            mbr.anchorMin = mbr.anchorMax = mbr.pivot = new Vector2(1f, 1f);
+            mbr.sizeDelta = new Vector2(210f, 50f);
+            mbr.anchoredPosition = new Vector2(-24f, -28f);
 
             void SetBars(int count, float[] v, string[] names)
             {
@@ -96,7 +118,13 @@ namespace FPS
                 kind.text = w.kind.ToUpperInvariant();
                 desc.text = w.desc;
                 SetBars(5, new[] { w.damage, w.fireRate, w.range, w.control, w.mobility }, GunStats);
-                mag.text = "Магазин: " + w.mag + " " + Rounds(w.mag);
+                var wd = WeaponDataDB.Get(w.name);
+                int cap = w.mag;
+                if (wd)
+                    foreach (var a in WeaponDataDB.Selection(wd))
+                        if (a && a.magCapacity > 0) cap = a.magCapacity;
+                mag.text = "Магазин: " + cap + " " + Rounds(cap);
+                mods.text = wd ? "<color=#FFBD42>МОДУЛИ</color>   " + WeaponDataDB.Summary(wd) : "";
             }
 
             void ShowMelee(MeleeDef m)
@@ -106,6 +134,7 @@ namespace FPS
                 desc.text = m.desc;
                 SetBars(3, new[] { m.uiDamage, m.uiSpeed, m.uiRange }, MeleeStats);
                 mag.text = "Удар: " + Mathf.RoundToInt(m.damage) + " · в спину: " + Mathf.RoundToInt(m.damage * m.backstab) + "  (" + GameSettings.KeyName(BindAction.Melee) + ")";
+                mods.text = "";
             }
 
             void ShowName(string n)
@@ -118,12 +147,15 @@ namespace FPS
                 string cur = Current();
                 foreach (var c in cards) c.fx.Selected = c.name == cur;
                 for (int i = 0; i < 3; i++) slotFx[i].Selected = i == (int)slot;
+                for (int i = 0; i < classFx.Length; i++) if (classFx[i]) classFx[i].Selected = i == (int)PlayerLoadout.Class;
                 slotSub[0].text = PlayerLoadout.Primary;
                 slotSub[1].text = PlayerLoadout.Secondary;
                 slotSub[2].text = PlayerLoadout.Melee;
-                for (int i = 0; i < chipFx.Count; i++) chipFx[i].Selected = PrimaryCats[i] == cat;
-                kit.text = "<color=#FFBD42>КОМПЛЕКТ</color>   " + PlayerLoadout.Primary + " · " + PlayerLoadout.Secondary + " · " + PlayerLoadout.Melee +
-                           "\n<color=#FFBD42>СНАРЯЖЕНИЕ</color>   3 осколочные гранаты (" + GameSettings.KeyName(BindAction.Grenade) + ") · способность с карты (" + GameSettings.KeyName(BindAction.Ability) + ")";
+                var ci = ClassDB.Get(PlayerLoadout.Class);
+                string gadget = string.IsNullOrEmpty(ci.gadget) ? "" : " · " + ci.gadget;
+                kit.text = "<color=#FFBD42>" + ci.name.ToUpperInvariant() + "</color>   " + ci.abilityName + " (" + GameSettings.KeyName(BindAction.ClassAbility) + "): " + ci.abilityDesc +
+                           "\n<color=#FFBD42>СНАРЯЖЕНИЕ</color>   " + PlayerLoadout.Primary + " · " + PlayerLoadout.Secondary + gadget + " · 3 гранаты (" + GameSettings.KeyName(BindAction.Grenade) + ")";
+                modsButton.gameObject.SetActive(slot != Slot.Melee && WeaponDataDB.Get(Current()));
             }
 
             void Card(string name, string sub, int index, int total, Action pick)
@@ -157,21 +189,12 @@ namespace FPS
                 cards.Clear();
                 chipFx.Clear();
 
-                if (slot == Slot.Primary)
                 {
-                    for (int i = 0; i < PrimaryCats.Length; i++)
-                    {
-                        var k = PrimaryCats[i];
-                        var cb = UIKit.Button(chips, WeaponCatalog.CategoryNames[(int)k], () => { cat = k; Rebuild(); }, UIKit.Style.Ghost, 19);
-                        UIKit.Span((RectTransform)cb.transform, i / (float)PrimaryCats.Length, 0f, (i + 1) / (float)PrimaryCats.Length, 1f);
-                        ((RectTransform)cb.transform).offsetMin = new Vector2(i == 0 ? 0f : 3f, 0f);
-                        ((RectTransform)cb.transform).offsetMax = new Vector2(i == PrimaryCats.Length - 1 ? 0f : -3f, 0f);
-                        chipFx.Add(cb.GetComponent<UIButtonFx>());
-                    }
-                }
-                else
-                {
-                    var head = UIKit.Label(chips, slot == Slot.Secondary ? "ПИСТОЛЕТЫ" : "ХОЛОДНОЕ ОРУЖИЕ", 20, TextAnchor.MiddleLeft, UIKit.Accent, true);
+                    var ci = ClassDB.Get(PlayerLoadout.Class);
+                    string headText = slot == Slot.Melee ? "ХОЛОДНОЕ ОРУЖИЕ"
+                        : slot == Slot.Primary ? "ОРУЖИЕ КЛАССА «" + ci.name.ToUpperInvariant() + "»"
+                        : PlayerLoadout.Class == PlayerClass.Assault ? "ПИСТОЛЕТЫ И ДРОБОВИКИ" : "ПИСТОЛЕТЫ";
+                    var head = UIKit.Label(chips, headText, 20, TextAnchor.MiddleLeft, UIKit.Accent, true);
                     UIKit.Fill(head.rectTransform);
                 }
 
@@ -186,9 +209,11 @@ namespace FPS
                 }
                 else
                 {
+                    // the class's own weapons (only those the catalog has)
+                    var ci = ClassDB.Get(PlayerLoadout.Class);
+                    var names = slot == Slot.Primary ? ci.primaries : ci.secondaries;
                     var list = new List<WeaponInfo>();
-                    foreach (var w in PlayerLoadout.Weapons)
-                        if (slot == Slot.Secondary ? w.secondary : !w.secondary && w.category == cat) list.Add(w);
+                    foreach (var n in names) if (WeaponCatalog.Get(n) != null) list.Add(PlayerLoadout.Info(n));
                     for (int i = 0; i < list.Count; i++)
                     {
                         var w = list[i];
@@ -198,6 +223,30 @@ namespace FPS
                 ShowName(Current());
                 RefreshSelection();
             }
+            showCurrent = () => { ShowName(Current()); RefreshSelection(); };
+
+            // class buttons: name + the ability, the chosen one highlighted; switching class brings back its own weapons
+            for (int i = 0; i < ClassDB.All.Length; i++)
+            {
+                var ci = ClassDB.All[i];
+                var b = UIKit.Button(classBar, "", () => { PlayerLoadout.Class = ci.id; Rebuild(); }, UIKit.Style.Ghost, 21, true);
+                var rt = (RectTransform)b.transform;
+                UIKit.Span(rt, i / (float)ClassDB.All.Length, 0f, (i + 1) / (float)ClassDB.All.Length, 1f);
+                rt.offsetMin = new Vector2(i == 0 ? 0f : 5f, 0f);
+                rt.offsetMax = new Vector2(i == ClassDB.All.Length - 1 ? 0f : -5f, 0f);
+                var lbl = UIKit.LabelOf(b);
+                lbl.text = ci.name.ToUpperInvariant();
+                lbl.fontSize = 24;
+                lbl.color = ci.color;
+                lbl.alignment = TextAnchor.UpperLeft;
+                lbl.rectTransform.offsetMax = new Vector2(-8f, -8f);
+                var sub = UIKit.Label(rt, ci.abilityName, 17, TextAnchor.LowerLeft, UIKit.TextDim);
+                UIKit.Fill(sub.rectTransform, 26f, 8f, 8f, 0f);
+                classFx[i] = b.GetComponent<UIButtonFx>();
+                var hover = b.gameObject.AddComponent<UIHover>();
+                hover.enter = () => { title.text = ci.name; kind.text = "КЛАСС · " + ci.abilityName.ToUpperInvariant(); desc.text = ci.desc + "\n" + ci.abilityDesc; SetBars(0, new float[0], GunStats); mag.text = ""; mods.text = ""; };
+                hover.exit = () => ShowName(Current());
+            }
 
             for (int i = 0; i < 3; i++)
             {
@@ -205,7 +254,6 @@ namespace FPS
                 var b = UIKit.Button(tabBar, "", () =>
                 {
                     slot = s;
-                    if (s == Slot.Primary) cat = PlayerLoadout.Info(PlayerLoadout.Primary).category;
                     Rebuild();
                 }, UIKit.Style.Ghost, 21, true);
                 var rt = (RectTransform)b.transform;

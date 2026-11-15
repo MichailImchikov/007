@@ -5,7 +5,8 @@ using Random = UnityEngine.Random;
 
 namespace FPS
 {
-    public enum WeaponSlot { Primary, Secondary }
+    /// <summary>Gadget: a class weapon carried next to the primary and the sidearm (the engineer's launcher).</summary>
+    public enum WeaponSlot { Primary, Secondary, Gadget }
     public enum ReloadStyle { Magazine, PerShell }
 
     /// <summary>
@@ -52,8 +53,12 @@ namespace FPS
         public float pelletSpread = 0f;
         public float moveSpeedMul = 1f;
         public float falloffStart = 35f, falloffEnd = 120f, falloffMin = 0.7f;
+        [Tooltip("Bullets fly from the muzzle along the barrel and cross the sight line at this distance (m, the zero)")]
+        public float zeroDistance = 50f;
 
-        [Header("Spread (degrees)")]
+        // Not used by shooting any more (bullets go exactly along the barrel, the only difficulty is the recoil); kept
+        // for the attachment stat multipliers and the weapon tables
+        [Header("Spread (degrees, unused)")]
         public float hipSpread = 1.3f;
         public float adsSpread = 0.06f;
         public float moveSpreadAdd = 1.8f;
@@ -66,6 +71,9 @@ namespace FPS
         public float recoilUp = 0.85f;
         public float recoilSide = 0.38f;
         public float adsRecoilMul = 0.62f;
+        /// <summary>Aimed recoil is the weapon's adsRecoilMul times this (capped at the hip recoil): aiming steadies the
+        /// gun only a little.</summary>
+        public const float AdsRecoilKeep = 1.2f;
         public float crouchRecoilMul = 0.8f;
         public float kickScale = 1f;
         public float punchScale = 1f;
@@ -93,11 +101,24 @@ namespace FPS
         public bool boltAction;
         public float pumpTime = 0.5f;
         public float shellScale = 1f;
+        /// <summary>Bolt action with a lifting handle (M700): the charging handle turns this many degrees about its local Z
+        /// (the bore) before it is pulled back, and stays open while single rounds are loaded. 0 = straight pull.</summary>
+        public float boltLiftAngle;
+        /// <summary>How far <see cref="bolt"/> (bolt carrier, pistol slide) cycles back on every shot (m).</summary>
+        public float boltKick = 0.035f;
+
+        [Header("Launcher")]
+        /// <summary>Fires a rocket (RocketProjectile) instead of bullets; the magazine part is the loaded rocket, gone
+        /// once it is fired and back in the hand during the reload.</summary>
+        public bool launcher;
+        public float rocketSpeed = 75f, rocketRadius = 7f, rocketDamage = 160f, rocketPush = 13f;
 
         [Header("Audio")]
         public Sfx shotSfx = Sfx.Shot;
         public float shotVolume = 0.8f;
         public float shotPitch = 1f;
+        /// <summary>Radius in which bots hear a shot (AIEvents); suppressors shrink it.</summary>
+        public float noiseRadius = 45f;
 
         [Header("Equip")]
         public float equipTime = 0.38f;
@@ -107,10 +128,13 @@ namespace FPS
         public int Reserve => reserve;
         public bool IsReloading => reloading;
         public float AimBlend => aimEased;
-        public float CurrentSpread { get; private set; }
+        /// <summary>Shot spread (degrees): only a shotgun's pellet pattern; single bullets go exactly along the barrel.</summary>
+        public float CurrentSpread => pellets > 1 ? pelletSpread : 0f;
         public bool FullAuto => fullAuto;
         public bool IsBusy => reloading || pumping || holstering || equipT < 1f;
         public bool IsScoped => scopeOn;
+        /// <summary>Init has run: rest poses, ADS aim position and reload animations are measured (see <see cref="RefreshModel"/>).</summary>
+        public bool IsInitialized => initialized;
         /// <summary>0..1, lowers the weapon out of view (knife, grenade, executions).</summary>
         public float ExternalLower { get; set; }
         /// <summary>0..1, lowers every first-person weapon (abilities: sword, chicken). Only the local player has viewmodels.</summary>
@@ -132,7 +156,12 @@ namespace FPS
         bool initialized;
         float nextFire, lastShotTime;
         int shotIndex, shotsSinceSmoke;
-        float recoilSeed, bloom;
+        float recoilSeed;
+        // the barrel relative to the eye where the body put it this frame (CacheAimFrame): shots turn it with the view
+        // of the moment they are fired, so a shot is not a frame behind the mouse
+        Vector3 eyeMuzzle, eyeSight;
+        Quaternion eyeRot = Quaternion.identity;
+        bool eyeCached;
         float aim, aimEased;
         float sprintBlend, vaultBlend, crouchBlend, proneBlend, slideBlend, wallTuck, bobWeight, boltT, lowerBlend;
         float flashTimer;
@@ -152,6 +181,7 @@ namespace FPS
         readonly Spring3 bumpRot = new Spring3(120f, 10f);
 
         Vector3 magRest, chRest, boltRest, handRest, reticleRest, reticleCenter;
+        Quaternion chRestRot = Quaternion.identity;
         bool reloading, reloadEmpty, magHidden, arenaHidden;
         float reloadT, reloadDuration;
         int evtIndex;
@@ -186,13 +216,33 @@ namespace FPS
             if (initialized) return;
             initialized = true;
             if (!model && transform.childCount > 0) model = transform.GetChild(0);
-            ImportedWeapons.Apply(this); // imported gun mesh over the procedural one (if the pack is present)
+            ImportedWeapons.Apply(this); // imported gun mesh over the procedural one (if the pack is present) / modular model
             HandGrips.Ensure(this);      // palm anchors for the IK hands (first-person arms, third-person bodies)
             ammo = magSize;
             reserve = reserveAmmo;
-            recoilSeed = Random.value * 100f;
+            // the side pattern is the weapon's own (learnable), not random from life to life
+            recoilSeed = (Mathf.Abs((weaponName ?? "").GetHashCode()) % 1000) * 0.001f * Mathf.PI * 2f;
+            CaptureRestPoses();
+
+            // place the holder so the sight sits exactly in screen center when aiming
+            transform.localPosition = Vector3.zero;
+            transform.localRotation = Quaternion.identity;
+            Vector3 s = transform.parent.InverseTransformPoint(sightPoint.position);
+            aimPosition = new Vector3(-s.x, -s.y, aimDistance - s.z);
+            transform.localPosition = hipPosition;
+
+            BuildRigAnimations();
+            renderers = model.GetComponentsInChildren<Renderer>(true);
+            // the builder bakes the flash enabled; only a shot may show it (weapons never held before stayed lit)
+            if (muzzleFlash) muzzleFlash.SetActive(false);
+            if (muzzleLight) muzzleLight.enabled = false;
+            if (reloadStyle == ReloadStyle.PerShell && magazine) magazine.gameObject.SetActive(false);
+        }
+
+        void CaptureRestPoses()
+        {
             if (magazine) magRest = magazine.localPosition;
-            if (chargingHandle) chRest = chargingHandle.localPosition;
+            if (chargingHandle) { chRest = chargingHandle.localPosition; chRestRot = chargingHandle.localRotation; }
             if (bolt) boltRest = bolt.localPosition;
             if (leftHand) handRest = leftHand.localPosition;
             if (reticle)
@@ -202,14 +252,11 @@ namespace FPS
                 var rmf = reticle.GetComponent<MeshFilter>();
                 reticleCenter = rmf && rmf.sharedMesh ? rmf.sharedMesh.bounds.center : Vector3.zero;
             }
+        }
 
-            // place the holder so the sight sits exactly in screen center when aiming
-            transform.localPosition = Vector3.zero;
-            transform.localRotation = Quaternion.identity;
-            Vector3 s = transform.parent.InverseTransformPoint(sightPoint.position);
-            aimPosition = new Vector3(-s.x, -s.y, aimDistance - s.z);
-            transform.localPosition = hipPosition;
-
+        /// <summary>Reload animations from the support-hand grip, magazine, charging handle and load port positions.</summary>
+        void BuildRigAnimations()
+        {
             Vector3 grip = leftHandGrip ? model.InverseTransformPoint(leftHandGrip.position) : Vector3.zero;
             Vector3 G = magazine && reloadStyle == ReloadStyle.Magazine
                 ? model.InverseTransformPoint(magazine.TransformPoint(magGripOffset)) - grip
@@ -221,11 +268,55 @@ namespace FPS
                 shellPort = model.InverseTransformPoint(loadPort.position) - grip;
                 shellH0 = shellPort + new Vector3(-0.04f, -0.09f, -0.02f);
             }
+        }
+
+        /// <summary>
+        /// ADS aim position from the current <see cref="sightPoint"/> and <see cref="aimDistance"/> (same result as Init,
+        /// without moving the holder). Call after an optic / sight change.
+        /// </summary>
+        public void RecomputeAimPosition()
+        {
+            if (!sightPoint || !transform.parent) return;
+            Vector3 s = Vector3.Scale(transform.localScale, transform.InverseTransformPoint(sightPoint.position));
+            aimPosition = new Vector3(-s.x, -s.y, aimDistance - s.z);
+        }
+
+        /// <summary>
+        /// Puts the animated parts back to their rest poses and stops a reload / bolt cycle (before the model or its
+        /// attachments are changed).
+        /// </summary>
+        public void ResetRigPose()
+        {
+            if (!initialized) return;
+            CancelReload();
+            pumping = false;
+            if (magazine) magazine.localPosition = magRest;
+            if (chargingHandle) { chargingHandle.localPosition = chRest; chargingHandle.localRotation = chRestRot; }
+            if (bolt) bolt.localPosition = boltRest;
+            if (leftHand) leftHand.localPosition = handRest;
+            if (reticle) reticle.localPosition = reticleRest;
+            SetScope(false);
+        }
+
+        /// <summary>
+        /// The model or its attachments changed (WeaponAttachments): rest poses, ADS aim position, reload animation key
+        /// points and the renderer list are measured again; the magazine is clamped to the (new) capacity.
+        /// </summary>
+        public void RefreshModel()
+        {
+            if (!initialized) { Init(); return; }
+            CancelReload();
+            pumping = false;
+            CaptureRestPoses();
+            RecomputeAimPosition();
+            BuildRigAnimations();
             renderers = model.GetComponentsInChildren<Renderer>(true);
-            // the builder bakes the flash enabled; only a shot may show it (weapons never held before stayed lit)
+            foreach (var r in renderers) if (r) r.enabled = !arenaHidden && !scopeOn;
+            flashTimer = 0f;
             if (muzzleFlash) muzzleFlash.SetActive(false);
             if (muzzleLight) muzzleLight.enabled = false;
             if (reloadStyle == ReloadStyle.PerShell && magazine) magazine.gameObject.SetActive(false);
+            ammo = Mathf.Min(ammo, magSize);
         }
 
         void OnEnable()
@@ -257,6 +348,7 @@ namespace FPS
             CancelReload();
             pumping = false;
             if (chargingHandle) chargingHandle.localPosition = chRest;
+            if (chargingHandle && boltLiftAngle != 0f) chargingHandle.localRotation = chRestRot;
             if (leftHand) leftHand.localPosition = handRest;
             if (magazine) magazine.localPosition = magRest;
             if (muzzleFlash) muzzleFlash.SetActive(false);
@@ -291,6 +383,7 @@ namespace FPS
             Init();
             reserve = reserveAmmo;
             if (ammo < magSize && !reloading) ammo = magSize;
+            if (launcher && !reloading) magHidden = ammo == 0;
         }
 
         public void ResetAmmo()
@@ -298,7 +391,11 @@ namespace FPS
             Init();
             ammo = magSize;
             reserve = reserveAmmo;
+            if (launcher) magHidden = false;
         }
+
+        /// <summary>Speed of reloads (the class: an assault soldier reloads faster, adrenaline faster still). 1 = normal.</summary>
+        public float ReloadSpeed { get; set; } = 1f;
 
         void OnLanded(float speed)
         {
@@ -344,8 +441,10 @@ namespace FPS
             aimEased = Anim.Smooth(aim);
             playerCam.AimBlend = aimEased;
             playerCam.AdsFov = adsFov;
+            playerCam.ScopeZoom = 1f; // a magnified optic (OpticSight, after this) raises it while aimed through
 
-            motor.BlockSprint = wantAim || (reloading && reloadStyle == ReloadStyle.Magazine) || (GameInput.FireHeld && ammo > 0);
+            // a reload goes on while running (the gun stays in the reload pose, sprintBlend below)
+            motor.BlockSprint = wantAim || (GameInput.FireHeld && ammo > 0);
             motor.SpeedMultiplier = Mathf.Lerp(1f, 0.62f, aimEased) * moveSpeedMul;
 
             sprintBlend = Anim.Damp(sprintBlend, motor.IsSprinting && motor.Speed01 > 0.45f && !reloading ? 1f : 0f, 9f, dt);
@@ -388,14 +487,6 @@ namespace FPS
                 FX.Ensure().MuzzleSmoke(muzzle.position, muzzle.forward, Mathf.Clamp(shotsSinceSmoke / 3, 2, 6));
                 shotsSinceSmoke = 0;
             }
-
-            if (Time.time - lastShotTime > 0.1f) bloom = Mathf.MoveTowards(bloom, 0f, bloomRecovery * dt);
-            float moveSpread = motor.Speed01 * moveSpreadAdd;
-            float air = motor.IsGrounded || motor.IsVaulting ? 0f : airSpreadAdd;
-            float stanceMul = motor.IsProne ? 0.5f : motor.IsCrouching ? 0.75f : 1f;
-            float hip = (hipSpread + moveSpread + air) * stanceMul + bloom;
-            float ads = adsSpread + moveSpread * 0.12f + air * 0.3f + bloom * 0.18f;
-            CurrentSpread = Mathf.Lerp(hip, ads, aimEased);
 
             if (flashTimer > 0f)
             {
@@ -440,12 +531,57 @@ namespace FPS
 
         static readonly RaycastHit[] shotHits = new RaycastHit[24];
 
+        /// <summary>
+        /// Where the barrel shoots: from the muzzle along the bore, through the sight line at the zero distance (so the
+        /// reticle / sights mark the hit there). The barrel's pose relative to the eye is the one the body gave it this
+        /// frame (recoil kick, sway and hands included), turned with the view of this moment.
+        /// </summary>
+        public void BarrelRay(out Vector3 origin, out Vector3 dir)
+        {
+            Vector3 m, s;
+            Quaternion r;
+            Transform ct = cam ? cam.transform : null;
+            if (eyeCached && ct)
+            {
+                m = ct.TransformPoint(eyeMuzzle);
+                s = ct.TransformPoint(eyeSight);
+                r = ct.rotation * eyeRot;
+            }
+            else
+            {
+                m = muzzle ? muzzle.position : transform.position;
+                s = sightPoint ? sightPoint.position : m;
+                r = transform.rotation;
+            }
+            origin = m;
+            dir = (s + r * Vector3.forward * Mathf.Max(1f, zeroDistance) - m).normalized;
+        }
+
+        /// <summary>Where a shot fired now would hit (or the end of the range): the crosshair goes there.</summary>
+        public Vector3 AimPoint()
+        {
+            BarrelRay(out Vector3 o, out Vector3 d);
+            return RaycastShot(o, d, out RaycastHit h) ? h.point : o + d * range;
+        }
+
+        /// <summary>The body placed the weapon (first person): keep its barrel relative to the eye for this frame's shots.</summary>
+        public void CacheAimFrame(Transform eye)
+        {
+            if (!eye || !muzzle) { eyeCached = false; return; }
+            eyeMuzzle = eye.InverseTransformPoint(muzzle.position);
+            eyeSight = eye.InverseTransformPoint(sightPoint ? sightPoint.position : muzzle.position);
+            eyeRot = Quaternion.Inverse(eye.rotation) * transform.rotation;
+            eyeCached = true;
+        }
+
         /// <summary>Nearest hit along a bullet ray that is not the shooter's own body / capsule.</summary>
-        bool RaycastShot(Vector3 origin, Vector3 dir, out RaycastHit best)
+        bool RaycastShot(Vector3 origin, Vector3 dir, out RaycastHit best, float maxDistance = -1f)
         {
             best = default;
             Transform self = owner ? owner.transform : motor ? motor.transform : null;
-            int n = Physics.RaycastNonAlloc(origin, dir, shotHits, range, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
+            if (maxDistance < 0f) maxDistance = range;
+            if (maxDistance <= 1e-4f || dir.sqrMagnitude < 1e-10f) return false;
+            int n = Physics.RaycastNonAlloc(origin, dir.normalized, shotHits, maxDistance, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
             float bd = float.MaxValue;
             bool any = false;
             for (int i = 0; i < n; i++)
@@ -458,8 +594,47 @@ namespace FPS
             return any;
         }
 
+        /// <summary>
+        /// Launcher shot: the loaded rocket leaves the muzzle along the barrel (RocketProjectile: flies straight, explodes on
+        /// impact for <see cref="rocketDamage"/> within <see cref="rocketRadius"/>); copies on the other machines fly it too.
+        /// </summary>
+        void FireRocket()
+        {
+            float interval = 60f / rpm;
+            if (Time.time - nextFire > interval) nextFire = Time.time;
+            nextFire += interval;
+            ammo--;
+            shotIndex++;
+            lastShotTime = Time.time;
+            if (owner) owner.lastShotTime = Time.time;
+            Transform ct = cam.transform;
+            HUD.Ensure().RegisterShot();
+            BarrelRay(out Vector3 origin, out Vector3 aimDir);
+            Vector3 toMuzzle = origin - ct.position;
+            if (RaycastShot(ct.position, toMuzzle, out RaycastHit wall, toMuzzle.magnitude))
+                origin = wall.point - toMuzzle.normalized * 0.2f;
+            var r = RocketProjectile.CreateLauncherRocket(magazine);
+            r.SetBlast(rocketRadius, rocketDamage, rocketPush, weaponName);
+            r.transform.position = origin;
+            Transform ignore = owner ? owner.transform : motor ? motor.transform : null;
+            r.Launch(aimDir, rocketSpeed, owner, ignore);
+            NetGame.SendLauncherShot(owner, origin, aimDir, rocketSpeed);
+            magHidden = ammo == 0;
+            // back-blast: smoke behind the tube, a hard shove of the view
+            if (model) FX.Ensure().Puff(model.position - model.forward * 0.7f, -model.forward, 6, 0.6f, new Vector2(0.3f, 1.4f), new Vector2(0.6f, 1.2f), new Vector2(1.2f, 2.4f),
+                                        new Color(0.8f, 0.78f, 0.74f, 0.55f), new Color(0.65f, 0.64f, 0.62f, 0.4f));
+            AIEvents.Emit(ct.position, noiseRadius, owner);
+            float mul = motor.IsProne ? 0.55f : motor.IsCrouching ? crouchRecoilMul : 1f;
+            playerCam.AddRecoil(recoilUp * mul, recoilSide * mul * (Random.value < 0.5f ? -1f : 1f));
+            playerCam.Punch(new Vector3(8f, 0f, 2f));
+            Fired?.Invoke();
+            kickPos.Kick(new Vector3(0f, 0.05f, -1.4f) * kickScale);
+            kickRot.Kick(new Vector3(-40f, Random.Range(-10f, 10f), Random.Range(-15f, 15f)) * kickScale);
+        }
+
         void Fire()
         {
+            if (launcher) { FireRocket(); return; }
             float interval = 60f / rpm;
             if (Time.time - nextFire > interval) nextFire = Time.time;
             nextFire += interval;
@@ -473,13 +648,20 @@ namespace FPS
             HUD.Ensure().RegisterShot();
             hitAccum.Clear();
             NetGame.ShotEnds.Clear();
+            // the bullets leave the muzzle along the barrel (wherever the recoil and the hands put it), no random spread
+            BarrelRay(out Vector3 origin, out Vector3 aimDir);
+            // a muzzle poking through a wall the eye is behind: the shot starts at the wall
+            Vector3 toMuzzle = origin - ct.position;
+            if (RaycastShot(ct.position, toMuzzle, out RaycastHit wall, toMuzzle.magnitude))
+                origin = wall.point + wall.normal * 0.005f;
+            Quaternion aimRot = Quaternion.LookRotation(aimDir, ct.up);
             int n = Mathf.Max(1, pellets);
             for (int p = 0; p < n; p++)
             {
-                Vector2 r = Random.insideUnitCircle * CurrentSpread + (n > 1 ? Random.insideUnitCircle * pelletSpread : Vector2.zero);
-                Vector3 dir = ct.rotation * Quaternion.Euler(-r.y, r.x, 0f) * Vector3.forward;
-                Vector3 end = ct.position + dir * range;
-                if (RaycastShot(ct.position, dir, out RaycastHit hit))
+                Vector2 r = n > 1 ? Random.insideUnitCircle * pelletSpread : Vector2.zero; // a shotgun's pellet pattern only
+                Vector3 dir = aimRot * Quaternion.Euler(-r.y, r.x, 0f) * Vector3.forward;
+                Vector3 end = origin + dir * range;
+                if (RaycastShot(origin, dir, out RaycastHit hit))
                 {
                     end = hit.point;
                     var hb = hit.collider.GetComponent<Hitbox>();
@@ -512,7 +694,7 @@ namespace FPS
                 var res = kv.Key.TakeDamage(new DamageInfo
                 {
                     amount = Mathf.Round(kv.Value.amount), point = kv.Value.point, normal = kv.Value.normal,
-                    direction = ct.forward, critical = kv.Value.crit, attacker = owner, weapon = weaponName
+                    direction = aimDir, critical = kv.Value.crit, attacker = owner, weapon = weaponName
                 });
                 // cover (crates, sandbags) takes damage but is not a "hit" — no hitmarker, no accuracy
                 if (!res.applied || kv.Key is Destructible) continue;
@@ -521,6 +703,8 @@ namespace FPS
                 anyCrit |= kv.Value.crit;
                 HUD.Ensure().RegisterHit(res.killed);
             }
+            // outside a match (the range) nobody else counts the player's kills
+            if (anyKill && !MatchManager.Instance) KillStreak.OnLocalKillNoMatch(owner);
             if (anyBody)
             {
                 HUD.Ensure().ShowHitmarker(anyKill, anyCrit);
@@ -537,23 +721,25 @@ namespace FPS
             flashTimer = 0.045f;
 
             ProcAudio.Play(shotSfx, shotVolume, 0.035f);
-            AIEvents.Emit(ct.position, 45f, owner);
-            NetGame.SendShot(owner, ct.position, NetGame.ShotEnds);
+            AIEvents.Emit(ct.position, noiseRadius, owner);
+            NetGame.SendShot(owner, origin, NetGame.ShotEnds);
             if (!pumpAction) FX.Ensure().EjectShell(ejectPort.position, ct, motor.Velocity, shellScale);
             boltT = 1f;
 
-            float mul = Mathf.Lerp(1f, adsRecoilMul, aimEased) * (motor.IsProne ? 0.55f : motor.IsCrouching ? crouchRecoilMul : 1f);
-            float up = recoilUp * mul * (shotIndex <= 3 ? 1.3f : 1f);
-            float side = (Mathf.PerlinNoise(recoilSeed, shotIndex * 0.33f) - 0.5f) * 2f * recoilSide * mul;
+            // recoil: the aim climbs by the weapon's own pattern (no randomness: the difficulty is holding it down). The
+            // first shots kick a little harder; the side drifts one way and back along the weapon's curve. Aimed, the
+            // shoulder takes less of it, but not much less (AdsRecoilKeep)
+            float adsMul = Mathf.Min(1f, adsRecoilMul * AdsRecoilKeep);
+            float mul = Mathf.Lerp(1f, adsMul, aimEased) * (motor.IsProne ? 0.55f : motor.IsCrouching ? crouchRecoilMul : 1f);
+            float up = recoilUp * mul * (shotIndex <= 3 ? 1.25f : 1f);
+            float side = recoilSide * mul * Mathf.Sin(recoilSeed + shotIndex * 0.55f) * Mathf.Clamp01(shotIndex / 3f);
             playerCam.AddRecoil(up, side);
-            playerCam.Punch(new Vector3(-Random.Range(5f, 9f) * mul, Random.Range(-3f, 3f), Random.Range(-7f, 7f)) * punchScale);
 
             Fired?.Invoke();
-            float vm = Mathf.Lerp(1f, 0.42f, aimEased) * kickScale;
+            float vm = Mathf.Lerp(1f, 0.5f, aimEased) * kickScale;
             kickPos.Kick(new Vector3(Random.Range(-0.05f, 0.05f), Random.Range(0.02f, 0.1f), -Random.Range(1.0f, 1.3f)) * vm);
             kickRot.Kick(new Vector3(-Random.Range(55f, 80f), Random.Range(-22f, 22f), Random.Range(-40f, 40f)) * vm);
 
-            bloom = Mathf.Min(maxBloom, bloom + bloomPerShot);
             if (ammo == 0) ProcAudio.Play(Sfx.Dry, 0.25f);
             if (pumpAction && ammo > 0) StartPump(boltAction ? 0.28f : 0.1f);
         }
@@ -594,6 +780,31 @@ namespace FPS
             return 0f;
         }
 
+        /// <summary>Bolt cycle with a lifting handle (<see cref="boltLiftAngle"/>): lift → pull back → push → lower.
+        /// lift / travel 0..1; the shell is ejected (pumpT 0.4) with the bolt fully back.</summary>
+        void BoltCycle(out float lift, out float travel)
+        {
+            lift = travel = 0f;
+            if (!pumping || pumpT <= 0f) return;
+            float t = pumpT;
+            if (t < 0.1f) lift = Anim.Smooth(t / 0.1f);
+            else if (t < 0.38f) { lift = 1f; travel = Anim.Smooth((t - 0.1f) / 0.28f); }
+            else if (t < 0.5f) { lift = 1f; travel = 1f; }
+            else if (t < 0.72f) { lift = 1f; travel = 1f - Anim.Smooth((t - 0.5f) / 0.22f); }
+            else if (t < 0.82f) lift = 1f - Anim.Smooth((t - 0.72f) / 0.1f);
+        }
+
+        /// <summary>Lifting-handle bolt held open while single rounds are loaded (opens in the first reload phase, closes in the last).</summary>
+        void BoltOpenForLoading(out float lift, out float travel)
+        {
+            lift = travel = 0f;
+            if (!reloading || reloadStyle != ReloadStyle.PerShell) return;
+            float u = Mathf.Clamp01(reloadT);
+            if (shellPhase == 0) { lift = Anim.Smooth(u * 2f); travel = Anim.Smooth(u * 2f - 1f); }
+            else if (shellPhase == 1) { lift = 1f; travel = 1f; }
+            else { travel = 1f - Anim.Smooth(u * 2f); lift = 1f - Anim.Smooth(u * 2f - 1f); }
+        }
+
         // ------------------------------------------------------------------ reload
 
         void TryReload()
@@ -603,21 +814,22 @@ namespace FPS
             reloadT = 0f;
             evtIndex = 0;
             reloadEmpty = ammo == 0;
-            magHidden = false;
+            magHidden = launcher && ammo == 0; // a fired launcher has no rocket to show until the new one is in the hand
             if (reloadStyle == ReloadStyle.PerShell)
             {
                 shellPhase = 0;
                 shellInterrupt = false;
                 shellInserted = false;
-                reloadDuration = 0.32f;
+                reloadDuration = 0.32f / Mathf.Max(0.1f, ReloadSpeed);
+                if (boltLiftAngle != 0f) ProcAudio.Play(Sfx.PumpBack, 0.6f); // the bolt opens for loading
             }
-            else reloadDuration = reloadEmpty ? emptyReloadTime : reloadTime;
+            else reloadDuration = (reloadEmpty ? emptyReloadTime : reloadTime) / Mathf.Max(0.1f, ReloadSpeed);
         }
 
         public void CancelReload()
         {
             reloading = false;
-            magHidden = false;
+            magHidden = launcher && ammo == 0;
             reloadT = 0f;
             if (reloadStyle == ReloadStyle.PerShell && magazine) magazine.gameObject.SetActive(false);
         }
@@ -657,14 +869,19 @@ namespace FPS
             if (shellPhase == 0 || shellPhase == 1)
             {
                 bool more = ammo < magSize && reserve > 0 && !shellInterrupt;
-                if (more) { shellPhase = 1; shellInserted = false; reloadDuration = shellInsertTime; }
-                else { shellPhase = 2; reloadDuration = 0.4f; }
+                if (more) { shellPhase = 1; shellInserted = false; reloadDuration = shellInsertTime / Mathf.Max(0.1f, ReloadSpeed); }
+                else
+                {
+                    shellPhase = 2; reloadDuration = 0.4f / Mathf.Max(0.1f, ReloadSpeed);
+                    if (boltLiftAngle != 0f) ProcAudio.Play(Sfx.PumpForward, 0.7f); // the open bolt closes on a round
+                }
             }
             else
             {
                 reloading = false;
                 if (magazine) magazine.gameObject.SetActive(false);
-                if (reloadEmpty && pumpAction) StartPump(0f);
+                // (a lifting-handle bolt was held open while loading and has just chambered a round)
+                if (reloadEmpty && pumpAction && boltLiftAngle == 0f) StartPump(0f);
             }
         }
 
@@ -681,7 +898,8 @@ namespace FPS
                     bumpPos.Kick(new Vector3(0f, -0.15f, 0f));
                     break;
                 case Evt.Drop:
-                    if (magazine) FX.Ensure().DropMagazine(magazine, motor.Velocity, cam.transform);
+                    // (a launcher's old rocket is gone: it was fired)
+                    if (magazine && !launcher) FX.Ensure().DropMagazine(magazine, motor.Velocity, cam.transform);
                     magHidden = true;
                     break;
                 case Evt.Show:
@@ -876,10 +1094,17 @@ namespace FPS
                 else handOff = shellH0 * w;
             }
 
+            float chLift = 0f;
             if (pumpAction)
             {
                 float po = PumpOffset();
-                chOff += new Vector3(0f, 0f, -chTravel * po);
+                if (boltLiftAngle != 0f && boltAction)
+                {
+                    BoltCycle(out chLift, out float travel);
+                    if (reloading) BoltOpenForLoading(out chLift, out travel);
+                    chOff += new Vector3(0f, 0f, -chTravel * travel);
+                }
+                else chOff += new Vector3(0f, 0f, -chTravel * po);
                 if (boltAction)
                 {
                     // the gun cants and comes off the eye while the right hand works the bolt
@@ -898,8 +1123,10 @@ namespace FPS
             if (AnimDriven)
             {
                 // hip / ADS base, look sway and shot kicks come from the FPS Animation layers (AdsLayer, SwayLayer, RecoilLayer)
-                PoseOffsetPos = pos - Vector3.Lerp(hipPosition, aimPosition, aimEased) + bobP + idleP + bp;
-                PoseOffsetRot = rot + bobR + idleR + br;
+                // landing / jump bumps stay small aimed: the sight must stay in front of the eye
+                float bump = Mathf.Lerp(1f, 0.4f, aimEased);
+                PoseOffsetPos = pos - Vector3.Lerp(hipPosition, aimPosition, aimEased) + bobP + idleP + bp * bump;
+                PoseOffsetRot = rot + bobR + idleR + br * bump;
                 transform.localPosition = Vector3.zero;
                 transform.localRotation = Quaternion.identity;
             }
@@ -922,17 +1149,19 @@ namespace FPS
             }
             if (leftHand) leftHand.localPosition = handRest + handOff;
             if (chargingHandle) chargingHandle.localPosition = chRest + chOff;
+            if (chargingHandle && boltLiftAngle != 0f) chargingHandle.localRotation = chRestRot * Quaternion.Euler(0f, 0f, boltLiftAngle * chLift);
             boltT = Mathf.MoveTowards(boltT, 0f, dt * 22f);
-            if (bolt) bolt.localPosition = boltRest + new Vector3(0f, 0f, -0.035f * Mathf.Sin(boltT * Mathf.PI * 0.5f));
+            if (bolt) bolt.localPosition = boltRest + new Vector3(0f, 0f, -boltKick * Mathf.Sin(boltT * Mathf.PI * 0.5f));
 
-            // collimated reticle: like a real red dot, it always marks where the camera (and the bullets) point
+            // collimated reticle: like a real red dot, it marks where the barrel (and the bullets) point, seen from the eye
             if (reticle)
             {
                 Vector3 rest = reticle.parent.TransformPoint(reticleRest);
                 Vector3 mark = rest + (reticle.TransformPoint(reticleCenter) - reticle.position);
                 Transform ct = cam.transform;
-                float d = Vector3.Dot(mark - ct.position, ct.forward);
-                Vector3 onAxis = ct.position + ct.forward * d;
+                Vector3 axis = transform.forward;
+                float d = Vector3.Dot(mark - ct.position, axis);
+                Vector3 onAxis = ct.position + axis * d;
                 Vector3 off = Vector3.ClampMagnitude(onAxis - mark, 0.012f);
                 reticle.position = rest + off * aimEased;
             }

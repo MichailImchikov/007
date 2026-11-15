@@ -30,9 +30,13 @@ namespace FPS
         [Header("Pickups")]
         public float pickupRange = 2.8f;
 
+        /// <summary>The class weapon on the class key (the engineer's launcher); empty for the other classes.</summary>
+        public string gadgetName = "";
+
         public WeaponController Active { get; private set; }
         public WeaponController Primary => Find(primaryName);
         public WeaponController Secondary => Find(secondaryName);
+        public WeaponController Gadget => string.IsNullOrEmpty(gadgetName) ? null : Find(gadgetName);
         public bool Switching => switching;
         public bool Throwing => throwState != 0;
         /// <summary>Set by abilities (sword, chicken): no switching, grenades, knife or pickups.</summary>
@@ -55,29 +59,98 @@ namespace FPS
             return null;
         }
 
-        /// <summary>The weapons chosen in the loadout menu differ from what we carry (applied on respawn).</summary>
+        /// <summary>The weapons (or their attachments) chosen in the loadout menu differ from what we carry (applied on respawn).</summary>
         public bool ChoicePending =>
+            (Self && Self.playerClass != PlayerLoadout.Class) ||
             (!DroneMode.Active && Find(PlayerLoadout.Primary) && primaryName != PlayerLoadout.Primary) ||
             (Find(PlayerLoadout.Secondary) && secondaryName != PlayerLoadout.Secondary) ||
-            (melee && melee.VariantName.Length > 0 && melee.VariantName != PlayerLoadout.Melee);
+            (melee && melee.VariantName.Length > 0 && melee.VariantName != PlayerLoadout.Melee) ||
+            AttachmentsPending(PlayerLoadout.Primary) || AttachmentsPending(PlayerLoadout.Secondary);
+
+        /// <summary>A modular weapon's mounted attachments differ from the player's saved choice.</summary>
+        bool AttachmentsPending(string weaponName)
+        {
+            var w = Find(weaponName);
+            var wa = w ? w.GetComponent<WeaponAttachments>() : null;
+            return wa && wa.data && wa.Signature != WeaponDataDB.Signature(WeaponDataDB.Selection(wa.data));
+        }
 
         /// <summary>Takes the weapons chosen in the loadout menu (start of the match, respawn).</summary>
+        Combatant self;
+        Combatant Self => self ? self : self = GetComponent<Combatant>();
+
         public void ApplyPlayerChoice()
         {
             if (!GetComponent<PlayerHealth>() && !GetComponent<PlayerMotor>()) return;
+            ApplyAttachmentChoice();
+            // the class decides what may be carried: its primaries, pistols (or, for the assault class, a shotgun) and
+            // its class weapon
+            var cls = PlayerLoadout.Class;
+            if (Self) Self.playerClass = cls;
             string p = PlayerLoadout.Primary, s = PlayerLoadout.Secondary;
             if (Find(p) && Find(p).slot == WeaponSlot.Primary) primaryName = p;
-            if (Find(s) && Find(s).slot == WeaponSlot.Secondary) secondaryName = s;
+            if (Find(s) && Find(s).slot != WeaponSlot.Gadget && s != primaryName) secondaryName = s;
+            string g = ClassDB.Get(cls).gadget;
+            gadgetName = !string.IsNullOrEmpty(g) && Find(g) ? g : "";
             if (melee) melee.SetVariant(PlayerLoadout.Melee);
-            if (DroneMode.Active) { primaryName = ""; grenades = 0; } // drone war: knife + pistol only
+            if (DroneMode.Active) { primaryName = ""; gadgetName = ""; grenades = 0; } // drone war: knife + pistol only
             var want = Primary ?? Secondary;
-            bool stale = Active && Active.weaponName != primaryName && Active.weaponName != secondaryName;
-            if (Active && want && Active != want && (stale || Active.slot == WeaponSlot.Primary))
+            bool stale = Active && Active.weaponName != primaryName && Active.weaponName != secondaryName && Active.weaponName != gadgetName;
+            if (Active && want && Active != want && (stale || Active.slot != WeaponSlot.Secondary))
             {
                 Active.gameObject.SetActive(false);
                 switching = false;
                 Activate(want);
             }
+        }
+
+        /// <summary>Modular weapons whose mounted attachments differ from the saved choice are re-assembled (their
+        /// world-model template too); the held one is re-announced so the arms pick up the new sight / grips.</summary>
+        void ApplyAttachmentChoice()
+        {
+            bool activeRebuilt = false;
+            foreach (var w in weapons)
+            {
+                if (!w) continue;
+                var wa = w.GetComponent<WeaponAttachments>();
+                if (!wa || !wa.data) continue;
+                var sel = WeaponDataDB.Selection(wa.data);
+                if (WeaponDataDB.Signature(sel) == wa.Signature) continue;
+                wa.Rebuild(sel);
+                if (templatesRoot) BuildTemplate(w);
+                if (w == Active) activeRebuilt = true;
+            }
+            if (activeRebuilt && Active) ActiveChanged?.Invoke(Active);
+        }
+
+        void Awake() => EnsureRuntimeWeapons();
+
+        bool runtimeWeaponsChecked;
+
+        /// <summary>
+        /// Scenes are pre-built with the catalog of their time: a modular catalog weapon (WeaponData) missing from this
+        /// player's weapons gets a WeaponController now — holder, Blender model, attachments, and a muzzle flash / light
+        /// cloned from a weapon of the scene so the materials match.
+        /// </summary>
+        void EnsureRuntimeWeapons()
+        {
+            if (runtimeWeaponsChecked) return;
+            runtimeWeaponsChecked = true;
+            if (weapons == null || weapons.Length == 0 || !cam) return;
+            WeaponController src = Find("M4A1");
+            if (!src || !src.muzzleFlash)
+                foreach (var w in weapons) if (w && w.muzzleFlash) { src = w; break; }
+            Transform parent = src ? src.transform.parent : null;
+            if (!parent) foreach (var w in weapons) if (w) { parent = w.transform.parent; break; }
+            if (!parent) parent = cam.transform;
+            var list = new List<WeaponController>(weapons);
+            foreach (var def in WeaponCatalog.All)
+            {
+                if (Find(def.name) || !WeaponDataDB.Get(def.name)) continue;
+                var w = WeaponAssembler.CreateRuntime(def, parent, src, motor, playerCam, cam);
+                if (w) list.Add(w);
+            }
+            weapons = list.ToArray();
         }
 
         void Start()
@@ -171,7 +244,7 @@ namespace FPS
                 return;
             }
             var nw = Find(p.weaponName);
-            if (!nw) return;
+            if (!nw || nw.slot == WeaponSlot.Gadget) return;
             if (DroneMode.Active && nw.slot == WeaponSlot.Primary) { ProcAudio.Play(Sfx.Dry, 0.4f); return; } // sidearms only
             bool isPrimary = nw.slot == WeaponSlot.Primary;
             string current = isPrimary ? primaryName : secondaryName;
@@ -209,39 +282,63 @@ namespace FPS
         void EnsureTemplates()
         {
             if (templatesRoot) return;
+            EnsureRuntimeWeapons();
             templatesRoot = new GameObject("WeaponTemplates").transform;
             templatesRoot.gameObject.SetActive(false);
-            foreach (var w in weapons)
+            foreach (var w in weapons) BuildTemplate(w);
+        }
+
+        /// <summary>(Re)builds the world-model template of a weapon (after its attachments changed too).</summary>
+        void BuildTemplate(WeaponController w)
+        {
+            if (!w || !w.model) return;
+            w.EnsureInit();
+            if (templates.TryGetValue(w.weaponName, out var old) && old) WeaponAssembler.Kill(old);
+            var clone = MakeWorldModel(w, templatesRoot);
+            clone.name = w.weaponName;
+            templates[w.weaponName] = clone;
+        }
+
+        /// <summary>
+        /// World (third-person / pickup) copy of a first-person weapon's model: procedural arms, muzzle flash and lights
+        /// removed, the support-hand grip moved onto the gun, shadows on. Attachment models keep all their parts.
+        /// </summary>
+        public static GameObject MakeWorldModel(WeaponController w, Transform parent)
+        {
+            var clone = Instantiate(w.model.gameObject, parent);
+            clone.transform.localPosition = Vector3.zero;
+            clone.transform.localRotation = Quaternion.identity;
+            // the support-hand grip lives under the (removed) procedural left arm: keep it on the gun
+            var gl = HandGrips.Find(clone.transform, HandGrips.Left);
+            if (gl) gl.SetParent(clone.transform, true);
+            foreach (var t in clone.GetComponentsInChildren<Transform>(true))
             {
-                if (!w || !w.model) continue;
-                w.EnsureInit();
-                var clone = Instantiate(w.model.gameObject, templatesRoot);
-                clone.name = w.weaponName;
-                clone.transform.localPosition = Vector3.zero;
-                clone.transform.localRotation = Quaternion.identity;
-                // the support-hand grip lives under the (removed) procedural left arm: keep it on the gun
-                var gl = HandGrips.Find(clone.transform, HandGrips.Left);
-                if (gl) gl.SetParent(clone.transform, true);
-                foreach (var t in clone.GetComponentsInChildren<Transform>(true))
-                {
-                    if (!t || t == clone.transform) continue;
-                    string n = t.name;
-                    if (n.Contains("Arm") || n.Contains("Flash") || n == "ShellInHand") DestroyImmediate(t.gameObject);
-                }
-                foreach (var l in clone.GetComponentsInChildren<Light>(true)) DestroyImmediate(l.gameObject);
-                foreach (var r in clone.GetComponentsInChildren<Renderer>(true))
-                {
-                    r.enabled = true;
-                    r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
-                }
-                templates[w.weaponName] = clone;
+                if (!t || t == clone.transform) continue;
+                string n = t.name;
+                // the flash rig goes even when it sits on a muzzle device; attachment models keep their parts ("Flashlight")
+                bool rig = n == "MuzzleFlash" || n == "FlashScale" || n == "ShellInHand";
+                if (rig || ((n.Contains("Arm") || n.Contains("Flash")) && !t.GetComponentInParent<AttachmentInstance>(true)))
+                    DestroyImmediate(t.gameObject);
             }
+            foreach (var l in clone.GetComponentsInChildren<Light>(true)) DestroyImmediate(l.gameObject);
+            foreach (var r in clone.GetComponentsInChildren<Renderer>(true))
+            {
+                r.enabled = true;
+                r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
+            }
+            return clone;
         }
 
         public GameObject CreateWorldModel(string weaponName, Transform parent)
         {
             EnsureTemplates();
-            if (!templates.TryGetValue(weaponName, out var t)) return null;
+            if (!templates.TryGetValue(weaponName, out var t) || !t)
+            {
+                var w = Find(weaponName);
+                if (!w) return null;
+                BuildTemplate(w);
+                if (!templates.TryGetValue(weaponName, out t) || !t) return null;
+            }
             var go = Instantiate(t, parent);
             go.name = weaponName + "_World";
             ImportHidden.Refresh(go);

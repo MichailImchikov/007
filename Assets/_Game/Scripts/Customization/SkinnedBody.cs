@@ -1,23 +1,27 @@
 using System.Collections.Generic;
+using FPS.Animation;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace FPS
 {
     /// <summary>
-    /// Wears an imported skinned (Humanoid) character on a procedural HumanoidRig.
+    /// Wears an imported skinned (Humanoid) character on a procedural HumanoidRig and animates it with the
+    /// FPS.Animation framework (our replacement of the KINEMATION FPS Animation Framework).
     ///
-    /// Animated mode (CharacterModelDB.tpController present): the model's own Animator plays the JU TPS 3 clips
-    /// (locomotion / crouch / prone / air + upper-body weapon hold), fed every frame from CharacterAnimator's
-    /// parameters — movement itself stays ours (motor / NavMeshAgent, no root motion). On top of it:
-    ///  • procedural poses (death fall, executions, knife, throw, abilities) are blended in per bone group;
-    ///  • aim pitch / lean / head look are added to the spine;
-    ///  • the hands are IK'd onto the held gun's grips (HandGrips);
-    ///  • the procedural rig follows the model, so every rig.head / rig.chest / weaponSocket user keeps working;
+    /// Animated mode (Resources/CharacterAnimSet present, built by Tools > FPS > Build Military Animations):
+    ///  • the soldier controller plays the locomotion (8-way blend trees per stance, air, slide, vault, death)
+    ///    from CharacterAnimator's parameters — movement itself stays ours (motor / NavMeshAgent, no root motion);
+    ///  • an FPSAnimator runs the layers: Look (aim pitch / lean / head look over the spine), BodyAlign (eyes on the
+    ///    aim frame), LegIK (feet on the ground), PoseOffset / Ads / Sway / Slot / Recoil / WeaponCollision (weapon);
+    ///  • the hands are bound to the held weapon's grip anchors (GripR / GripL) by the core's grip IK;
+    ///  • third person: the aim frame is a virtual eye (stance height + aim pitch), the gun hangs on rig.weaponSocket;
+    ///    first person (the local player, EnableFirstPerson): the aim frame is the camera, the player's own
+    ///    WeaponControllers hang on the weapon bone and the head renders as a shadow only — true first person;
+    ///  • procedural poses (executions, knife, abilities) are blended in per bone group from the procedural rig;
+    ///  • the procedural rig follows the model, so rig.head / rig.chest / weaponSocket users keep working;
     ///  • hit boxes live on the model's real bones (head = critical).
-    ///
-    /// Without a controller it falls back to the old retarget: the model copies the procedural rig's pose.
-    /// Retarget math: the procedural bones rest with identity rotations, the model in a T-pose; per mapped bone
-    /// C = rotation from the model's rest bone direction to the rig's, modelBone = rigBoneDelta * C * modelRest.
+    /// Without the animation set it falls back to the old retarget: the model copies the procedural rig's pose.
     /// </summary>
     [DefaultExecutionOrder(260)]
     public class SkinnedBody : MonoBehaviour
@@ -34,6 +38,10 @@ namespace FPS
 
         HumanoidRig rigRef;
         CharacterAnimator ca;
+        // gun kept in the right hand while dead / not holding (pose relative to the hand, captured when it let go)
+        bool gunInHand;
+        Vector3 gunInHandPos;
+        Quaternion gunInHandRot = Quaternion.identity;
         Transform body;          // HumanoidRig transform (shared reference frame)
         Transform modelHips;
         readonly List<Map> maps = new List<Map>();
@@ -42,21 +50,70 @@ namespace FPS
         public Renderer[] Renderers { get; private set; }
         public int ModelIndex { get; private set; }
 
-        // animated mode
+        // ---- animated mode
         Animator an;
         bool animated;
-        Transform mSpine, mChestTop, mNeck, mHead;
-        ArmIK lArm, rArm;
+        CharacterAnimSet set;
+        FPSAnimator core;
+        LookLayer look;
+        BodyAlignLayer align;
+        LegIKLayer legIK;
+        StockMountLayer stockMount;
+        PoseOffsetLayer poseLayer;
+        AdsLayer ads;
+        SwayLayer sway;
+        SlotLayer slot;
+        RecoilLayer recoilLayer;
+        WeaponCollisionLayer collision;
+        Transform aimTarget;
         readonly float[] procW = new float[5];
-        float upperW = 1f, ikW;
-        bool lastReload, lastThrow;
-        Vector3 socketRest;
+        float gripW, alignW = 1f;
+        float fpAimRelief = 0.2f; // eye → sight distance when aiming (m), per weapon
+        // what the equipped weapon was measured with: a new optic / grip (WeaponAttachments.Rebuild) moves the sight
+        // point and replaces the hand grip anchors, so the weapon is equipped again
+        WeaponAttachments fpAttachments;
+        Transform fpSight, fpGripR;
+        string fpSignature = "";
+        // where the body's eyes are relative to the camera pivot (the player's yaw frame, smoothed): the camera and the
+        // aim frame sit there. Standing, the bent knees keep the eyes ~10 cm under the gameplay eye height, and the body
+        // alignment never lifts the body to it (straight legs, tiptoes)
+        Vector3 fpEye;
+        bool fpEyeValid;
+        AnimSequence currentPose, reloadSeq, throwSeq;
+        bool poseApplied, lastReload, lastThrow;
+
         public bool Animated => animated;
         public Animator ModelAnimator => an;
+        /// <summary>The character's own CharacterAnimator (motion state: velocity, slide, grounded...).</summary>
+        public CharacterAnimator Driver => ResolveCharacterAnimator();
+        public FPSAnimator Core => core;
 
-        static readonly int pForward = Animator.StringToHash("Forward"), pRight = Animator.StringToHash("Right"),
-            pCrouch = Animator.StringToHash("Crouch"), pProne = Animator.StringToHash("Prone"), pPistol = Animator.StringToHash("Pistol"),
-            pGrounded = Animator.StringToHash("Grounded"), pReload = Animator.StringToHash("Reload"), pThrow = Animator.StringToHash("Throw");
+        // ---- first person (the local player wears this body)
+        public bool FirstPerson { get; private set; }
+        PlayerCamera fpCam;
+        Loadout fpLoadout;
+        PlayerMotor fpMotor;
+        WeaponController fpWeapon;
+        readonly CameraShaker shaker = new CameraShaker();
+        readonly Dictionary<WeaponController, RecoilProfile> recoilProfiles = new Dictionary<WeaponController, RecoilProfile>();
+        readonly Dictionary<WeaponController, Transform> pivots = new Dictionary<WeaponController, Transform>();
+        Renderer[] headRenderers = new Renderer[0], bodyRenderers = new Renderer[0];
+        int visState = -1;
+
+        // ---- third person: the gun under rig.weaponSocket
+        Transform heldGun;
+
+        const float EyeStand = 1.68f, EyeCrouch = 1.0f, EyeProne = 0.4f; // PlayerMotor's eye heights
+
+        static readonly int pVelX = Animator.StringToHash("VelX"), pVelZ = Animator.StringToHash("VelZ"), pSpeed = Animator.StringToHash("Speed"),
+            pCrouch = Animator.StringToHash("Crouch"), pProne = Animator.StringToHash("Prone"), pGrounded = Animator.StringToHash("Grounded"),
+            pVert = Animator.StringToHash("VertSpeed"), pSlide = Animator.StringToHash("Slide"), pVault = Animator.StringToHash("Vault"),
+            pMantle = Animator.StringToHash("Mantle"), pVaultT = Animator.StringToHash("VaultT"), pDead = Animator.StringToHash("Dead"),
+            pDeadFwd = Animator.StringToHash("DeadForward"), pAnimSpeed = Animator.StringToHash("AnimSpeed");
+
+        static readonly string[] HeadParts = { "Head", "Cap", "Helmet", "Goggle", "Headset", "Balaclava", "Gsmask", "Gasmask", "NVG", "Hair", "Beard", "Eye", "Glasses", "Mask" };
+
+        // ================================================================================================ setup
 
         /// <summary>Instantiates the model under the rig and binds it. Returns null if the model has no humanoid avatar.</summary>
         public static SkinnedBody Attach(HumanoidRig rig, int modelIndex, CharacterModelDB.Entry e)
@@ -79,19 +136,13 @@ namespace FPS
 
             var sb = inst.AddComponent<SkinnedBody>();
             sb.ModelIndex = modelIndex;
+            sb.set = CharacterAnimSet.Instance;
+            sb.animated = sb.set && sb.set.controller && Application.isPlaying;
+            sb.an = an;
             sb.Bind(rig, an);
-
-            var db = CharacterModelDB.Instance;
-            sb.animated = db && db.tpController && Application.isPlaying;
             if (sb.animated)
             {
-                an.runtimeAnimatorController = db.tpController;
-                an.applyRootMotion = false;
-                an.cullingMode = AnimatorCullingMode.AlwaysAnimate;
-                an.enabled = true;
-                sb.an = an;
-                sb.lArm = ArmIK.Make(an, true);
-                sb.rArm = ArmIK.Make(an, false);
+                sb.SetupAnimated();
                 sb.BuildHitboxes(rig);
             }
             else an.enabled = false;
@@ -114,17 +165,20 @@ namespace FPS
         {
             rigRef = rig;
             body = rig.transform;
-            if (rig.weaponSocket) socketRest = rig.weaponSocket.localPosition;
-            // the player has it on the rig, bots / proxies on their root
-            ca = rig.GetComponentInParent<CharacterAnimator>();
-            if (!ca) ca = rig.transform.root.GetComponentInChildren<CharacterAnimator>();
+            ca = null;
+            ResolveCharacterAnimator();
             Transform B(HumanBodyBones b) => animator.GetBoneTransform(b);
             modelHips = B(HumanBodyBones.Hips);
 
-            // scale the model so its hips sit where the procedural hips rest
-            float hipsH = BodyPos(modelHips).y;
-            float rigHips = rig.hips.localPosition.y + (rig.rig ? rig.rig.localPosition.y : 0f);
-            if (hipsH > 0.1f) transform.localScale = Vector3.one * (rigHips / hipsH);
+            if (animated && set.restEyeHeight > 0.5f)
+                transform.localScale = Vector3.one * (EyeStand / set.restEyeHeight); // eyes at the camera height when standing
+            else
+            {
+                // scale the model so its hips sit where the procedural hips rest
+                float hipsH = BodyPos(modelHips).y;
+                float rigHips = rig.hips.localPosition.y + (rig.rig ? rig.rig.localPosition.y : 0f);
+                if (hipsH > 0.1f) transform.localScale = Vector3.one * (rigHips / hipsH);
+            }
 
             var chest = B(HumanBodyBones.Chest);
             var upper = B(HumanBodyBones.UpperChest);
@@ -132,7 +186,6 @@ namespace FPS
             var head = B(HumanBodyBones.Head);
             var spine = B(HumanBodyBones.Spine);
             Transform chestTop = upper ? upper : chest;
-            mSpine = spine; mChestTop = chestTop; mNeck = neck; mHead = head;
 
             Quaternion Add(Transform m, Transform mChild, Transform r, Vector3 rigRestDir, Group g, bool follow, Quaternion? inherit = null)
             {
@@ -169,10 +222,711 @@ namespace FPS
 
             modelHead = head;
             if (head) modelHeadScale = head.localScale;
-            Sync();
+            if (!animated) Sync();
         }
 
-        // ------------------------------------------------------------------ hit boxes on the real bones
+        /// <summary>The framework on the model (the model is still in its bind pose: the rig is calibrated from it).</summary>
+        void SetupAnimated()
+        {
+            an.applyRootMotion = false;
+            an.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+            an.enabled = true;
+
+            core = an.gameObject.AddComponent<FPSAnimator>();
+            core.autoUpdate = false;
+            look = core.AddLayer<LookLayer>();
+            align = core.AddLayer<BodyAlignLayer>();
+            legIK = core.AddLayer<LegIKLayer>();
+            stockMount = core.AddLayer<StockMountLayer>(); // first person only (EnableFirstPerson)
+            stockMount.enabled = false;
+            poseLayer = core.AddLayer<PoseOffsetLayer>();
+            ads = core.AddLayer<AdsLayer>();
+            sway = core.AddLayer<SwayLayer>();
+            slot = core.AddLayer<SlotLayer>();
+            recoilLayer = core.AddLayer<RecoilLayer>();
+            collision = core.AddLayer<WeaponCollisionLayer>();
+            align.eyeOffset = set.eyeOffset;
+            align.cameraOffset = Vector3.zero;
+            align.maxHorizontal = 0.35f;
+            // the crouch clips stand taller than the crouch eye height (1.0 m): the knees bend (leg IK) instead of the
+            // back hunching, so the pelvis may come down this far
+            align.maxVertical = 0.45f;
+            align.smoothSpeed = 8f; // follows stance changes, not the head bob of every step
+            legIK.SetIgnoreRoot(rigRef.transform.parent ? rigRef.transform.parent : rigRef.transform);
+
+            core.Initialize(an, transform, set.controller, set.upperBodyMask);
+            core.PreIK += PlaceElbowHints;
+            // the comic villain look a kill streak gives the character (seen by everyone else)
+            if (!GetComponent<ComicAvatar>()) gameObject.AddComponent<ComicAvatar>();
+            align.Calibrate();
+            look.SetupHumanoid(core.rig, false);
+            // third person: the head turns for lookYaw, the body / gun follow the aim frame
+            look.lookRightOffset.Clear();
+            if (core.rig.neck) look.lookRightOffset.Add(new LookLayer.AimOffsetBone(core.rig.neck, new Vector2(45f, 45f)));
+            if (core.rig.head) look.lookRightOffset.Add(new LookLayer.AimOffsetBone(core.rig.head, new Vector2(45f, 45f)));
+
+            aimTarget = new GameObject("AimTarget").transform;
+            aimTarget.SetParent(core.rig.rootBone, false);
+            ads.aimTarget = aimTarget;
+            ads.enabled = sway.enabled = collision.enabled = false;
+            core.weaponRoot = rigRef.weaponSocket;
+            core.OnWeaponEquipped(new WeaponAnimSettings(), default);
+
+            if (set.reloadRifle)
+            {
+                var mask = new AnimationCurve(new Keyframe(0f, 0f), new Keyframe(0.1f, 1f), new Keyframe(0.86f, 1f), new Keyframe(0.95f, 0f));
+                reloadSeq = AnimSequence.Create(set.reloadRifle, 0.15f, 0.25f, set.upperBodyMask).WithCurve(AnimCurves.MaskLeftHand, mask);
+            }
+            if (set.throwGrenade)
+            {
+                var both = AnimationCurve.Constant(0f, 1f, 1f);
+                throwSeq = AnimSequence.Create(set.throwGrenade, 0.1f, 0.2f, set.upperBodyMask)
+                    .WithCurve(AnimCurves.MaskLeftHand, both).WithCurve(AnimCurves.MaskRightHand, both);
+            }
+        }
+
+        // ================================================================================================ first person
+
+        /// <summary>
+        /// True first person for the local player: the camera sits at the body's eyes and is the aim frame, the player's
+        /// WeaponControllers hang on the body's weapon bone (no separate arms model), the head is a shadow. False if this
+        /// body is not animated.
+        /// </summary>
+        public bool EnableFirstPerson(PlayerCamera pc, Loadout loadout, PlayerMotor motor)
+        {
+            if (!animated || !pc || !loadout) return false;
+            FirstPerson = true;
+            fpCam = pc; fpLoadout = loadout; fpMotor = motor;
+            look.SetupHumanoid(core.rig, true);
+            look.useRightOffset = false;
+            // the butt rests in the right shoulder; the camera-space hold position only gives the gun's direction
+            stockMount.enabled = true;
+            stockMount.shoulder = an.GetBoneTransform(HumanBodyBones.RightUpperArm);
+            ads.enabled = sway.enabled = collision.enabled = true;
+            // the body follows the gameplay pivot (motor eye height, bob, lean); the camera and the aim frame then come
+            // to the eyes (FollowEyes). The eyes a little in front of the pivot: the shoulders come forward enough for
+            // the arms to hold the gun; looking down, the bending head moves the body back
+            align.target = pc.fxPivot;
+            align.cameraOffset = new Vector3(0f, -0.02f, 0.02f);
+            Transform owner = motor ? motor.transform : rigRef.transform.root;
+            collision.SetIgnoreRoot(owner);
+            legIK.SetIgnoreRoot(owner);
+            int mask = Physics.DefaultRaycastLayers & ~(1 << LayerMask.NameToLayer("Ignore Raycast"));
+            collision.layerMask = mask;
+            core.weaponRoot = null;
+
+            foreach (var w in loadout.weapons)
+            {
+                if (!w) continue;
+                w.EnsureInit();
+                w.AnimDriven = true;
+                w.transform.SetParent(core.rig.weaponBone, false);
+                w.transform.localPosition = Vector3.zero;
+                w.transform.localRotation = Quaternion.identity;
+                HideProceduralArms(w);
+                foreach (var r in w.model.GetComponentsInChildren<Renderer>(true))
+                    if (!(r is ParticleSystemRenderer) && !r.name.Contains("Flash")) r.shadowCastingMode = ShadowCastingMode.On;
+                var wc = w;
+                w.Fired += () => OnFired(wc);
+            }
+            loadout.ActiveChanged += Equip;
+            if (loadout.Active) Equip(loadout.Active);
+
+            var head = new List<Renderer>(); var rest = new List<Renderer>();
+            foreach (var r in Renderers)
+            {
+                if (!r) continue;
+                bool isHead = false;
+                foreach (var h in HeadParts) if (r.name.Contains(h)) { isHead = true; break; }
+                (isHead ? head : rest).Add(r);
+            }
+            headRenderers = head.ToArray();
+            bodyRenderers = rest.ToArray();
+            visState = -1;
+            return true;
+        }
+
+        static readonly string[] ArmParts = { "Glove", "Finger", "Thumb", "Cuff", "Forearm", "UpperArm" };
+
+        static void HideProceduralArms(WeaponController w)
+        {
+            foreach (var r in w.model.GetComponentsInChildren<Renderer>(true))
+                foreach (var p in ArmParts)
+                    if (r.name.Contains(p)) { r.forceRenderingOff = true; if (!r.GetComponent<ImportHidden>()) r.gameObject.AddComponent<ImportHidden>(); break; }
+        }
+
+        Transform Pivot(WeaponController w)
+        {
+            if (pivots.TryGetValue(w, out var p) && p) return p;
+            p = new GameObject("FP_Pivot").transform;
+            p.SetParent(w.transform, false);
+            var grip = HandGrips.Find(w.model, HandGrips.Right);
+            // rotations pivot a little ahead of the trigger hand (center of the gun's mass)
+            p.localPosition = grip ? w.transform.InverseTransformPoint(grip.position) + new Vector3(0f, 0.02f, 0.06f) : Vector3.zero;
+            pivots[w] = p;
+            return p;
+        }
+
+        RecoilProfile Recoil(WeaponController w)
+        {
+            if (recoilProfiles.TryGetValue(w, out var d) && d) return d;
+            d = RecoilProfile.CreateRuntime(w.weaponName, w.kickScale, w.recoilUp, w.slot == WeaponSlot.Secondary);
+            recoilProfiles[w] = d;
+            return d;
+        }
+
+        // true first person: where the trigger hand holds the gun, ahead of the eyes (m). The view-model offsets of the
+        // weapons held them ~0.2 m further out than a shoulder can reach; rifles: stock at the shoulder. Pistols: in front
+        // of the chest (lowered by FpPistolHipDrop), pushed out to nearly straight arms when aiming (at 0.24 m the gun
+        // was at the face and the gloves filled the view)
+        const float FpRifleGripZ = 0.08f, FpPistolGripZ = 0.30f, FpPistolAimGripZ = 0.40f, FpPistolHipDrop = 0.05f;
+        // bladed rifle stance (torso twist to the right): the support shoulder comes forward to the handguard
+        const float FpRifleStanceYaw = 28f;
+        // prone: chest arched up on the elbows (degrees over the spine chain)
+        const float PronePropAngle = 24f;
+        // aiming: the gun rises only this fraction of the way to the eye line, the head comes down (degrees) and the eye
+        // goes to the sight the rest of the way. A shouldered rifle comes up a few cm (head onto the stock; the body is
+        // not lifted: the knees stay bent and the butt stays in the shoulder); a pistol comes most of the way up
+        const float AdsGunRise = 0.2f, AdsHeadDrop = 14f, AdsGunRisePistol = 0.7f, AdsHeadDropPistol = 6f;
+        // the camera follows the body's eyes this fast (1/s: quick enough to stay with the head when looking down, while
+        // softening the steps' bob), at most this far (m; looking at the feet the eyes are ~0.3 m under the pivot)
+        const float EyeFollowSpeed = 12f, MaxEyeOffset = 0.45f;
+        // aiming, the camera rides on the sight: the eye and the butt in the shoulder then follow the body slowly (1/s),
+        // keeping the stance's average and dropping each step's sway (strafing swung them by up to 14 cm, and the whole
+        // view jerked with every step)
+        const float EyeFollowSpeedAim = 1.5f, StockFollow = 14f, StockFollowAim = 1.2f;
+        // aimed, the eye follows the sight's place at this rate (1/s): a burst's kicks (~10 per second) pass under it
+        const float AdsEyeFollow = 7f;
+        // aimed: how far the gun may sway off the line of sight before the eye turns with it (degrees); how far the eye
+        // may trail off the sight's axis (m; behind an optic a share of its lens radius, its eyebox) and along it (a
+        // share of the eye relief: a crouch moved the gun 5 cm along its axis under the trailing eye, and behind a 4x
+        // the eye ended up inside the tube). The trail eases into these limits, so the sway stays and the reticle never
+        // leaves the middle of the sight
+        const float AdsSwayLimit = 1.2f, AdsSwayLimitOptic = 0.4f, AdsEyeSlack = 0.003f, OpticEyeSlack = 0.12f;
+        const float AdsEyeTrail = 0.12f;
+        // a magnified eyepiece is seen at this apparent half-angle (degrees): about half the view, like a real 4x
+        // (from the cheek weld the prism's ocular was a 5° hole)
+        const float OpticHalfAngle = 14f;
+        Vector3 adsEye;
+        bool adsEyeValid;
+        OpticSight fpOptic;
+        Quaternion adsTilt = Quaternion.identity;
+        // standing / moving: extra pelvis drop for bent knees (m), on top of the ~4 cm the leg IK takes to plant the
+        // clip's feet. 0 left ~153° at the knee, 4 cm gave a half squat (~135°): 3.5 cm is a ready stance (~140°)
+        const float StandKneeDrop = 0.035f;
+
+        void Equip(WeaponController w)
+        {
+            if (!w || !core) return;
+            fpWeapon = w;
+            bool pistol = w.slot == WeaponSlot.Secondary;
+            Vector3 hip = w.hipPosition;
+            float aimDist = w.aimDistance;
+            var gripR = HandGrips.Find(w.model, HandGrips.Right);
+            if (gripR)
+            {
+                // the gun hangs on the weapon bone untransformed: its local space is the bone's (camera-aligned) space
+                Vector3 g = w.transform.InverseTransformPoint(gripR.position);
+                float gripZ = pistol ? FpPistolGripZ : FpRifleGripZ;
+                hip.z = gripZ - g.z;
+                if (pistol) hip.y -= FpPistolHipDrop;
+                // the sight distance follows from the gun's own geometry and where the hand goes aiming (a rifle's
+                // stays at the shoulder, a pistol is pushed out)
+                float aimGripZ = pistol ? FpPistolAimGripZ : FpRifleGripZ;
+                if (w.sightPoint) aimDist = Mathf.Max(0.08f, aimGripZ + (w.transform.InverseTransformPoint(w.sightPoint.position).z - g.z));
+            }
+            look.stanceYaw = pistol ? 0f : FpRifleStanceYaw;
+            fpAimRelief = Mathf.Clamp(aimDist, 0.08f, 0.5f);
+            bool stock = StockMountLayer.FindButtTop(w.transform, w.model, w.muzzle, gripR, out var butt);
+            stockMount.hasStock = stock && !pistol;
+            stockMount.buttTop = stockMount.hasStock ? butt : Vector3.zero;
+            fpAttachments = w.GetComponent<WeaponAttachments>();
+            fpSignature = fpAttachments ? fpAttachments.Signature : "";
+            fpOptic = w.GetComponentInChildren<OpticSight>();
+            fpSight = w.sightPoint;
+            fpGripR = gripR;
+            var s = new WeaponAnimSettings
+            {
+                weaponBone = new LocRot(hip, Quaternion.identity),
+                aimDistance = aimDist,
+                ads = new AdsData(1f / Mathf.Max(0.05f, w.AimTime)) { changeSightSpeed = 30f, pointAimSpeed = 1f },
+                recoil = Recoil(w),
+                gripIK = true,
+            };
+            s.sway.loc.scale = new Vector3(-0.018f, -0.018f, 0f);
+            s.sway.rot.scale = new Vector3(1.4f, -1.2f, -2f);
+            var pivot = Pivot(w);
+            float muzzle = w.muzzle ? w.transform.InverseTransformPoint(w.muzzle.position).z - pivot.localPosition.z : 0.6f;
+            s.block = new GunBlockData(new LocRot(new Vector3(0.02f, -0.06f, -0.08f), Quaternion.Euler(-35f, -15f, 12f)))
+            {
+                weaponLength = Mathf.Max(0.25f, muzzle) + 0.12f, startOffset = 0.12f, threshold = 0.22f,
+            };
+            var t = new WeaponTransforms
+            {
+                pivotPoint = pivot, aimPoint = w.sightPoint,
+                rightHandTarget = HandGrips.Find(w.model, HandGrips.Right),
+                leftHandTarget = HandGrips.Find(w.model, HandGrips.Left),
+            };
+            aimTarget.localPosition = new Vector3(0f, 0f, aimDist);
+            core.OnWeaponEquipped(s, t);
+            ads.ResetSight();
+        }
+
+        // the gun's own kick in the hands, procedural and smooth: back into the shoulder and the muzzle up a little,
+        // springing back critically damped (no shake, nothing random). The bullets follow the barrel, so a kick still up
+        // at the next shot of a burst lifts that shot too. Peaks: ~0.45° up and ~2 cm back at kickScale 1 (the climb itself
+        // is the view's, PlayerCamera.AddRecoil: a bigger kick here held the sight off the view center in a burst)
+        readonly Spring3 kickRot = new Spring3(170f, 26.1f), kickPos = new Spring3(190f, 27.6f);
+        int kickCount;
+
+        void OnFired(WeaponController w)
+        {
+            if (w != fpWeapon) return;
+            float k = Mathf.Clamp(w.kickScale, 0.4f, 2.5f) * Mathf.Lerp(1f, 0.85f, w.AimBlend) * (fpMotor && fpMotor.IsProne ? 0.6f : 1f);
+            kickCount++;
+            float roll = kickCount % 2 == 0 ? 1f : -1f; // alternating, not random
+            // aimed, the muzzle flip and the cant are what the eye sees on the reticle: a burst made it bounce and rock
+            // with every shot. They are kept small there; the felt recoil is the view's climb (PlayerCamera.AddRecoil)
+            float flip = Mathf.Lerp(1f, 0.5f, w.AimBlend), cant = Mathf.Lerp(1f, 0.3f, w.AimBlend);
+            kickRot.Kick(new Vector3(-16f * flip, 0f, roll * 9f * cant) * k);  // deg/s
+            kickPos.Kick(new Vector3(0f, 0.05f, -0.75f) * k);   // m/s
+        }
+
+        void OnDestroy()
+        {
+            if (fpLoadout) fpLoadout.ActiveChanged -= Equip;
+            foreach (var d in recoilProfiles.Values) if (d) Destroy(d);
+        }
+
+        // ================================================================================================ per frame
+
+        /// <summary>The character's own CharacterAnimator: the player has it on the rig, bots / proxies on their root.
+        /// Bots can get theirs after the model is attached, so this resolves lazily, and never searches wider than the
+        /// character itself (bots share a manager root: a root-wide search picked another bot's animator).</summary>
+        CharacterAnimator ResolveCharacterAnimator()
+        {
+            if (ca || !rigRef) return ca;
+            ca = rigRef.GetComponentInParent<CharacterAnimator>();
+            if (!ca && rigRef.transform.parent) ca = rigRef.transform.parent.GetComponentInChildren<CharacterAnimator>();
+            return ca;
+        }
+
+        /// <summary>Animator parameters, overlay pose, one-shots and blend weights (before the Animator evaluates).</summary>
+        void Update()
+        {
+            if (!animated || !ResolveCharacterAnimator() || core == null || core.Graph == null) return;
+            float dt = Time.deltaTime;
+            var g = core.Graph;
+            bool dead = ca.dead > 0.001f;
+            Vector3 v = ca.localVelocity;
+            g.SetFloat(pVelX, v.x, 0.08f, dt);
+            g.SetFloat(pVelZ, v.z, 0.08f, dt);
+            float speed = new Vector2(v.x, v.z).magnitude;
+            g.SetFloat(pSpeed, speed);
+            g.SetFloat(pCrouch, ca.crouch);
+            g.SetFloat(pProne, ca.prone);
+            g.SetBool(pGrounded, ca.grounded || ca.prone > 0.5f);
+            g.SetFloat(pVert, ca.verticalSpeed);
+            g.SetBool(pSlide, ca.sliding && !dead);
+            g.SetBool(pVault, ca.vault >= 0f && !dead);
+            g.SetBool(pMantle, ca.vault >= 0f && ca.mantle && !dead);
+            g.SetFloat(pVaultT, Mathf.Clamp01(ca.vault));
+            g.SetBool(pDead, dead);
+            g.SetBool(pDeadFwd, ca.deadDir > 0f);
+            float maxRing = set.speeds.z > 0f ? set.speeds.z : 7.4f;
+            g.SetFloat(pAnimSpeed, speed > maxRing ? speed / maxRing : 1f);
+
+            // weapon hold pose over the arms. Not lying down: the humanoid keeps the body orientation, which averages the
+            // hips with the shoulders, so standing shoulders over the prone clip turned the pelvis and lifted the legs
+            // ~7° off the ground. Prone the clip's own arms (on the elbows) are the base and the hand IK holds the gun
+            bool holding = ca.holdingWeapon && !dead;
+            var want = holding && ca.prone < 0.5f ? (ca.pistolHold > 0.5f ? set.pistolHold : set.rifleHold) : null;
+            if (!poseApplied || want != currentPose)
+            {
+                currentPose = want;
+                poseApplied = true;
+                if (want) g.PlayPose(want); else g.ClearPose(0.25f);
+            }
+
+            // upper-body one-shots (third person: the local player's reload is the weapon's own procedural one)
+            bool reload = ca.reloading && holding && !FirstPerson;
+            if (reload && !lastReload && reloadSeq) g.PlayAnimation(reloadSeq);
+            if (!reload && lastReload) g.StopAnimation(0.2f);
+            lastReload = reload;
+            bool thr = ca.throwT >= 0f && !FirstPerson;
+            if (thr && !lastThrow && throwSeq) g.PlayAnimation(throwSeq);
+            lastThrow = thr;
+
+            // procedural overrides per bone group (smoothed so nothing pops); deaths are clips now
+            float full = Mathf.Max(ca.executeVictim >= 0f ? 1f : 0f, ca.slip > 0.01f ? 1f : 0f, ca.bentOver > 0.01f ? 1f : 0f);
+            float arms = Mathf.Max(full, ca.executeAttack >= 0f ? 1f : 0f, ca.swordHold ? 1f : 0f, ca.blind > 0.01f ? 1f : 0f);
+            float right = Mathf.Max(arms, ca.knife >= 0f && !FirstPerson ? 1f : 0f, ca.throwT >= 0f && !throwSeq && !FirstPerson ? 1f : 0f);
+            float coreW = Mathf.Max(full, ca.executeAttack >= 0f ? 1f : 0f);
+            float head = Mathf.Max(full, ca.blind > 0.01f ? 1f : 0f);
+            const float k = 10f;
+            procW[(int)Group.Core] = Anim.Damp(procW[(int)Group.Core], coreW, k, dt);
+            procW[(int)Group.Head] = Anim.Damp(procW[(int)Group.Head], head, k, dt);
+            procW[(int)Group.LArm] = Anim.Damp(procW[(int)Group.LArm], arms, k, dt);
+            procW[(int)Group.RArm] = Anim.Damp(procW[(int)Group.RArm], right, k, dt);
+            procW[(int)Group.Legs] = Anim.Damp(procW[(int)Group.Legs], full, k, dt);
+
+            bool fpHolding = !FirstPerson || (fpWeapon && fpWeapon.gameObject.activeInHierarchy && !SkyArena.LocalRunner);
+            // prone included: the arms hold the gun (propped on the elbows) instead of the clip's arms reaching forward
+            gripW = Anim.Damp(gripW, holding && fpHolding ? 1f : 0f, 10f, dt);
+            bool special = dead || ca.vault >= 0f || full > 0.5f;
+            alignW = Anim.Damp(alignW, special ? 0f : 1f, 8f, dt);
+        }
+
+        void LateUpdate()
+        {
+            if (!animated) { Sync(); return; }
+            if (core == null || !core.Ready || !ResolveCharacterAnimator()) return;
+            float dt = Time.deltaTime;
+
+            PlaceRootBone();
+            FeedCharData(dt);
+            if (FirstPerson) UpdateFirstPersonWeapon(dt); else UpdateHeldGun();
+            core.handIkWeight = gripW;
+            core.RightGripWeight = 1f - procW[(int)Group.RArm];
+            core.LeftGripWeight = 1f - procW[(int)Group.LArm];
+            look.SetLayerAlpha((1f - procW[(int)Group.Core]) * (ca.dead > 0.001f ? 0f : 1f));
+            align.SetLayerAlpha(alignW);
+            // prone: the feet are not planted (the leg IK kept them where they were while the body slid to the camera,
+            // folding the legs up), and the chest props up on the elbows to bring the eyes to the prone eye height
+            float prone = Mathf.Clamp01(ca.prone);
+            core.legIkWeight = 1f - prone;
+            legIK.SetLayerAlpha(1f - prone);
+            // lying, the head is ~0.6 m ahead of the pelvis: the body slides back further to put the eyes on the camera
+            // (clamped at the standing limit the camera ended up inside the shoulders)
+            align.maxHorizontal = Mathf.Lerp(0.35f, 0.9f, prone);
+            // never lift the body to the camera when on the feet (straight legs, the feet came off the ground: "tiptoes");
+            // the eyes may sit a few cm under the camera instead (the head is hidden). Standing the knees bend a little
+            align.maxLift = Mathf.Lerp(0f, 0.08f, prone);
+            float crouch = Mathf.Clamp01(ca.crouch);
+            align.pelvisDrop = StandKneeDrop * (1f - crouch) * (1f - prone);
+            look.stancePitch = PronePropAngle * prone;
+            // lying, the shoulder is low under the eyes and the head far ahead of it: the butt in the shoulder put the
+            // optic above and behind the eye, filling the view. Crouched alike: the deep crouch leans the chest far
+            // forward and its shoulders sit well behind the eyes, so the butt pulled the sight up against the eye in hip
+            // fire. Lying or crouched the gun is held from the eyes
+            float heldFromEyes = Mathf.Max(prone, crouch);
+            stockMount.SetLayerAlpha(1f - heldFromEyes);
+            // aiming: cheek onto the stock, or the head a little forward over a pistol (the rest is the eye going to the
+            // sight, PlaceEyeCamera)
+            float aimW = FirstPerson && fpWeapon ? Anim.Smooth(fpWeapon.AimBlend) : 0f;
+            look.headDrop = (stockMount.hasStock ? AdsHeadDrop * (1f - heldFromEyes) : AdsHeadDropPistol) * aimW;
+            stockMount.smoothSpeed = Mathf.Lerp(StockFollow, StockFollowAim, aimW);
+
+            core.Evaluate(dt);
+
+            ApplyOverrides();
+            FollowRig();
+            if (!FirstPerson) PlaceSocket();
+            if (modelHead && rigRef.head) modelHead.localScale = Vector3.Scale(modelHeadScale, rigRef.head.localScale);
+            if (FirstPerson)
+            {
+                PlaceEyeCamera(dt);
+                FollowEyes(dt);
+                FirstPersonVisibility();
+                CameraShake(dt);
+                // shots fired before the next pose use the barrel where the body holds it now (recoil kick included)
+                if (fpWeapon && fpCam && fpCam.cam) fpWeapon.CacheAimFrame(fpCam.cam.transform);
+            }
+        }
+
+        /// <summary>
+        /// The camera is the body's eye: it sits at the eyes (fpEye, this frame's aim frame) inside its pivot, and when
+        /// aiming it goes to the sight line instead of the gun coming all the way up to the eye (AdsLayer.positionScale):
+        /// the weapon's sight distance behind the sight point, whatever optic is mounted (the sight point follows the
+        /// attachments). The body is aligned to the pivot, not to the moved camera, so nothing chases it. Once the gun is
+        /// up the eye follows the sight's place smoothly (AdsEyeFollow), not each shot's kick: the gun kicks in front of
+        /// a steady eye (riding the kick 1:1 shook the whole view back and forth with every shot).
+        /// </summary>
+        void PlaceEyeCamera(float dt)
+        {
+            if (!fpCam || !fpCam.cam || !fpCam.fxPivot || fpCam.ThirdPerson > 0.001f) return;
+            var camT = fpCam.cam.transform;
+            var pivot = fpCam.fxPivot;
+            var w = fpWeapon;
+            Vector3 eye = pivot.position + fpCam.transform.rotation * fpEye;
+            float a = w && w.sightPoint && w.gameObject.activeInHierarchy ? Anim.Smooth(w.AimBlend) : 0f;
+            adsTilt = Quaternion.identity;
+            if (a > 0.0001f)
+            {
+                bool optic = fpOptic && fpOptic.Magnified && fpOptic.LensRadius > 0f;
+                // behind a magnified eyepiece the eye comes close enough for it to fill a good part of the view
+                float relief = optic ? Mathf.Clamp(fpOptic.EyeReliefFor(w.sightPoint, OpticHalfAngle), 0.03f, fpAimRelief) : fpAimRelief;
+                Vector3 axisW = w.transform.forward;
+                Vector3 axis = pivot.InverseTransformDirection(axisW);
+                Vector3 onSight = pivot.InverseTransformPoint(w.sightPoint.position - axisW * relief);
+                if (adsEyeValid && a > 0.6f)
+                {
+                    // the eye trails the sight's place: along its axis by a share of the relief (a shot's kick passes
+                    // under it), across it hardly at all (the sight stays framed around the eye however the body moves)
+                    Vector3 lag = adsEye - onSight;
+                    float along = Vector3.Dot(lag, axis);
+                    float slack = optic ? fpOptic.LensRadius * OpticEyeSlack : AdsEyeSlack;
+                    adsEye = onSight + axis * EyeTrail(along, relief * AdsEyeTrail, dt) + EyeTrail(lag - axis * along, slack, dt);
+                }
+                else adsEye = onSight;
+                adsEyeValid = true;
+                eye = Vector3.Lerp(eye, pivot.TransformPoint(adsEye), a);
+                // the gun sways around the line of sight, but only so far: past the limit the eye turns with it, so the
+                // reticle stays near the middle of the sight and an optic's picture in its eyebox (applied in CameraShake)
+                Vector3 viewF = pivot.forward;
+                float ang = Vector3.Angle(viewF, axisW);
+                float limit = optic ? AdsSwayLimitOptic : AdsSwayLimit;
+                if (ang > limit)
+                {
+                    Quaternion follow = Quaternion.Slerp(Quaternion.identity, Quaternion.FromToRotation(viewF, axisW), (ang - limit) / ang * a);
+                    adsTilt = Quaternion.Inverse(pivot.rotation) * follow * pivot.rotation;
+                }
+            }
+            else adsEyeValid = false;
+            Vector3 offset = pivot.InverseTransformPoint(eye);
+            // the camera keeps it for the next frame's updates too (the collimated reticle, firing): every script
+            // between now and the next aim update sees the same eye
+            fpCam.EyeOffset = offset;
+            camT.localPosition = offset;
+        }
+
+        /// <summary>
+        /// One frame of the aimed eye's trail behind the sight (the lag, this frame's target move included): it decays at
+        /// AdsEyeFollow, faster the nearer it is to its limit (a soft stop, not a wall), and never passes the limit.
+        /// </summary>
+        static float EyeTrail(float lag, float limit, float dt)
+        {
+            float u = Mathf.Abs(lag) / Mathf.Max(limit, 1e-5f);
+            return Mathf.Clamp(lag * Mathf.Exp(-AdsEyeFollow * (1f + 3f * u * u) * dt), -limit, limit);
+        }
+
+        static Vector3 EyeTrail(Vector3 lag, float limit, float dt)
+        {
+            float m = lag.magnitude;
+            return m > 1e-7f ? lag * (EyeTrail(m, limit, dt) / m) : Vector3.zero;
+        }
+
+        /// <summary>
+        /// Where the body's eyes ended this frame relative to the camera pivot, for the next frame's aim frame and camera.
+        /// In the player's yaw frame (looking up and down does not swing it) and smoothed (the stance height, not each
+        /// step's bob). While the body leaves the camera (vaults, executions) the eye height is held; dead, the camera
+        /// goes back to the pivot (the death camera) and snaps to the eyes again once the body is aligned.
+        /// </summary>
+        void FollowEyes(float dt)
+        {
+            if (!fpCam || !fpCam.fxPivot) return;
+            Vector3 target = Vector3.zero;
+            if (ca.dead > 0.001f) fpEyeValid = false;
+            else if (alignW < 0.99f) return;
+            else target = Vector3.ClampMagnitude(Quaternion.Inverse(fpCam.transform.rotation) * (align.EyePosition - fpCam.fxPivot.position), MaxEyeOffset);
+            bool snap = !fpEyeValid && ca.dead <= 0.001f;
+            float speed = Mathf.Lerp(EyeFollowSpeed, EyeFollowSpeedAim, fpWeapon ? Anim.Smooth(fpWeapon.AimBlend) : 0f);
+            fpEye = snap ? target : Anim.Damp(fpEye, target, speed, dt);
+            fpEyeValid = ca.dead <= 0.001f;
+        }
+
+        /// <summary>Aim frame: the camera (first person) or a virtual eye at the stance's eye height, pitched by the aim.</summary>
+        void PlaceRootBone()
+        {
+            var root = core.rig.rootBone;
+            if (FirstPerson && fpCam && fpCam.fxPivot)
+            {
+                // the eye: the gameplay pivot plus where the body's eyes sit under it (the camera goes there too)
+                root.SetPositionAndRotation(fpCam.fxPivot.position + fpCam.transform.rotation * fpEye, fpCam.fxPivot.rotation);
+                return;
+            }
+            float eye = Mathf.Lerp(Mathf.Lerp(EyeStand, EyeCrouch, Mathf.Clamp01(ca.crouch)), EyeProne, Mathf.Clamp01(ca.prone)) * body.lossyScale.y;
+            Vector3 pos = body.position + body.up * eye + body.right * (ca.lean * 0.26f) + body.forward * 0.03f;
+            Quaternion rot = body.rotation * Quaternion.Euler(Mathf.Clamp(ca.aimPitch, -80f, 80f), 0f, -ca.lean * 14f);
+            root.SetPositionAndRotation(pos, rot);
+        }
+
+        void FeedCharData(float dt)
+        {
+            var d = core.characterData;
+            if (FirstPerson)
+            {
+                d.deltaAimInput = fpCam.LastLookDelta;
+                d.totalAimInput = new Vector2(0f, -fpCam.Pitch);
+                d.moveInput = fpMotor ? fpMotor.MoveInput : Vector2.zero;
+                d.lean = fpCam.Lean;
+                d.aim = fpWeapon ? fpWeapon.AimBlend : 0f;
+                d.recoilAnim = new LocRot(kickPos.Step(dt), Quaternion.Euler(kickRot.Step(dt)));
+            }
+            else
+            {
+                d.deltaAimInput = Vector2.zero;
+                d.totalAimInput = new Vector2(ca.lookYaw, -ca.aimPitch);
+                d.moveInput = Vector2.ClampMagnitude(new Vector2(ca.localVelocity.x, ca.localVelocity.z) / 4.6f, 1f);
+                d.lean = ca.lean;
+                d.aim = ca.aim;
+                d.recoilAnim = LocRot.Identity;
+            }
+            d.velocity = ca.localVelocity;
+            d.grounded = ca.grounded || ca.prone > 0.5f;
+            core.characterData = d;
+        }
+
+        void UpdateFirstPersonWeapon(float dt)
+        {
+            var w = fpLoadout ? fpLoadout.Active : null;
+            if (w && (w != fpWeapon || WeaponRebuilt(w))) Equip(w);
+            w = fpWeapon;
+            if (w)
+            {
+                poseLayer.offset = new LocRot(w.PoseOffsetPos, Quaternion.Euler(w.PoseOffsetRot));
+                // the gun turns fully onto the sight line but comes up only part of the way; the eye goes to the sight
+                // the rest (PlaceEyeCamera). Prone or crouched (no butt in the shoulder) the gun comes all the way to the eye
+                ads.positionScale = stockMount.hasStock ? Mathf.Lerp(AdsGunRise, 1f, Mathf.Clamp01(Mathf.Max(ca.prone, ca.crouch))) : AdsGunRisePistol;
+                ads.SetAdsWeight(w.AimBlend);
+            }
+        }
+
+        /// <summary>
+        /// The equipped weapon was re-assembled since it was measured (another optic or grip): the sight point moved or
+        /// the hand grip anchors were replaced (the old ones are destroyed).
+        /// </summary>
+        bool WeaponRebuilt(WeaponController w) =>
+            w.sightPoint != fpSight || (fpGripR is object && !fpGripR) ||
+            (fpAttachments && fpAttachments.Signature != fpSignature);
+
+        /// <summary>Third person: the gun under rig.weaponSocket, held at the hip or shouldered by the aim weight.</summary>
+        void UpdateHeldGun()
+        {
+            var sock = rigRef.weaponSocket;
+            Transform gun = null;
+            if (sock)
+                for (int i = 0; i < sock.childCount; i++)
+                {
+                    var c = sock.GetChild(i);
+                    if (c.gameObject.activeInHierarchy) { gun = c; break; }
+                }
+            if (gun != heldGun)
+            {
+                heldGun = gun;
+                core.weaponTransforms = new WeaponTransforms
+                {
+                    rightHandTarget = gun ? HandGrips.Find(gun, HandGrips.Right) : null,
+                    leftHandTarget = gun ? HandGrips.Find(gun, HandGrips.Left) : null,
+                };
+            }
+            core.weaponRoot = sock;
+            float a = Anim.Smooth(Mathf.Clamp01((ca.aim - 0.3f) / 0.6f));
+            bool pistol = ca.pistolHold > 0.5f;
+            Vector3 hip = pistol ? new Vector3(0.1f, -0.22f, 0.36f) : new Vector3(0.15f, -0.21f, 0.33f);
+            Vector3 shouldered = pistol ? new Vector3(0.0f, -0.07f, 0.42f) : new Vector3(0.025f, -0.085f, 0.25f);
+            core.rig.weaponTransform = new LocRot(Vector3.Lerp(hip, shouldered, a), Quaternion.Euler(Mathf.Lerp(6f, 0f, a), Mathf.Lerp(-8f, 0f, a), 0f));
+            if (!gun) gripW = 0f;
+        }
+
+        /// <summary>
+        /// Elbow directions for the arm IK, from the arm itself: below the shoulder → hand line and a little outward,
+        /// in the character's frame. The animated elbows (clip + hold pose) turn with the chest, so a leaning / twisted
+        /// torso (crouch) swung the trigger elbow up over the shoulder and twisted the wrist around the grip.
+        /// </summary>
+        void PlaceElbowHints()
+        {
+            if (core == null || !an) return;
+            Transform ch = an.transform;
+            Vector3 up = ch.up, right = ch.right, fwd = ch.forward;
+            void Hint(IKLimb limb, Vector3 outward)
+            {
+                if (limb == null || !limb.hint || !limb.upper || !limb.goal) return;
+                Vector3 mid = (limb.upper.position + limb.goal.position) * 0.5f;
+                limb.hint.position = mid - up * 0.3f + outward;
+            }
+            Hint(core.rig.rightHand, right * 0.16f - fwd * 0.04f); // trigger arm: elbow down and out
+            Hint(core.rig.leftHand, -right * 0.1f);                // support arm: elbow under the handguard
+        }
+
+        /// <summary>The socket (and the gun under it) takes the weapon bone's pose; procedural moves (knife / throw) still lower it.
+        /// Dead or not holding: the gun stays in the right hand where it was (it falls with the body instead of hanging in the air).</summary>
+        void PlaceSocket()
+        {
+            var sock = rigRef.weaponSocket;
+            if (!sock || !heldGun) return;
+            var hand = an ? an.GetBoneTransform(HumanBodyBones.RightHand) : null;
+            if (hand && (ca.dead > 0.001f || !ca.holdingWeapon))
+            {
+                if (!gunInHand)
+                {
+                    gunInHand = true;
+                    gunInHandPos = hand.InverseTransformPoint(sock.position);
+                    gunInHandRot = Quaternion.Inverse(hand.rotation) * sock.rotation;
+                }
+                sock.SetPositionAndRotation(hand.TransformPoint(gunInHandPos), hand.rotation * gunInHandRot);
+                return;
+            }
+            gunInHand = false;
+            float w = 1f - procW[(int)Group.RArm];
+            if (w <= 0.001f) return;
+            var wb = core.rig.weaponBone;
+            sock.SetPositionAndRotation(Vector3.Lerp(sock.position, wb.position, w), Quaternion.Slerp(sock.rotation, wb.rotation, w));
+        }
+
+        void FirstPersonVisibility()
+        {
+            bool fpView = fpCam.ThirdPerson < 0.5f;
+            bool scoped = fpWeapon && fpWeapon.IsScoped;
+            int state = (fpView ? 1 : 0) | (scoped ? 2 : 0);
+            if (state == visState) return;
+            visState = state;
+            foreach (var r in headRenderers) if (r) r.shadowCastingMode = fpView ? ShadowCastingMode.ShadowsOnly : ShadowCastingMode.On;
+            foreach (var r in bodyRenderers) if (r) r.shadowCastingMode = fpView && scoped ? ShadowCastingMode.ShadowsOnly : ShadowCastingMode.On;
+        }
+
+        void CameraShake(float dt)
+        {
+            if (!fpCam || !fpCam.cam || fpCam.ThirdPerson > 0.001f) return;
+            var t = fpCam.cam.transform;
+            t.localRotation = adsTilt; // aimed, the eye turned after a gun swayed past the limit (PlaceEyeCamera)
+            shaker.Apply(t, dt);
+        }
+
+        /// <summary>Procedural poses (executions, knife, abilities) over the animated pose, per bone group.</summary>
+        void ApplyOverrides()
+        {
+            Quaternion br = body.rotation;
+            foreach (var m in maps)
+            {
+                float w = procW[(int)m.group];
+                if (w <= 0.001f) continue;
+                Quaternion proc = br * (BodyRot(m.rig) * m.correction * m.rest);
+                m.model.rotation = w >= 0.999f ? proc : Quaternion.Slerp(m.model.rotation, proc, w);
+            }
+            float wc = procW[(int)Group.Core];
+            if (modelHips && rigRef.hips && wc > 0.001f) modelHips.position = Vector3.Lerp(modelHips.position, rigRef.hips.position, wc);
+        }
+
+        /// <summary>The procedural rig follows the model (aim points, executions, hit tests keep using rig bones).</summary>
+        void FollowRig()
+        {
+            Quaternion br = body.rotation;
+            var sock = rigRef.weaponSocket;
+            Vector3 sockPos = sock ? sock.position : Vector3.zero;
+            Quaternion sockRot = sock ? sock.rotation : Quaternion.identity;
+            foreach (var m in maps)
+            {
+                if (!m.follow) continue;
+                Quaternion modelBody = BodyRot(m.model);
+                m.rig.rotation = br * (modelBody * Quaternion.Inverse(m.rest) * Quaternion.Inverse(m.correction));
+            }
+            if (modelHips && rigRef.hips) rigRef.hips.position = modelHips.position;
+            if (sock) sock.SetPositionAndRotation(sockPos, sockRot); // the chest moved: keep the gun where it was this frame
+        }
+
+        /// <summary>Non-animated fallback: the model copies the procedural rig (also used for editor previews).</summary>
+        public void Sync()
+        {
+            if (!rigRef || !body || animated) return;
+            Quaternion br = body.rotation;
+            foreach (var m in maps)
+                m.model.rotation = br * (BodyRot(m.rig) * m.correction * m.rest);
+            if (modelHips && rigRef.hips) modelHips.position = rigRef.hips.position;
+            if (modelHead && rigRef.head) modelHead.localScale = Vector3.Scale(modelHeadScale, rigRef.head.localScale);
+        }
+
+        // ================================================================================================ hit boxes
 
         /// <summary>Colliders + Hitbox on the model's bones (only when the rig had hit boxes, i.e. not the local player).
         /// The procedural primitives' colliders are removed — they no longer match the animated body.</summary>
@@ -261,129 +1015,6 @@ namespace FPS
             Capsule(B(HumanBodyBones.RightLowerLeg), B(HumanBodyBones.RightFoot), 0.065f * s, 0.8f);
             Capsule(B(HumanBodyBones.LeftFoot), B(HumanBodyBones.LeftToes), 0.055f * s, 0.6f);
             Capsule(B(HumanBodyBones.RightFoot), B(HumanBodyBones.RightToes), 0.055f * s, 0.6f);
-        }
-
-        // ------------------------------------------------------------------ animator parameters (before the Animator update)
-
-        void Update()
-        {
-            if (!animated || !an || !ca) return;
-            float dt = Time.deltaTime;
-            Vector3 v = ca.localVelocity;
-            an.SetFloat(pForward, v.z, 0.08f, dt);
-            an.SetFloat(pRight, v.x, 0.08f, dt);
-            an.SetFloat(pCrouch, ca.crouch);
-            an.SetFloat(pProne, ca.prone);
-            an.SetFloat(pPistol, ca.pistolHold, 0.1f, dt);
-            an.SetBool(pGrounded, ca.grounded || ca.prone > 0.5f);
-
-            bool reload = ca.reloading && ca.holdingWeapon;
-            if (reload && !lastReload) an.SetTrigger(pReload);
-            lastReload = reload;
-            bool thr = ca.throwT >= 0f;
-            if (thr && !lastThrow) an.SetTrigger(pThrow);
-            lastThrow = thr;
-
-            // procedural overrides per bone group (smoothed so nothing pops)
-            float full = Mathf.Max(ca.dead > 0f ? 1f : 0f, ca.executeVictim >= 0f ? 1f : 0f, ca.slip > 0.01f ? 1f : 0f, ca.bentOver > 0.01f ? 1f : 0f);
-            float arms = Mathf.Max(full, ca.executeAttack >= 0f ? 1f : 0f, ca.swordHold ? 1f : 0f, ca.blind > 0.01f ? 1f : 0f);
-            float right = Mathf.Max(arms, ca.knife >= 0f ? 1f : 0f, ca.throwT >= 0f ? 1f : 0f);
-            float core = Mathf.Max(full, ca.executeAttack >= 0f ? 1f : 0f);
-            float head = Mathf.Max(full, ca.blind > 0.01f ? 1f : 0f);
-            float k = ca.dead > 0f ? 18f : 10f;
-            procW[(int)Group.Core] = Anim.Damp(procW[(int)Group.Core], core, k, dt);
-            procW[(int)Group.Head] = Anim.Damp(procW[(int)Group.Head], head, k, dt);
-            procW[(int)Group.LArm] = Anim.Damp(procW[(int)Group.LArm], arms, k, dt);
-            procW[(int)Group.RArm] = Anim.Damp(procW[(int)Group.RArm], right, k, dt);
-            procW[(int)Group.Legs] = Anim.Damp(procW[(int)Group.Legs], full, k, dt);
-
-            upperW = Anim.Damp(upperW, ca.holdingWeapon ? 1f - ca.prone : 0f, 8f, dt);
-            an.SetLayerWeight(1, upperW);
-            ikW = Anim.Damp(ikW, ca.holdingWeapon && !reload && ca.prone < 0.5f ? 1f : 0f, 10f, dt);
-        }
-
-        void LateUpdate() => Sync();
-
-        /// <summary>Final pose for this frame (runs every LateUpdate; public for editor previews).</summary>
-        public void Sync()
-        {
-            if (!rigRef || !body) return;
-            Quaternion br = body.rotation;
-            if (!animated)
-            {
-                foreach (var m in maps)
-                    m.model.rotation = br * (BodyRot(m.rig) * m.correction * m.rest);
-                if (modelHips && rigRef.hips) modelHips.position = rigRef.hips.position;
-                if (modelHead && rigRef.head) modelHead.localScale = Vector3.Scale(modelHeadScale, rigRef.head.localScale);
-                return;
-            }
-
-            // 1) procedural overrides on top of the Animator pose
-            foreach (var m in maps)
-            {
-                float w = procW[(int)m.group];
-                if (w <= 0.001f) continue;
-                Quaternion proc = br * (BodyRot(m.rig) * m.correction * m.rest);
-                m.model.rotation = w >= 0.999f ? proc : Quaternion.Slerp(m.model.rotation, proc, w);
-            }
-            float wc = procW[(int)Group.Core];
-            if (modelHips && rigRef.hips && wc > 0.001f) modelHips.position = Vector3.Lerp(modelHips.position, rigRef.hips.position, wc);
-
-            // 2) aim pitch / lean / head look (the clips aim straight ahead)
-            if (ca)
-            {
-                float add = 1f - wc;
-                float rawPitch = Mathf.Clamp(ca.aimPitch, -70f, 70f) * (1f - ca.prone * 0.6f);
-                float pitch = rawPitch * add;
-                float lean = ca.lean * add;
-                RotBody(mSpine, new Vector3(pitch * 0.25f, 0f, -12f * lean));
-                RotBody(mChestTop, new Vector3(pitch * 0.35f, 0f, -12f * lean));
-                float addHead = 1f - procW[(int)Group.Head];
-                RotBody(mNeck, new Vector3(rawPitch * 0.4f * addHead, ca.lookYaw * 0.5f * addHead, 0f));
-                RotBody(mHead, new Vector3(0f, ca.lookYaw * 0.5f * addHead, 0f));
-            }
-            if (modelHead && rigRef.head) modelHead.localScale = Vector3.Scale(modelHeadScale, rigRef.head.localScale);
-
-            // 3) the procedural rig follows the model (aim points, executions keep using rig bones). The weapon socket
-            // keeps its procedural pose (aimed by pitch): the clips twist the chest, the gun must still point where we aim.
-            var sock = rigRef.weaponSocket;
-            if (sock) sock.localPosition = socketRest; // last frame's world override must not accumulate
-            Vector3 sockPos = sock ? sock.position : Vector3.zero;
-            Quaternion sockRot = sock ? sock.rotation : Quaternion.identity;
-            foreach (var m in maps)
-            {
-                if (!m.follow) continue;
-                Quaternion modelBody = BodyRot(m.model);
-                m.rig.rotation = br * (modelBody * Quaternion.Inverse(m.rest) * Quaternion.Inverse(m.correction));
-            }
-            if (modelHips && rigRef.hips) rigRef.hips.position = modelHips.position;
-            if (sock) sock.SetPositionAndRotation(sockPos, sockRot);
-
-            // 4) hands onto the held gun
-            if (ikW > 0.001f && rigRef.weaponSocket && rigRef.weaponSocket.childCount > 0)
-            {
-                Transform gun = null;
-                for (int i = 0; i < rigRef.weaponSocket.childCount; i++)
-                {
-                    var c = rigRef.weaponSocket.GetChild(i);
-                    if (c.gameObject.activeInHierarchy) { gun = c; break; }
-                }
-                if (gun)
-                {
-                    var gr = gun.Find(HandGrips.Right);
-                    var gl = gun.Find(HandGrips.Left);
-                    Vector3 down = -body.up, side = body.right;
-                    if (rArm != null && gr) rArm.Solve(gr, down + side * 0.6f - body.forward * 0.2f, ikW * (1f - procW[(int)Group.RArm]));
-                    if (lArm != null && gl) lArm.Solve(gl, down - side * 0.8f, ikW * (1f - procW[(int)Group.LArm]));
-                }
-            }
-        }
-
-        void RotBody(Transform b, Vector3 euler)
-        {
-            if (!b || euler.sqrMagnitude < 1e-6f) return;
-            Quaternion br = body.rotation;
-            b.rotation = br * Quaternion.Euler(euler) * Quaternion.Inverse(br) * b.rotation;
         }
     }
 }

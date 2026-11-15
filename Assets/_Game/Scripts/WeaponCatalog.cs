@@ -3,7 +3,8 @@ using UnityEngine;
 
 namespace FPS
 {
-    public enum WeaponCategory { Assault, Marksman, SMG, Shotgun, Pistol }
+    /// <summary>Appended values only (bots / menus index by value).</summary>
+    public enum WeaponCategory { Assault, Marksman, SMG, Shotgun, Pistol, Launcher }
 
     /// <summary>Procedural base model a weapon is built on (arms, animation anchors, reload style).
     /// The imported mesh is drawn over it, the procedural parts only stay as anchors.</summary>
@@ -13,6 +14,8 @@ namespace FPS
     /// Single source of truth for every gun: player stats (applied by the map builder to the WeaponController),
     /// menu card (normalized bars), bot stats (derived), network index and the imported mesh.
     /// Adding a weapon = one entry here, then Tools > FPS > Build Weapon Models and Build All Maps.
+    /// Modular weapon (Blender model + attachments): one entry here without fbx + a WeaponData asset with the same name
+    /// (Tools > FPS > Weapons > Build Weapon Data) — the Loadout builds it at runtime, no map rebuild needed.
     /// </summary>
     public class WeaponDef
     {
@@ -44,7 +47,7 @@ namespace FPS
         public bool keepMagazine;
 
         public bool Secondary => category == WeaponCategory.Pistol;
-        public WeaponSlot Slot => Secondary ? WeaponSlot.Secondary : WeaponSlot.Primary;
+        public WeaponSlot Slot => category == WeaponCategory.Launcher ? WeaponSlot.Gadget : Secondary ? WeaponSlot.Secondary : WeaponSlot.Primary;
 
         /// <summary>Writes the stats on a WeaponController (builder, at bake time).</summary>
         public void Apply(WeaponController w)
@@ -101,7 +104,7 @@ namespace FPS
 
     public static class WeaponCatalog
     {
-        public static readonly string[] CategoryNames = { "Автоматы", "Снайперские", "ПП", "Дробовики", "Пистолеты" };
+        public static readonly string[] CategoryNames = { "Автоматы", "Снайперские", "ПП", "Дробовики", "Пистолеты", "Гранатомёты" };
 
         const string W = "Assets/Weapons_ChamferZone/";
         const string JU = "Assets/Julhiecio TPS Controller/Demos/Demo Prefabs/Items/Weapons/Guns/";
@@ -111,10 +114,11 @@ namespace FPS
         public static readonly WeaponDef[] All =
         {
             // ================= assault rifles
+            // modular weapons (M4A1, AK-12, M14 EBR, M700, Glock 17): Blender models + attachments from Resources/Weapons
+            // (WeaponData / AttachmentData, Tools > FPS > Weapons > Build Weapon Data); scenes built without them get them at runtime
             new WeaponDef { name = "M4A1", kind = "Штурмовая винтовка", category = WeaponCategory.Assault, archetype = WeaponArchetype.Rifle,
                 uiDamage = 0.45f, uiRate = 0.76f, uiRange = 0.55f, uiControl = 0.7f, uiMobility = 0.62f,
-                desc = "Универсал: точная очередь на средней дистанции, коллиматорный прицел, переключение режима огня.",
-                fbx = W + "AR15/WPN_MK18.FBX", sight = new Vector3(0f, 0.072f, -0.261f) },
+                desc = "Универсал: точная очередь на средней дистанции, переключение режима огня, планки под любые модули." },
             new WeaponDef { name = "CV-47", kind = "Автомат", category = WeaponCategory.Assault, archetype = WeaponArchetype.Rifle,
                 damage = 31f, rpm = 600f, mag = 30, reserve = 180,
                 setup = w => { w.recoilUp = 1.15f; w.recoilSide = 0.55f; w.hipSpread = 1.5f; w.adsSpread = 0.1f; w.adsFov = 50f; w.moveSpeedMul = 0.97f;
@@ -122,6 +126,13 @@ namespace FPS
                 uiDamage = 0.55f, uiRate = 0.62f, uiRange = 0.6f, uiControl = 0.48f, uiMobility = 0.58f,
                 desc = "Тяжёлый патрон и жёсткая отдача. Три попадания вместо четырёх — если удержишь ствол.",
                 fbx = W + "CV47/CV47.FBX", modelScale = 1.3f },
+            new WeaponDef { name = "AK-12", kind = "Автомат", category = WeaponCategory.Assault, archetype = WeaponArchetype.Rifle,
+                damage = 28f, rpm = 650f, mag = 30, reserve = 210,
+                setup = w => { w.recoilUp = 0.95f; w.recoilSide = 0.42f; w.hipSpread = 1.4f; w.adsSpread = 0.08f; w.moveSpeedMul = 0.98f;
+                               w.reloadTime = 2.25f; w.emptyReloadTime = 2.75f; w.falloffStart = 38f; w.falloffEnd = 125f; w.falloffMin = 0.72f;
+                               w.shotPitch = 0.95f; w.kickScale = 1.05f; },
+                uiDamage = 0.5f, uiRate = 0.68f, uiRange = 0.58f, uiControl = 0.62f, uiMobility = 0.6f,
+                desc = "Современный «калашников» под 5,45: бьёт сильнее M4A1, отдача ровная. Планки под прицелы, глушитель, рукоятки и магазин на 45." },
 
             // ================= marksman
             // bolt-action sniper: 88 per hit, no range falloff → body max 88 × 1.06 ≈ 93 (< 100 HP, never a one-shot),
@@ -151,6 +162,25 @@ namespace FPS
                 uiDamage = 0.62f, uiRate = 0.55f, uiRange = 0.85f, uiControl = 0.72f, uiMobility = 0.5f,
                 desc = "Одиночный огонь и прицел ACOG: быстрые точные выстрелы на средней и дальней дистанции.",
                 fbx = W + "M16/WPN_M16.FBX", modelScale = 1.2f },
+            // 45 per hit: three body hits (also at range, falloff min 0.85), head 45 × 2.2 × 0.94 ≈ 93 — no one-shot
+            new WeaponDef { name = "M14 EBR", kind = "Марксманская винтовка", category = WeaponCategory.Marksman, archetype = WeaponArchetype.Rifle,
+                damage = 45f, rpm = 420f, mag = 20, reserve = 100, fullAuto = false,
+                setup = w => { w.recoilUp = 1.7f; w.recoilSide = 0.45f; w.hipSpread = 2.1f; w.adsSpread = 0.02f; w.adsFov = 44f; w.aimTime = 0.25f;
+                               w.falloffStart = 70f; w.falloffEnd = 220f; w.falloffMin = 0.85f; w.moveSpeedMul = 0.93f;
+                               w.reloadTime = 2.5f; w.emptyReloadTime = 3.05f; w.kickScale = 1.4f; w.punchScale = 1.5f; w.bloomPerShot = 0.8f;
+                               w.impactForce = 7f; w.shotVolume = 0.95f; w.shotPitch = 0.9f; },
+                uiDamage = 0.72f, uiRate = 0.38f, uiRange = 0.9f, uiControl = 0.5f, uiMobility = 0.45f,
+                desc = "Самозарядная 7,62 НАТО: три попадания в тело, кучная и дальнобойная. Магазин на 20, призматический прицел 4× в комплекте." },
+            // bolt action like Hunter 85: 90 per hit, body max 90 × 1.06 ≈ 95 (< 100 HP), head always a one-shot
+            new WeaponDef { name = "M700", kind = "Болтовая снайперская винтовка", category = WeaponCategory.Marksman, archetype = WeaponArchetype.DMR,
+                damage = 90f, rpm = 45f, mag = 4, reserve = 28, fullAuto = false, sfx = Sfx.ShotSniper,
+                setup = w => { w.pumpAction = true; w.boltAction = true; w.pumpTime = 1.1f;
+                               w.reloadStyle = ReloadStyle.PerShell; w.shellInsertTime = 0.55f; w.shellScale = 1.25f;
+                               w.aimTime = 0.32f; w.adsSpread = 0f; w.hipSpread = 3.4f; w.recoilUp = 3.4f; w.recoilSide = 0.6f;
+                               w.falloffStart = 1000f; w.falloffEnd = 2000f; w.falloffMin = 1f; w.moveSpeedMul = 0.9f;
+                               w.kickScale = 1.9f; w.punchScale = 2.1f; w.impactForce = 11f; w.shotVolume = 1f; },
+                uiDamage = 0.97f, uiRate = 0.06f, uiRange = 1f, uiControl = 0.38f, uiMobility = 0.38f,
+                desc = "Классический «Ремингтон» под .308: в голову — наповал на любой дистанции, в тело — 90 урона. Четыре патрона, заряжается по одному, затвор — после каждого выстрела." },
 
             // ================= SMGs
             new WeaponDef { name = "SMG-9", kind = "Пистолет-пулемёт", category = WeaponCategory.SMG, archetype = WeaponArchetype.SMG,
@@ -225,6 +255,11 @@ namespace FPS
                 uiDamage = 0.42f, uiRate = 0.5f, uiRange = 0.3f, uiControl = 0.75f, uiMobility = 1f,
                 desc = "Быстро достаётся. Добивает, когда кончился магазин основного оружия.",
                 fbx = W + "M9/WPN_M9.FBX", sight = new Vector3(0f, 0.077f, -0.066f) },
+            new WeaponDef { name = "Glock 17", kind = "Пистолет", category = WeaponCategory.Pistol, archetype = WeaponArchetype.Pistol,
+                damage = 24f, rpm = 480f, mag = 17, reserve = 102, fullAuto = false, sfx = Sfx.ShotPistol,
+                setup = w => { w.recoilUp = 1.15f; w.adsSpread = 0.13f; w.moveSpeedMul = 1.09f; w.equipTime = 0.26f; },
+                uiDamage = 0.42f, uiRate = 0.56f, uiRange = 0.3f, uiControl = 0.78f, uiMobility = 1f,
+                desc = "Полимерный 9 мм на 17 патронов: лёгкий и надёжный. Ставится коллиматор, глушитель, компенсатор, ЛЦУ с фонарём и магазин на 33." },
             new WeaponDef { name = "AP85", kind = "Пистолет", category = WeaponCategory.Pistol, archetype = WeaponArchetype.Pistol,
                 damage = 25f, rpm = 480f, mag = 16, reserve = 96, fullAuto = false, sfx = Sfx.ShotPistol,
                 setup = w => { w.recoilUp = 1.1f; w.adsSpread = 0.12f; },
@@ -282,6 +317,129 @@ namespace FPS
                 uiDamage = 1f, uiRate = 0.05f, uiRange = 0.25f, uiControl = 0.5f, uiMobility = 1f,
                 desc = "Один заряд, огромный урон вблизи. Для отчаянных.",
                 fbx = W + "Flaregun/WPN_Flaregun.FBX", modelScale = 0.95f },
+
+            // ================= imported modular weapons (Art/Weapons/weapons_manifest_imported.json; appended: the network
+            // index of the older entries stays the same). Classes pick from these (ClassDB)
+            new WeaponDef { name = "AKM", kind = "Автомат 7,62", category = WeaponCategory.Assault, archetype = WeaponArchetype.Rifle,
+                damage = 31f, rpm = 600f, mag = 30, reserve = 180,
+                setup = w => { w.recoilUp = 1.15f; w.recoilSide = 0.55f; w.hipSpread = 1.5f; w.adsSpread = 0.1f; w.moveSpeedMul = 0.97f;
+                               w.reloadTime = 2.3f; w.emptyReloadTime = 2.8f; w.falloffStart = 40f; w.falloffEnd = 130f; w.falloffMin = 0.72f; w.shotPitch = 0.88f; w.kickScale = 1.15f; },
+                uiDamage = 0.56f, uiRate = 0.6f, uiRange = 0.6f, uiControl = 0.46f, uiMobility = 0.58f,
+                desc = "Классический «калашников» под 7,62×39: три попадания вместо четырёх, но ствол надо держать. Планка под прицелы, магазин на 45." },
+            new WeaponDef { name = "HK416", kind = "Штурмовая винтовка", category = WeaponCategory.Assault, archetype = WeaponArchetype.Rifle,
+                damage = 27f, rpm = 760f, mag = 30, reserve = 210,
+                setup = w => { w.recoilUp = 0.82f; w.recoilSide = 0.34f; w.moveSpeedMul = 0.99f; w.reloadTime = 2.1f; w.emptyReloadTime = 2.6f;
+                               w.falloffStart = 36f; w.falloffEnd = 120f; w.shotPitch = 1.02f; },
+                uiDamage = 0.47f, uiRate = 0.78f, uiRange = 0.57f, uiControl = 0.75f, uiMobility = 0.62f,
+                desc = "Газовый поршень: ровная, послушная очередь. Барабанный и спаренный магазины на 60." },
+            new WeaponDef { name = "Mk 47 Mutant", kind = "Автомат 7,62", category = WeaponCategory.Assault, archetype = WeaponArchetype.Rifle,
+                damage = 30f, rpm = 650f, mag = 30, reserve = 180,
+                setup = w => { w.recoilUp = 1.0f; w.recoilSide = 0.45f; w.moveSpeedMul = 0.98f; w.reloadTime = 2.2f; w.emptyReloadTime = 2.7f;
+                               w.falloffStart = 40f; w.falloffEnd = 130f; w.falloffMin = 0.72f; w.shotPitch = 0.92f; w.kickScale = 1.08f; },
+                uiDamage = 0.54f, uiRate = 0.66f, uiRange = 0.6f, uiControl = 0.58f, uiMobility = 0.6f,
+                desc = "Патрон АК в эргономике AR-15: бьёт как AKM, отдача мягче, длинная планка под модули." },
+            new WeaponDef { name = "QBZ-191", kind = "Штурмовая винтовка 5,8", category = WeaponCategory.Assault, archetype = WeaponArchetype.Rifle,
+                damage = 27f, rpm = 750f, mag = 30, reserve = 210,
+                setup = w => { w.recoilUp = 0.8f; w.recoilSide = 0.32f; w.moveSpeedMul = 0.99f; w.reloadTime = 2.15f; w.emptyReloadTime = 2.65f;
+                               w.falloffStart = 40f; w.falloffEnd = 130f; w.shotPitch = 1.04f; },
+                uiDamage = 0.47f, uiRate = 0.76f, uiRange = 0.6f, uiControl = 0.76f, uiMobility = 0.62f,
+                desc = "Винтовка под 5,8 мм: точная и стабильная на средней дистанции, планка Пикатинни под любой прицел." },
+            new WeaponDef { name = "M249", kind = "Ручной пулемёт", category = WeaponCategory.Assault, archetype = WeaponArchetype.Rifle,
+                damage = 25f, rpm = 800f, mag = 100, reserve = 300,
+                setup = w => { w.recoilUp = 0.72f; w.recoilSide = 0.5f; w.hipSpread = 2.4f; w.moveSpeedMul = 0.88f; w.aimTime = 0.32f; w.equipTime = 0.6f;
+                               w.reloadTime = 4.6f; w.emptyReloadTime = 5.4f; w.falloffStart = 40f; w.falloffEnd = 140f; w.falloffMin = 0.72f;
+                               w.shotVolume = 0.9f; w.shotPitch = 0.95f; w.kickScale = 0.9f; },
+                uiDamage = 0.45f, uiRate = 0.8f, uiRange = 0.6f, uiControl = 0.5f, uiMobility = 0.28f,
+                desc = "Короб на 100 патронов: прижимает огнём целый проход. Тяжёлый, медленно вскидывается и долго перезаряжается." },
+            new WeaponDef { name = "Mk18 Mod 1", kind = "Карабин", category = WeaponCategory.Assault, archetype = WeaponArchetype.Rifle,
+                damage = 25f, rpm = 820f, mag = 30, reserve = 210,
+                setup = w => { w.recoilUp = 0.85f; w.recoilSide = 0.38f; w.moveSpeedMul = 1.02f; w.aimTime = 0.17f; w.reloadTime = 2.0f; w.emptyReloadTime = 2.5f;
+                               w.falloffStart = 28f; w.falloffEnd = 100f; w.falloffMin = 0.66f; w.shotPitch = 1.05f; },
+                uiDamage = 0.43f, uiRate = 0.82f, uiRange = 0.45f, uiControl = 0.66f, uiMobility = 0.72f,
+                desc = "Короткий карабин для боя в зданиях: быстро вскидывается и не мешает бегать." },
+            new WeaponDef { name = "Honey Badger", kind = "Бесшумный карабин .300", category = WeaponCategory.Assault, archetype = WeaponArchetype.Rifle,
+                damage = 27f, rpm = 760f, mag = 30, reserve = 180,
+                setup = w => { w.recoilUp = 0.7f; w.recoilSide = 0.32f; w.moveSpeedMul = 1.03f; w.aimTime = 0.17f; w.reloadTime = 2.0f; w.emptyReloadTime = 2.5f;
+                               w.falloffStart = 25f; w.falloffEnd = 80f; w.falloffMin = 0.6f; w.shotVolume = 0.35f; w.noiseRadius = 16f; w.shotPitch = 1.15f; },
+                uiDamage = 0.47f, uiRate = 0.78f, uiRange = 0.4f, uiControl = 0.74f, uiMobility = 0.74f,
+                desc = "Встроенный глушитель: выстрел почти не слышен и не светит. Тяжёлая дозвуковая пуля теряет силу на дальности." },
+            new WeaponDef { name = "KRISS Vector", kind = "Пистолет-пулемёт .45", category = WeaponCategory.SMG, archetype = WeaponArchetype.SMG,
+                damage = 22f, rpm = 1100f, mag = 25, reserve = 200,
+                setup = w => { w.recoilUp = 0.42f; w.recoilSide = 0.3f; w.moveSpeedMul = 1.06f; w.falloffStart = 15f; w.falloffEnd = 45f; w.falloffMin = 0.5f;
+                               w.reloadTime = 1.9f; w.emptyReloadTime = 2.3f; w.shotPitch = 1.05f; },
+                uiDamage = 0.38f, uiRate = 1f, uiRange = 0.25f, uiControl = 0.82f, uiMobility = 0.86f,
+                desc = "Отдача уходит вниз: 1100 выстрелов в минуту почти без подброса. Магазин заканчивается мгновенно." },
+            new WeaponDef { name = "SIG MPX", kind = "Пистолет-пулемёт", category = WeaponCategory.SMG, archetype = WeaponArchetype.SMG,
+                damage = 20f, rpm = 860f, mag = 30, reserve = 240,
+                setup = w => { w.recoilUp = 0.48f; w.recoilSide = 0.34f; w.moveSpeedMul = 1.06f; w.falloffStart = 18f; w.falloffEnd = 55f; w.falloffMin = 0.55f; },
+                uiDamage = 0.35f, uiRate = 0.88f, uiRange = 0.32f, uiControl = 0.78f, uiMobility = 0.86f,
+                desc = "9 мм с газовым поршнем: мягкая и точная очередь, длинная планка под коллиматоры и глушитель." },
+            new WeaponDef { name = "Scorpion EVO 3", kind = "Пистолет-пулемёт", category = WeaponCategory.SMG, archetype = WeaponArchetype.SMG,
+                damage = 19f, rpm = 1000f, mag = 30, reserve = 240,
+                setup = w => { w.recoilUp = 0.52f; w.recoilSide = 0.42f; w.moveSpeedMul = 1.08f; w.falloffStart = 15f; w.falloffEnd = 48f; w.falloffMin = 0.5f;
+                               w.reloadTime = 1.7f; w.emptyReloadTime = 2.1f; w.shotPitch = 1.08f; },
+                uiDamage = 0.33f, uiRate = 0.96f, uiRange = 0.26f, uiControl = 0.7f, uiMobility = 0.9f,
+                desc = "Лёгкий и скорострельный: лучший выбор для штурма коридоров. На дистанции быстро теряет урон." },
+            new WeaponDef { name = "СР-2 «Вереск»", kind = "Пистолет-пулемёт 9×21", category = WeaponCategory.SMG, archetype = WeaponArchetype.SMG,
+                damage = 23f, rpm = 900f, mag = 30, reserve = 210,
+                setup = w => { w.recoilUp = 0.55f; w.recoilSide = 0.4f; w.moveSpeedMul = 1.06f; w.falloffStart = 20f; w.falloffEnd = 60f; w.falloffMin = 0.6f; w.shotPitch = 0.98f; },
+                uiDamage = 0.4f, uiRate = 0.9f, uiRange = 0.35f, uiControl = 0.68f, uiMobility = 0.86f,
+                desc = "Бронебойный 9×21: сильнее обычного ПП и дальше бьёт. Магазин в рукояти, складной приклад." },
+            new WeaponDef { name = "Remington 870", kind = "Помповый дробовик", category = WeaponCategory.Shotgun, archetype = WeaponArchetype.Shotgun,
+                damage = 13f, pellets = 9, rpm = 80f, mag = 6, reserve = 30, fullAuto = false, sfx = Sfx.ShotShotgun,
+                setup = w => { w.pumpAction = true; w.moveSpeedMul = 1f; },
+                uiDamage = 1f, uiRate = 0.1f, uiRange = 0.12f, uiControl = 0.3f, uiMobility = 0.6f,
+                desc = "Короткий «Ремингтон» с пистолетной рукоятью: 9 картечин, в упор убивает с одного выстрела." },
+            new WeaponDef { name = "Desert Eagle", kind = "Пистолет .50", category = WeaponCategory.Pistol, archetype = WeaponArchetype.Pistol,
+                damage = 46f, rpm = 260f, mag = 7, reserve = 42, fullAuto = false, sfx = Sfx.ShotPistol,
+                setup = w => { w.recoilUp = 2.6f; w.recoilSide = 0.5f; w.aimTime = 0.18f; w.moveSpeedMul = 1.04f; w.reloadTime = 1.8f; w.emptyReloadTime = 2.2f;
+                               w.shotVolume = 1f; w.shotPitch = 0.8f; w.kickScale = 1.9f; w.punchScale = 1.5f; w.falloffStart = 30f; w.falloffMin = 0.75f; },
+                uiDamage = 0.85f, uiRate = 0.25f, uiRange = 0.45f, uiControl = 0.32f, uiMobility = 0.95f,
+                desc = "Пистолет под .50 AE: три попадания, в голову — почти наповал. Семь патронов и сильный подброс." },
+            new WeaponDef { name = "Kimber K6s", kind = "Револьвер .357", category = WeaponCategory.Pistol, archetype = WeaponArchetype.Pistol,
+                damage = 48f, rpm = 180f, mag = 6, reserve = 36, fullAuto = false, sfx = Sfx.ShotPistol,
+                setup = w => { w.recoilUp = 2.6f; w.recoilSide = 0.55f; w.reloadTime = 2.3f; w.emptyReloadTime = 2.3f; w.shotVolume = 1f; w.shotPitch = 0.82f;
+                               w.kickScale = 1.8f; w.punchScale = 1.4f; w.falloffStart = 30f; w.falloffMin = 0.75f; },
+                uiDamage = 0.86f, uiRate = 0.2f, uiRange = 0.48f, uiControl = 0.38f, uiMobility = 0.98f,
+                desc = "Компактный шестизарядный револьвер: каждый выстрел весомый, перезаряжается сразу всем барабаном." },
+            // 62 per hit: two in the body, a head one-shot (62 × 2.2 ≈ 136)
+            new WeaponDef { name = "СВД", kind = "Самозарядная снайперская винтовка", category = WeaponCategory.Marksman, archetype = WeaponArchetype.Rifle,
+                damage = 62f, rpm = 220f, mag = 10, reserve = 50, fullAuto = false, sfx = Sfx.ShotSniper,
+                setup = w => { w.recoilUp = 2.3f; w.recoilSide = 0.5f; w.hipSpread = 2.6f; w.adsSpread = 0f; w.adsFov = 44f; w.aimTime = 0.28f; w.adsRecoilMul = 0.75f;
+                               w.falloffStart = 90f; w.falloffEnd = 300f; w.falloffMin = 0.9f; w.moveSpeedMul = 0.92f; w.reloadTime = 2.5f; w.emptyReloadTime = 3f;
+                               w.kickScale = 1.6f; w.punchScale = 1.7f; w.impactForce = 8f; w.shotVolume = 1f; w.shotPitch = 0.9f; w.bloomPerShot = 1f; },
+                uiDamage = 0.8f, uiRate = 0.3f, uiRange = 0.95f, uiControl = 0.45f, uiMobility = 0.42f,
+                desc = "Драгунов: десять патронов 7,62×54R, два попадания в тело, в голову — наповал. Механика и любая оптика." },
+            new WeaponDef { name = "AWM", kind = "Болтовая снайперская винтовка .338", category = WeaponCategory.Marksman, archetype = WeaponArchetype.DMR,
+                damage = 93f, rpm = 42f, mag = 5, reserve = 25, fullAuto = false, sfx = Sfx.ShotSniper,
+                setup = w => { w.pumpAction = true; w.boltAction = true; w.pumpTime = 1.15f; w.chTravel = 0.08f;
+                               w.aimTime = 0.33f; w.adsSpread = 0f; w.hipSpread = 3.5f; w.recoilUp = 3.5f; w.recoilSide = 0.6f;
+                               w.falloffStart = 1000f; w.falloffEnd = 2000f; w.falloffMin = 1f; w.moveSpeedMul = 0.88f; w.reloadTime = 2.8f; w.emptyReloadTime = 3.2f;
+                               w.kickScale = 2f; w.punchScale = 2.2f; w.impactForce = 12f; w.shotVolume = 1f; w.shotPitch = 0.85f; },
+                uiDamage = 0.98f, uiRate = 0.07f, uiRange = 1f, uiControl = 0.35f, uiMobility = 0.34f,
+                desc = "Магнум .338: в голову — наповал на любой дистанции, в тело — 93 урона. Магазин на пять, затвор после каждого выстрела." },
+            // 98 per hit: the only rifle that kills with a chest hit (98 × 1.06 > 100); slow bolt, heavy
+            new WeaponDef { name = "AXMC", kind = "Болтовая снайперская винтовка .338", category = WeaponCategory.Marksman, archetype = WeaponArchetype.DMR,
+                damage = 98f, rpm = 36f, mag = 5, reserve = 25, fullAuto = false, sfx = Sfx.ShotSniper,
+                setup = w => { w.pumpAction = true; w.boltAction = true; w.pumpTime = 1.25f; w.chTravel = 0.085f;
+                               w.aimTime = 0.36f; w.adsSpread = 0f; w.hipSpread = 3.8f; w.recoilUp = 3.8f; w.recoilSide = 0.7f;
+                               w.falloffStart = 1000f; w.falloffEnd = 2000f; w.falloffMin = 1f; w.moveSpeedMul = 0.85f; w.reloadTime = 3f; w.emptyReloadTime = 3.4f;
+                               w.kickScale = 2.2f; w.punchScale = 2.4f; w.impactForce = 14f; w.shotVolume = 1f; w.shotPitch = 0.8f; },
+                uiDamage = 1f, uiRate = 0.05f, uiRange = 1f, uiControl = 0.3f, uiMobility = 0.28f,
+                desc = "Самая тяжёлая винтовка: смертелен даже выстрел в грудь. Медленный затвор, тяжёлая в руках." },
+            new WeaponDef { name = "ВСС «Винторез»", kind = "Бесшумная снайперская винтовка", category = WeaponCategory.Marksman, archetype = WeaponArchetype.Rifle,
+                damage = 40f, rpm = 700f, mag = 20, reserve = 120,
+                setup = w => { w.recoilUp = 0.95f; w.recoilSide = 0.38f; w.adsFov = 44f; w.aimTime = 0.24f; w.moveSpeedMul = 0.97f; w.reloadTime = 2.2f; w.emptyReloadTime = 2.7f;
+                               w.falloffStart = 40f; w.falloffEnd = 130f; w.falloffMin = 0.7f; w.shotVolume = 0.32f; w.noiseRadius = 14f; w.shotPitch = 1.2f; w.kickScale = 0.9f; },
+                uiDamage = 0.68f, uiRate = 0.7f, uiRange = 0.6f, uiControl = 0.62f, uiMobility = 0.55f,
+                desc = "Встроенный глушитель и тяжёлая дозвуковая пуля 9×39: бесшумно, можно очередью. Хуже на дальних дистанциях." },
+            new WeaponDef { name = "РПГ-7", kind = "Ручной гранатомёт", category = WeaponCategory.Launcher, archetype = WeaponArchetype.Rifle,
+                damage = 0f, rpm = 30f, mag = 1, reserve = 3, fullAuto = false, sfx = Sfx.RocketLaunch,
+                setup = w => { w.launcher = true; w.rocketSpeed = 75f; w.rocketRadius = 7f; w.rocketDamage = 160f; w.rocketPush = 13f;
+                               w.allowFireModeSwitch = false; w.recoilUp = 3f; w.recoilSide = 0.6f; w.adsFov = 50f; w.aimTime = 0.38f; w.moveSpeedMul = 0.86f;
+                               w.reloadTime = 3.2f; w.emptyReloadTime = 3.2f; w.equipTime = 0.75f; w.kickScale = 1.4f; w.noiseRadius = 60f; w.shotVolume = 1f; },
+                uiDamage = 1f, uiRate = 0.05f, uiRange = 0.7f, uiControl = 0.4f, uiMobility = 0.25f,
+                desc = "Реактивная граната взрывается при попадании: накрывает группу и разбивает укрытия. Четыре выстрела." },
         };
 
         public static WeaponDef Get(string name)

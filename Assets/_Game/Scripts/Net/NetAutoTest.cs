@@ -9,14 +9,18 @@ namespace FPS
     /// Command-line driven network smoke test (for a second instance without a human at the keyboard):
     ///   007.exe -nethost Map_Port [-netbots 3] [-nettest]
     ///   007.exe -netjoin 127.0.0.1 [-nettest]
+    ///   007.exe -onlinehost Map_Port [-netmode Bomb] -uprofile a        internet game (Unity Relay), the code is logged
+    ///   007.exe -onlinejoin CODE -uprofile b [-nettest]                  join an internet game by its code
+    ///   007.exe -onlinejoinfirst -uprofile b                             join the first game in the internet list
     /// -nettest makes the local player act on its own (hits, grenade, cover, abilities, execution)
     /// and logs the replicated state every 2 s with the "[NetTest]" prefix.
     /// </summary>
     public class NetAutoTest : MonoBehaviour
     {
-        static string hostScene, joinAddr;
-        static bool test;
+        static string hostScene, joinAddr, onlineHost, onlineCode;
+        static bool test, onlineFirst;
         static int bots = -1;
+        float listT;
         public static NetAutoTest Instance;
 
         float t, logT, cycleT;
@@ -35,14 +39,21 @@ namespace FPS
                 else if (a == "-nettest") test = true;
                 else if (a == "-netbots" && next != null) int.TryParse(next, out bots);
                 else if (a == "-netnick" && next != null) CharacterLook.Local.nick = next;
+                else if (a == "-onlinehost" && next != null) onlineHost = next;
+                else if (a == "-onlinejoin" && next != null) onlineCode = next;
+                else if (a == "-onlinejoinfirst") onlineFirst = true;
+                else if (a == "-netmode" && next != null && Enum.TryParse(next, out GameMode gm)) MatchSettings.mode = gm;
             }
-            if (hostScene == null && joinAddr == null && !test) return;
+            if (hostScene == null && joinAddr == null && onlineHost == null && onlineCode == null && !onlineFirst && !test) return;
             var go = new GameObject("NetAutoTest");
             DontDestroyOnLoad(go);
             Instance = go.AddComponent<NetAutoTest>();
             if (bots >= 0) MatchSettings.botCount = bots;
+            NetGame.StatusChanged += () => Log("status: " + NetGame.Status);
             if (hostScene != null) NetGame.Ensure().StartHost(hostScene);
             else if (joinAddr != null) NetGame.Ensure().Join(joinAddr);
+            else if (onlineHost != null) NetOnline.Host(onlineHost, onlineHost);
+            else if (onlineCode != null) NetOnline.JoinByCode(onlineCode);
         }
 
         /// <summary>Editor-driven tests can switch the autopilot on for the local player.</summary>
@@ -83,6 +94,14 @@ namespace FPS
             foreach (var d in Destructible.All) { if (!d) continue; cover++; if (d.Broken) broken++; }
             sb.Append($" cover={cover} broken={broken} pickups={UnityEngine.Object.FindObjectsByType<AbilityPickup>().Length} smoke={SmokeCloud.All.Count}");
             if (MatchManager.Instance) sb.Append($" time={MatchManager.Instance.TimeLeft:0} feed={MatchManager.Instance.Feed.Count} ended={MatchManager.Instance.Ended}");
+            var om = ObjectiveMode.Current;
+            if (om)
+            {
+                var icons = new System.Collections.Generic.List<ObjectiveIcon>();
+                om.Icons(icons, ObjectiveMode.MyTeam);
+                sb.Append($" obj={om.Mode} myTeam={ObjectiveMode.MyTeam} score={om.TeamScore(0)}:{om.TeamScore(1)} clock={om.Clock:0} icons=");
+                foreach (var ic in icons) sb.Append($"{ic.label}(o{ic.owner} p{ic.progress:0.00}) ");
+            }
             return sb.ToString();
         }
 
@@ -91,15 +110,61 @@ namespace FPS
             float dt = Time.unscaledDeltaTime;
             t += dt;
             logT -= dt;
-            if (logT <= 0f) { logT = 2f; Log(Describe()); }
+            if (logT <= 0f) { logT = 2f; Log(Describe() + (NetOnline.Code != null ? " code=" + NetOnline.Code : "")); }
+            // -onlinejoinfirst: read the internet list until a game shows up, then join it
+            if (onlineFirst && !Net.Active && !NetOnline.Working)
+            {
+                listT -= dt;
+                if (listT <= 0f)
+                {
+                    listT = 5f;
+                    NetOnline.Refresh();
+                    Log($"internet list: {NetOnline.Found.Count} game(s){(NetOnline.ListError != null ? " error " + NetOnline.ListError : "")}");
+                    if (NetOnline.Found.Count > 0)
+                    {
+                        var g = NetOnline.Found[0];
+                        Log($"joining '{g.name}' map {g.map} mode {g.mode} players {g.players}/{g.max}");
+                        onlineFirst = false;
+                        NetOnline.JoinById(g.id);
+                    }
+                }
+            }
             if (!test || !MatchManager.Instance || !PlayerHealth.Local) return;
             var ph = PlayerHealth.Local;
+            // bomb mode: the autopilot plays the objective instead (plant when carrying, defuse when it ticks)
+            if (ObjectiveMode.Current is BombMode bm) { BombPilot(ph, bm); return; }
             if (ph.IsDead) return;
             cycleT += dt;
             if (cycleT < 2.5f) return;
             cycleT = 0f;
             try { Act(ph, step++ % 8); }
             catch (Exception e) { Log("action failed: " + e); }
+        }
+
+        bool bombMoved;
+
+        /// <summary>Bomb mode autopilot: carrying the bomb — stand on site A and hold the key; a planted bomb and we
+        /// defend — stand next to it and hold the key. Exercises the client → host plant / defuse messages.</summary>
+        void BombPilot(PlayerHealth ph, BombMode bm)
+        {
+            var me = ph.GetComponent<Combatant>();
+            bool plant = !ph.IsDead && bm.IsLive && bm.Carrier == me;
+            bool defuse = !ph.IsDead && bm.IsPlanted && me.team != bm.Attackers;
+            if (!plant && !defuse)
+            {
+                if (GameInput.ForceInteractHeld) Log("bomb pilot: released");
+                GameInput.ForceInteractHeld = false;
+                bombMoved = false;
+                return;
+            }
+            if (!bombMoved)
+            {
+                bombMoved = true;
+                Vector3 to = plant ? bm.SitePosition(0) : bm.BombPosition + new Vector3(0.8f, 0f, 0f);
+                ph.motor.Teleport(to + Vector3.up * 0.15f);
+                Log(plant ? $"bomb pilot: planting on A at {to}" : $"bomb pilot: defusing at {bm.BombPosition}");
+            }
+            GameInput.ForceInteractHeld = true;
         }
 
         static Combatant NearestRemote(Vector3 from, bool humanFirst)

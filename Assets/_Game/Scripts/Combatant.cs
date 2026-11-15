@@ -15,7 +15,11 @@ namespace FPS
         public string displayName = "Игрок";
         public bool isPlayer;
         public int team = -1; // -1 = free for all
+        /// <summary>Soldier class (weapons, passives, class ability): the player's choice, a bot's draw.</summary>
+        public PlayerClass playerClass;
         public int kills, deaths;
+        /// <summary>Kills since the last death (KillStreak): the comic look grows with it.</summary>
+        public int streak;
         public bool alive = true;
         /// <summary>Ability slot of this participant (set by AbilityUser).</summary>
         public AbilityUser abilities;

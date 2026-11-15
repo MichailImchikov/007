@@ -11,32 +11,77 @@ namespace FPS
     /// </summary>
     public partial class MainMenu : MonoBehaviour
     {
-        public struct MapEntry { public string scene, title, tag, desc; public Color accent; public GameMode mode; }
+        /// <summary>
+        /// A menu map. <c>alt</c>/<c>altTag</c>: the scene (and card line) played instead when <c>scene</c> is not in the build
+        /// (its asset pack was removed from the project); <c>size</c>: the card's size label.
+        /// </summary>
+        public struct MapEntry { public string scene, title, tag, desc, alt, altTag, size; public Color accent; public GameMode mode; }
 
         public static readonly MapEntry[] Maps =
         {
-            new MapEntry { scene = "Map_Port", title = "ПОРТ", tag = "Контейнерный терминал · средняя дистанция", accent = new Color(0.25f, 0.6f, 0.95f),
+            new MapEntry { scene = "Map_Port", title = "ПОРТ", tag = "Контейнерный терминал · средняя дистанция", accent = new Color(0.25f, 0.6f, 0.95f), size = "СРЕДНЯЯ",
                            desc = "Лабиринт контейнеров, линия на крышах вдоль востока, кран и склад в центре. Фланги через западный лабиринт." },
-            new MapEntry { scene = "Map_Town", title = "ГОРОДОК", tag = "Пустынный город · три линии", accent = new Color(0.95f, 0.65f, 0.25f),
+            new MapEntry { scene = "Map_Town", title = "ГОРОДОК", tag = "Пустынный город · три линии", accent = new Color(0.95f, 0.65f, 0.25f), size = "СРЕДНЯЯ",
                            desc = "Главная улица, рынок на площади и переулки. Двухэтажные дома с окнами на улицу и выходы на крыши." },
-            new MapEntry { scene = "Map_Warehouse", title = "СКЛАД", tag = "Промышленный склад · два уровня", accent = new Color(0.55f, 0.85f, 0.4f),
+            new MapEntry { scene = "Map_Warehouse", title = "СКЛАД", tag = "Промышленный склад · два уровня", accent = new Color(0.55f, 0.85f, 0.4f), size = "СРЕДНЯЯ",
                            desc = "Ряды стеллажей, антресоль по периметру, офис и погрузочная зона с фурами." },
-            new MapEntry { scene = "Map_Plant", title = "ЗАВОД", tag = "Котельная на закате · два яруса", accent = new Color(0.9f, 0.35f, 0.3f),
+            new MapEntry { scene = "Map_Plant", title = "ЗАВОД", tag = "Котельная на закате · два яруса", accent = new Color(0.9f, 0.35f, 0.3f), size = "СРЕДНЯЯ",
                            desc = "Цех с котлами и трубопроводами, мостки на двух ярусах, двор с цистернами и железнодорожной веткой." },
-            new MapEntry { scene = "Map_Village", title = "ДЕРЕВНЯ", tag = "Лесная деревня · открытые линии", accent = new Color(0.45f, 0.75f, 0.55f),
+            new MapEntry { scene = "Map_Village", title = "ДЕРЕВНЯ", tag = "Лесная деревня · открытые линии", accent = new Color(0.45f, 0.75f, 0.55f), size = "БОЛЬШАЯ",
                            desc = "Избы, сараи и церковь на холме. Длинные линии через поле, заборы, стога и ближний бой в домах." },
-            new MapEntry { scene = "Map_Flooded", title = "ЗАТОПЛЕННАЯ ДЕРЕВНЯ", tag = "Туманная низина · большая карта", accent = new Color(0.4f, 0.62f, 0.68f),
+            new MapEntry { scene = "Map_Flooded", title = "ЗАТОПЛЕННАЯ ДЕРЕВНЯ", tag = "Туманная низина · большая карта", accent = new Color(0.4f, 0.62f, 0.68f), size = "БОЛЬШАЯ",
                            desc = "Особняк с садом, церковь, теплицы и ангар вокруг затопленной дороги. Дальние линии в тумане и бой в домах." },
             new MapEntry { scene = "Map_Flooded", title = "ВОЙНА ДРОНОВ", tag = "Затопленная деревня · нож, пистолет и FPV-дрон", accent = new Color(0.95f, 0.45f, 0.2f), mode = GameMode.Drones,
+                           alt = "Map_DesertBase", altTag = "Пустынная база · нож, пистолет и FPV-дрон",
                            desc = "Только нож и пистолет. [V] — запуск FPV-дрона (перезарядка 30 с после потери): полёт по взгляду, сброс гранат, подрыв при касании, тепловизор. Сбитый дрон выдаёт район оператора." },
-            new MapEntry { scene = "Map_Disco", title = "ДИСКОТЕКА", tag = "Ночной клуб под открытым небом · толпа манекенов", accent = new Color(1f, 0.25f, 0.75f),
+            new MapEntry { scene = "Map_Disco", title = "ДИСКОТЕКА", tag = "Ночной клуб под открытым небом · толпа манекенов", accent = new Color(1f, 0.25f, 0.75f), size = "СРЕДНЯЯ",
                            desc = "Три танцпола со своей музыкой и светомузыкой, VIP-кабинки, бар и лобби. Ников над игроками нет — прячьтесь в толпе танцующих манекенов. Голова в небе каждые 30 с шлёт ракеты: красный круг — место удара, под крышей безопасно." },
+            new MapEntry { scene = "Map_DesertBase", title = "ПУСТЫННАЯ БАЗА", tag = "Военная база · техника и палатки", accent = new Color(0.92f, 0.7f, 0.38f), size = "СРЕДНЯЯ",
+                           desc = "Автопарк с рядами танков и грузовиков, длинный ангар, вертолётная площадка, палаточный городок и стены из габионов. Бой на средней дистанции между машинами." },
+            new MapEntry { scene = "Map_Factory", title = "ФАБРИКА", tag = "Ночная смена · цех, антресоль и двор", accent = new Color(0.45f, 0.72f, 0.95f), size = "МАЛАЯ",
+                           desc = "Цех с конвейерами, чанами и генераторами, антресоль с пультовой над полом, склад со стеллажами, раздевалка с офисом и двор с водонапорными баками, контейнерами и прожекторами." },
+            new MapEntry { scene = "Map_Downtown", title = "ДАУНТАУН", tag = "Городские кварталы · улицы и подворотни", accent = new Color(0.88f, 0.5f, 0.32f), size = "СРЕДНЯЯ",
+                           desc = "Кирпичные кварталы вокруг церкви со шпилем, сквер и парковка в центре, узкие улицы и переулки, высотки по краям. Низкое вечернее солнце: улицы в тени." },
+            new MapEntry { scene = "Map_Bazaar", title = "БАЗАР", tag = "Глинобитный город за стеной · ближний бой", accent = new Color(0.96f, 0.78f, 0.32f), size = "СРЕДНЯЯ",
+                           desc = "Саманные дома за крепостной стеной среди дюн: рынок, дворики с пальмами, лестницы на плоские крыши. Короткие линии и много углов." },
+            new MapEntry { scene = "Map_Suburb", title = "ПРИГОРОД", tag = "Офисы, парк и коттеджи · смешанная дистанция", accent = new Color(0.48f, 0.82f, 0.42f), size = "СРЕДНЯЯ",
+                           desc = "Офисный квартал с парковкой, большое здание в центре, парк с деревьями и коттеджи на окраине среди зелёных холмов." },
+            new MapEntry { scene = "Map_Station", title = "ВОКЗАЛ", tag = "Сортировочная станция · линии вдоль путей", accent = new Color(0.55f, 0.66f, 0.88f), size = "СРЕДНЯЯ",
+                           desc = "Пути с составами и цистернами, платформы под навесами, вокзал с часовой башней и водонапорные баки. Укрытия за вагонами, простреливаемые пролёты между ними. Пасмурно." },
+            new MapEntry { scene = "Map_Depot", title = "СКЛАД БОЕПРИПАСОВ", tag = "Крытый склад · короткая дистанция", accent = new Color(0.82f, 0.6f, 0.3f), size = "МАЛАЯ",
+                           desc = "Закрытый склад с контейнерами и ящиками под прожекторами. Быстрые стычки за углами, никаких дальних линий." },
+            new MapEntry { scene = "Map_Construction", title = "СТРОЙКА", tag = "Крыша небоскрёба · краны и леса", accent = new Color(0.98f, 0.72f, 0.16f), size = "МАЛАЯ",
+                           desc = "Недостроенный этаж на крыше высотки среди небоскрёбов: бетонные стены, строительные леса, штабеля кирпича и арматуры, два башенных крана." },
             new MapEntry { scene = "ShootingRange", title = "ПОЛИГОН", tag = "Тренировка", accent = new Color(0.8f, 0.8f, 0.85f),
                            desc = "Мишени, полоса препятствий, тренировочные боты для добиваний, стенд со всеми способностями." },
         };
 
         static readonly string[] DiffNames = { "Легко", "Нормально", "Сложно" };
+        static readonly string[] RuleNames = { "Командный бой", "Каждый за себя", "Захват точек", "Закладка бомбы", "Штурм" };
         static int selectedMap;
+        /// <summary>
+        /// Rules of an ordinary map: 0 — team deathmatch (allies, medics revive), 1 — free-for-all, 2 — capture points,
+        /// 3 — bomb (rounds, one life), 4 — assault (attack / defend points one after another).
+        /// </summary>
+        static int rules;
+
+        static GameMode RuleMode(int r) => r switch
+        {
+            0 => GameMode.TeamDeathmatch, 1 => GameMode.Deathmatch, 2 => GameMode.Domination, 3 => GameMode.Bomb, _ => GameMode.Assault,
+        };
+
+        static string RuleHint(int r)
+        {
+            string key = GameSettings.KeyName(BindAction.Pickup);
+            return r switch
+            {
+                0 => "Командный бой: две команды, медики поднимают раненых. Побеждает команда, первой набравшая лимит убийств.",
+                1 => "Каждый за себя: побеждает первый, кто наберёт лимит убийств.",
+                2 => "Захват точек: стойте в круге A, B или C, чтобы занять точку. Каждая удерживаемая точка приносит очки — до 150.",
+                3 => $"Закладка бомбы: раунды, одна жизнь. Атака закладывает бомбу на A или B (удерживать [{key}]), защита мешает или обезвреживает. До 4 побед, смена сторон после 3 раундов.",
+                _ => "Штурм: атака берёт 4 точки по очереди (по 2 минуты на каждую), защита удерживает. Две половины со сменой сторон: больше взятых точек — победа.",
+            };
+        }
 
         RectTransform canvasRoot;
         Text nickText, loadoutText, statusLine, controlsText;
@@ -201,7 +246,14 @@ namespace FPS
 
         void OpenPlay()
         {
-            var panel = MenuPanel.Create(canvasRoot, "Одиночная игра", new Vector2(1560f, 860f), out var body);
+            // maps whose scene (or its fallback) is in the build: a map made from a removed asset pack is hidden
+            var shown = new List<int>();
+            for (int i = 0; i < Maps.Length; i++) if (Available(Maps[i])) shown.Add(i);
+            if (!shown.Contains(selectedMap) && shown.Count > 0) selectedMap = shown[0];
+            int rows = (shown.Count + 1) / 2;
+            bool compact = rows > 6; // many maps: a taller window, shorter cards, one-line tags, the size label up top
+
+            var panel = MenuPanel.Create(canvasRoot, "Одиночная игра", new Vector2(1600f, compact ? 950f : 860f), out var body);
             var cards = new List<UIButtonFx>();
             Text desc = null, title = null;
             Image accentBar = null;
@@ -209,30 +261,33 @@ namespace FPS
             var grid = UIKit.Rect("Maps", body);
             UIKit.Span(grid, 0f, 0f, 0.6f, 1f);
             grid.offsetMin = new Vector2(0f, 84f);
-            for (int i = 0; i < Maps.Length; i++)
+            for (int k = 0; k < shown.Count; k++)
             {
-                int idx = i;
-                var m = Maps[i];
-                int col = i % 2, row = i / 2;
-                var b = UIKit.Button(grid, "", () => { selectedMap = idx; Select(); }, UIKit.Style.Normal, 34, true);
+                int idx = shown[k];
+                var m = Maps[idx];
+                int col = k % 2, row = k / 2;
+                var b = UIKit.Button(grid, "", () => { selectedMap = idx; Select(); }, UIKit.Style.Normal, compact ? 28 : 34, true);
                 var rt = (RectTransform)b.transform;
                 // rows share the grid height, so more maps shrink the cards instead of overflowing
-                int rows = (Maps.Length + 1) / 2;
                 float top = 1f - row / (float)rows, bottom = 1f - (row + 1) / (float)rows;
                 rt.anchorMin = new Vector2(col * 0.5f, bottom); rt.anchorMax = new Vector2(col * 0.5f + 0.5f, top); rt.pivot = new Vector2(0.5f, 1f);
-                rt.offsetMin = new Vector2(col == 0 ? 0f : 8f, row == rows - 1 ? 0f : 7f);
-                rt.offsetMax = new Vector2(col == 0 ? -8f : 0f, row == 0 ? 0f : -7f);
+                float gap = compact ? 5f : 7f;
+                rt.offsetMin = new Vector2(col == 0 ? 0f : 8f, row == rows - 1 ? 0f : gap);
+                rt.offsetMax = new Vector2(col == 0 ? -8f : 0f, row == 0 ? 0f : -gap);
                 var lbl = UIKit.LabelOf(b);
                 lbl.text = m.title;
                 lbl.alignment = TextAnchor.UpperLeft;
-                lbl.rectTransform.offsetMax = new Vector2(-8f, -22f);
-                var tag = UIKit.Label(rt, m.tag, 18, TextAnchor.UpperLeft, UIKit.TextDim);
-                UIKit.Fill(tag.rectTransform, 27f, 0f, 14f, 72f);
+                lbl.rectTransform.offsetMax = new Vector2(-8f, compact ? -8f : -22f);
+                var tag = UIKit.Label(rt, TagOf(m), compact ? 16 : 18, TextAnchor.UpperLeft, UIKit.TextDim);
+                UIKit.Fill(tag.rectTransform, 27f, 0f, 14f, compact ? 44f : 72f);
                 var sw = UIKit.Solid(rt, "MapAccent", m.accent);
                 sw.rectTransform.anchorMin = new Vector2(0f, 0f); sw.rectTransform.anchorMax = new Vector2(1f, 0f); sw.rectTransform.pivot = new Vector2(0.5f, 0f);
-                sw.rectTransform.offsetMin = new Vector2(16f, 16f); sw.rectTransform.offsetMax = new Vector2(-16f, 22f);
-                var mode = UIKit.Label(rt, m.scene == "ShootingRange" ? "ТРЕНИРОВКА" : m.mode == GameMode.Drones ? "ДРОНЫ" : "DEATHMATCH", 16, TextAnchor.LowerRight, m.accent, true);
-                UIKit.Fill(mode.rectTransform, 0f, 30f, 18f, 0f);
+                sw.rectTransform.offsetMin = new Vector2(16f, compact ? 6f : 16f); sw.rectTransform.offsetMax = new Vector2(-16f, compact ? 9f : 22f);
+                string kind = m.scene == "ShootingRange" ? "ТРЕНИРОВКА" : m.mode == GameMode.Drones ? "ДРОНЫ" : string.IsNullOrEmpty(m.size) ? "БОЙ" : m.size + " КАРТА";
+                // compact: in the top-right corner, level with the title, so the tag line has the full width
+                var mode = UIKit.Label(rt, kind, compact ? 14 : 16, compact ? TextAnchor.UpperRight : TextAnchor.LowerRight, m.accent, true);
+                if (compact) UIKit.Fill(mode.rectTransform, 0f, 0f, 16f, 14f);
+                else UIKit.Fill(mode.rectTransform, 0f, 30f, 18f, 0f);
                 cards.Add(b.GetComponent<UIButtonFx>());
             }
 
@@ -250,6 +305,8 @@ namespace FPS
             UIKit.Fill(listHolder, 14f, 10f, 14f, 206f);
             var list = UIKit.ScrollList(listHolder, 6f);
             UIKit.Header(list, "Настройки матча");
+            Text modeHint = null;
+            UIKit.SelectorRow(list, "Режим", RuleNames.Length, () => rules, i => { rules = i; if (modeHint) modeHint.text = RuleHint(rules); }, i => RuleNames[i]);
             UIKit.SelectorRow(list, "Боты", 13, () => MatchSettings.botCount - 1, i => MatchSettings.botCount = i + 1, i => (i + 1).ToString());
             UIKit.SelectorRow(list, "Сложность", 3, () => MatchSettings.difficulty, i => MatchSettings.difficulty = i, i => DiffNames[i]);
             UIKit.SelectorRow(list, "Лимит убийств", 20, () => MatchSettings.killLimit / 5 - 1, i => MatchSettings.killLimit = (i + 1) * 5, i => ((i + 1) * 5).ToString());
@@ -261,19 +318,27 @@ namespace FPS
             UIKit.Span((RectTransform)lb.transform, 0.42f, 0.12f, 1f, 0.88f);
             ((RectTransform)lb.transform).offsetMax = new Vector2(-12f, 0f);
 
-            var go = UIKit.Button(body, "В БОЙ", () => { MatchSettings.mode = Maps[selectedMap].mode; Play(Maps[selectedMap].scene); }, UIKit.Style.Primary, 30);
+            var go = UIKit.Button(body, "В БОЙ", () =>
+            {
+                var m = Maps[selectedMap];
+                MatchSettings.mode = m.mode == GameMode.Deathmatch ? RuleMode(rules) : m.mode;
+                Play(SceneOf(m));
+            }, UIKit.Style.Primary, 30);
             var grt = (RectTransform)go.transform;
             grt.anchorMin = grt.anchorMax = grt.pivot = new Vector2(1f, 0f);
             grt.sizeDelta = new Vector2(340f, 64f); grt.anchoredPosition = Vector2.zero;
-            var hint = UIKit.Label(body, "Оружие и облик можно поменять и во время матча (Esc).", 19, TextAnchor.MiddleLeft, UIKit.TextDim);
-            hint.rectTransform.anchorMin = Vector2.zero; hint.rectTransform.anchorMax = new Vector2(0.7f, 0f); hint.rectTransform.pivot = Vector2.zero;
+            // the chosen rules in a sentence (weapons and looks can still be changed in the match, Esc)
+            var hint = UIKit.Label(body, RuleHint(rules), 19, TextAnchor.MiddleLeft, UIKit.TextDim);
+            hint.rectTransform.anchorMin = Vector2.zero; hint.rectTransform.anchorMax = new Vector2(0.76f, 0f); hint.rectTransform.pivot = Vector2.zero;
             hint.rectTransform.sizeDelta = new Vector2(0f, 64f); hint.rectTransform.anchoredPosition = Vector2.zero;
+            hint.horizontalOverflow = HorizontalWrapMode.Wrap;
+            modeHint = hint;
 
             void Select()
             {
                 selectedMap = Mathf.Clamp(selectedMap, 0, Maps.Length - 1);
                 var m = Maps[selectedMap];
-                for (int i = 0; i < cards.Count; i++) cards[i].Selected = i == selectedMap;
+                for (int i = 0; i < cards.Count; i++) cards[i].Selected = shown[i] == selectedMap;
                 title.text = m.title;
                 title.fontSize = m.title.Length > 14 ? 34 : 46; // long names stay on one line above the description
                 desc.text = m.desc;
@@ -281,6 +346,14 @@ namespace FPS
             }
             Select();
         }
+
+        /// <summary>The scene an entry plays: its own, or its fallback when its own is not in the build (asset pack removed).</summary>
+        static string SceneOf(MapEntry m) =>
+            Application.CanStreamedLevelBeLoaded(m.scene) || string.IsNullOrEmpty(m.alt) || !Application.CanStreamedLevelBeLoaded(m.alt) ? m.scene : m.alt;
+
+        static bool Available(MapEntry m) => Application.CanStreamedLevelBeLoaded(SceneOf(m));
+
+        static string TagOf(MapEntry m) => SceneOf(m) != m.scene && !string.IsNullOrEmpty(m.altTag) ? m.altTag : m.tag;
 
         void Play(string scene)
         {

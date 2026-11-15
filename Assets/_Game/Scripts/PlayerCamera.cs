@@ -26,8 +26,11 @@ namespace FPS
         public float pitchLimit = 88f;
 
         [Header("Recoil")]
-        public float recoilSnappiness = 20f;
-        public float recoilReturn = 6.5f;
+        [Tooltip("How fast a shot's climb reaches the aim (1/s): high snaps, low drifts")] public float recoilSnappiness = 20f;
+        [Tooltip("How fast the settling part comes back after a burst (1/s)")] public float recoilReturn = 6.5f;
+        [Tooltip("Part of the climb that settles back after a burst (what the player did not pull down himself)")]
+        [Range(0f, 1f)] public float recoilRecovery = 0.6f;
+        [Tooltip("Seconds after the last shot before the climb starts settling")] public float recoilHold = 0.12f;
 
         [Header("Bob")]
         public float bobAmount = 1f;
@@ -39,6 +42,11 @@ namespace FPS
 
         public float AimBlend { get; set; }
         public float AdsFov { get; set; } = 48f;
+        /// <summary>Magnification of the optic aimed through (picture in picture): the look slows down by it.</summary>
+        public float ScopeZoom { get; set; } = 1f;
+        /// <summary>First-person eye offset inside the effects pivot: the true first-person body moves the eye onto the
+        /// sight while aiming a shouldered rifle. Kept here (not reset to zero) so every script sees the same eye.</summary>
+        public Vector3 EyeOffset { get; set; }
         public Vector2 LastLookDelta { get; private set; }
         public float Lean { get; private set; }
         public float Yaw => yaw;
@@ -56,7 +64,8 @@ namespace FPS
         readonly RaycastHit[] tpHits = new RaycastHit[8];
 
         float yaw, pitch;
-        Vector3 recoilTarget, recoilCurrent;
+        Vector2 recoilPending, recoilSettle; // degrees: x up, y right
+        float lastRecoilTime = -10f;
         readonly Spring3 punchRot = new Spring3(240f, 17f);
         readonly Spring3 punchPos = new Spring3(200f, 16f);
         float roll, moveFov, fovKick, bobWeight, trauma;
@@ -88,7 +97,31 @@ namespace FPS
             motor.ProneStarted -= OnProne;
         }
 
-        public void AddRecoil(float up, float side) => recoilTarget += new Vector3(-up, side, 0f);
+        /// <summary>One shot's recoil (degrees): the aim climbs by it over a few frames (recoilSnappiness).</summary>
+        public void AddRecoil(float up, float side)
+        {
+            recoilPending += new Vector2(up, side);
+            recoilSettle += new Vector2(up, side) * recoilRecovery;
+            lastRecoilTime = Time.time;
+        }
+
+        void ApplyRecoil(float dt)
+        {
+            if (recoilPending.sqrMagnitude > 1e-10f)
+            {
+                Vector2 step = recoilPending * (1f - Mathf.Exp(-recoilSnappiness * dt));
+                recoilPending -= step;
+                pitch = Mathf.Clamp(pitch - step.x, -pitchLimit, pitchLimit);
+                yaw += step.y;
+            }
+            if (Time.time - lastRecoilTime > recoilHold && recoilSettle.sqrMagnitude > 1e-10f)
+            {
+                Vector2 step = recoilSettle * (1f - Mathf.Exp(-recoilReturn * dt));
+                recoilSettle -= step;
+                pitch = Mathf.Clamp(pitch + step.x, -pitchLimit, pitchLimit);
+                yaw -= step.y;
+            }
+        }
         public void Punch(Vector3 rotKick) => punchRot.Kick(rotKick);
         public void PunchPos(Vector3 kick) => punchPos.Kick(kick);
         public void Shake(float amount) => trauma = Mathf.Clamp01(Mathf.Max(trauma, amount));
@@ -157,19 +190,26 @@ namespace FPS
             float dt = Time.deltaTime;
             if (dt <= 0f) return;
 
-            // ---- look (sensitivity scales with zoom so scopes feel consistent)
-            float zoomSens = Mathf.Clamp(AdsFov / baseFov, 0.12f, 1f) * 1.05f * GameSettings.AdsSensitivity;
+            // ---- look: aimed, the turn keeps the feel relative to the screen like Call of Duty's "Relative" ADS
+            // sensitivity (monitor distance coefficient, 1.33 by default): every sight — iron, red dot, 2x–8x eyepiece,
+            // full-screen sniper scope — needs the same mouse movement to put the aim on a point the same share of the
+            // screen away, whatever its zoom (AdsFov) and an optic's magnification (ScopeZoom). Then the "aimed" slider
+            float zoomSens = GameSettings.AdsSensitivity * GameSettings.AdsLookScale(baseFov, AdsFov, ScopeZoom);
             Vector2 look = Locked ? Vector2.zero : GameInput.LookDelta * Mathf.Lerp(1f, zoomSens, AimBlend);
             LastLookDelta = look;
             yaw += look.x;
             pitch = Mathf.Clamp(pitch - look.y, -pitchLimit, pitchLimit);
+            // pulling down against the climb counts: what the player already held down does not settle back
+            if (look.y < 0f && Time.time - lastRecoilTime < recoilHold + 0.3f)
+                recoilSettle.x = Mathf.Max(0f, recoilSettle.x + look.y * recoilRecovery);
+
+            // ---- recoil: each shot pushes the aim itself (the barrel follows the view, the bullets follow the barrel),
+            // spread over a few frames so it climbs instead of jumping. While firing it builds up and is held down with
+            // the mouse; after the burst part of the climb settles back
+            ApplyRecoil(dt);
             transform.rotation = Quaternion.Euler(0f, yaw, 0f);
             pitchPivot.localRotation = Quaternion.Euler(pitch, 0f, 0f);
-
-            // ---- recoil (kicks up fast, recovers smoothly)
-            recoilTarget = Vector3.Lerp(recoilTarget, Vector3.zero, 1f - Mathf.Exp(-recoilReturn * dt));
-            recoilCurrent = Vector3.Lerp(recoilCurrent, recoilTarget, 1f - Mathf.Exp(-recoilSnappiness * dt));
-            recoilPivot.localRotation = Quaternion.Euler(recoilCurrent);
+            recoilPivot.localRotation = Quaternion.identity;
 
             Vector3 pr = punchRot.Step(dt);
             Vector3 pp = punchPos.Step(dt) * 0.5f;
@@ -207,7 +247,8 @@ namespace FPS
             Vector3 leanPos = new Vector3(Mathf.Sin(-la * Mathf.Deg2Rad) * L + Lean * leanSlide * leanScale,
                                           (Mathf.Cos(la * Mathf.Deg2Rad) - 1f) * L, 0f);
 
-            float targetRoll = -motor.MoveInput.x * 1.5f * (1f - AimBlend * 0.6f);
+            // strafe tilt; aimed it nearly goes (a change of direction rocked the whole aimed view)
+            float targetRoll = -motor.MoveInput.x * 1.5f * (1f - AimBlend * 0.9f);
             if (motor.IsSliding) targetRoll += 6f;
             roll = Anim.Damp(roll, targetRoll, 7f, dt);
 
@@ -252,9 +293,9 @@ namespace FPS
                 cam.transform.localPosition = local / len * allowed * tp;
                 cam.transform.localRotation = Quaternion.Euler(8f * tp, 0f, 0f);
             }
-            else if (cam.transform.localPosition != Vector3.zero)
+            else if (cam.transform.localPosition != EyeOffset)
             {
-                cam.transform.localPosition = Vector3.zero;
+                cam.transform.localPosition = EyeOffset;
                 cam.transform.localRotation = Quaternion.identity;
             }
 

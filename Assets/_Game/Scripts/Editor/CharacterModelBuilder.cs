@@ -73,6 +73,13 @@ namespace FPS.EditorTools
                 if (go) entries.Add(new CharacterModelDB.Entry { name = name, prefab = go });
             }
 
+            if (entries.Count == 0)
+            {
+                // the old packs are not in this project: the Military soldiers (Tools > FPS > Build Character Models (Military))
+                Anim.MilitaryAnimBuilder.BuildCharacterModels();
+                BuildWeapons();
+                return;
+            }
             if (!AssetDatabase.IsValidFolder("Assets/Resources")) AssetDatabase.CreateFolder("Assets", "Resources");
             var db = AssetDatabase.LoadAssetAtPath<CharacterModelDB>(DbPath);
             if (!db) { db = ScriptableObject.CreateInstance<CharacterModelDB>(); AssetDatabase.CreateAsset(db, DbPath); }

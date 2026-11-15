@@ -61,6 +61,12 @@ namespace FPS
                             v => { GameSettings.Sensitivity = v; Changed(); });
             UIKit.SliderRow(list, "Чувствительность в прицеле", 0.2f, 2f, GameSettings.AdsSensitivity, v => "×" + v.ToString("0.00"),
                             v => { GameSettings.AdsSensitivity = v; Changed(); }, "Множитель при прицеливании и в оптике");
+            UIKit.ChoiceRow(list, "Сенса в прицелах", new[] { "Одинаковый поворот", "Относительно экрана" }, GameSettings.AdsRelative ? 1 : 0,
+                            i => { GameSettings.AdsRelative = i == 1; Changed(); },
+                            "Относительно экрана — как «Relative» в Call of Duty: в любом прицеле и оптике мышь ощущается одинаково по тому, что видно. Одинаковый поворот — те же градусы на движение мыши, что от бедра");
+            UIKit.SliderRow(list, "Коэффициент дистанции монитора", 0f, 2f, GameSettings.AdsCoefficient, v => v.ToString("0.00"),
+                            v => { GameSettings.AdsCoefficient = Mathf.Round(v * 100f) / 100f; Changed(); },
+                            "1.33 — как в Call of Duty по умолчанию (край экрана 4:3). 0 — совпадение у перекрестья, 1.78 — у края экрана 16:9");
             UIKit.ChoiceRow(list, "Инверсия по вертикали", OffOn, GameSettings.InvertY ? 1 : 0, i => { GameSettings.InvertY = i == 1; Changed(); });
 
             UIKit.Header(list, "Режимы клавиш");
@@ -150,6 +156,9 @@ namespace FPS
             UIKit.ChoiceRow(list, "Полноэкранный режим", OffOn, GameSettings.Fullscreen ? 1 : 0, i => { GameSettings.Fullscreen = i == 1; Changed(); });
             UIKit.ChoiceRow(list, "Вертикальная синхронизация", OffOn, GameSettings.VSync ? 1 : 0, i => { GameSettings.VSync = i == 1; Changed(); });
             UIKit.ChoiceRow(list, "Счётчик FPS", OffOn, GameSettings.ShowFps ? 1 : 0, i => { GameSettings.ShowFps = i == 1; Changed(); });
+            UIKit.ChoiceRow(list, "Миникарта", OffOn, GameSettings.MiniMapOn ? 1 : 0, i => { GameSettings.MiniMapOn = i == 1; Changed(); });
+            UIKit.ChoiceRow(list, "Поворот миникарты", new[] { "Север вверху", "По взгляду" }, GameSettings.MiniMapRotate ? 1 : 0,
+                            i => { GameSettings.MiniMapRotate = i == 1; Changed(); });
             UIKit.Header(list, "Звук");
             UIKit.SliderRow(list, "Общая громкость", 0f, 1f, GameSettings.Volume, v => Mathf.RoundToInt(v * 100f) + "%",
                             v => { GameSettings.Volume = v; Changed(); });

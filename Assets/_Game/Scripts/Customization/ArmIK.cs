@@ -97,9 +97,22 @@ namespace FPS
     {
         public const string Right = "GripR", Left = "GripL";
 
+        /// <summary>Drops the anchors and builds them again (after the model / attachments changed).</summary>
+        public static void Rebuild(WeaponController w)
+        {
+            if (!w || !w.model) return;
+            foreach (var n in new[] { Right, Left })
+            {
+                var t = Find(w.model, n);
+                if (t) { t.name = n + "_old"; Object.Destroy(t.gameObject); }
+            }
+            Ensure(w);
+        }
+
         public static void Ensure(WeaponController w)
         {
             if (!w || !w.model || w.model.Find(Right)) return;
+            if (EnsureFromSockets(w)) return;
             bool pistol = w.slot == WeaponSlot.Secondary;
             var model = w.model;
 
@@ -129,6 +142,59 @@ namespace FPS
             if (!root) return null;
             foreach (var t in root.GetComponentsInChildren<Transform>(true)) if (t.name == name) return t;
             return null;
+        }
+
+        /// <summary>
+        /// Weapons built in Blender (Tools/Blender/weapons) carry grip sockets: Grip_R / Grip_L at the grip's center
+        /// line, forward = down the grip, up = toward its front (on a handguard Grip_L is unrotated, on the axis).
+        /// The palm anchors sit on the surface the palm touches. Grip_L of a vertical / angled foregrip attachment
+        /// (under w.leftHandGrip) gets a pistol-grip style left hand.
+        /// </summary>
+        static bool EnsureFromSockets(WeaponController w)
+        {
+            var model = w.model;
+            var sr = Find(model, "Grip_R");
+            if (!sr) return false;
+            bool pistol = w.slot == WeaponSlot.Secondary;
+            Vector3 right = model.right, up = model.up, fwd = model.forward;
+
+            // right hand on the pistol grip: palm on the grip's right side, fingers around its front
+            Vector3 d = sr.forward, f = sr.up;
+            var r = new GameObject(Right).transform;
+            r.SetParent(model, false);
+            r.position = sr.position + right * 0.016f - f * 0.004f;
+            r.rotation = Quaternion.LookRotation((f * 0.88f - right * 0.32f + d * 0.12f).normalized, (-right + f * 0.12f).normalized);
+
+            // support hand: the procedural reload moves w.leftHand, so the anchor lives under it when it exists
+            Transform lSrc = w.leftHandGrip ? w.leftHandGrip : Find(model, "Grip_L");
+            if (!lSrc) return true;
+            Transform lParent = w.leftHand ? w.leftHand : model;
+            var l = new GameObject(Left).transform;
+            l.SetParent(lParent, false);
+            bool foregrip = false;
+            for (var p = lSrc; p && p != model; p = p.parent)
+                if (p.name.StartsWith("Grip_Vertical") || p.name.StartsWith("Grip_Angled")) { foregrip = true; break; }
+            if (pistol)
+            {
+                // wraps the right hand from the left side
+                Vector3 pd = lSrc.forward, pf = lSrc.up;
+                l.position = lSrc.position - right * 0.01f + pf * 0.006f;
+                l.rotation = Quaternion.LookRotation((pf * 0.8f + right * 0.4f + pd * 0.25f).normalized, (right + up * 0.3f).normalized);
+            }
+            else if (foregrip && Vector3.Dot(lSrc.forward, up) < -0.3f)
+            {
+                // vertical / angled foregrip: like a pistol grip, left hand
+                Vector3 gd = lSrc.forward, gf = lSrc.up;
+                l.position = lSrc.position - right * 0.016f - gf * 0.004f;
+                l.rotation = Quaternion.LookRotation((gf * 0.88f + right * 0.32f + gd * 0.12f).normalized, (right + gf * 0.12f).normalized);
+            }
+            else
+            {
+                // handguard from below-left, fingers up the right side
+                l.position = lSrc.position - up * 0.026f - right * 0.008f;
+                l.rotation = Quaternion.LookRotation((right * 0.5f + up * 0.25f + fwd * 0.8f).normalized, (right * 0.3f + up).normalized);
+            }
+            return true;
         }
     }
 }

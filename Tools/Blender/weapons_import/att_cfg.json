@@ -1,0 +1,817 @@
+{
+ "Optic_Scope6x": {
+  "src": "{WORK}/work/kit_split.blend",
+  "objects": [
+   "kit_optic_3"
+  ],
+  "kind": "optic",
+  "slot": "Optic",
+  "fwd": "+X",
+  "up": "+Z",
+  "scale": 0.11,
+  "mat": {
+   "Basic_mat": "Metal_Black",
+   "Sec_mat": "Metal_Dark",
+   "White_mat": "Metal_Worn",
+   "red_mat": "Polymer_Red",
+   "optic": "Glass_Lens",
+   "Pixelcom": "Metal_Dark",
+   "Pixelcom1": "Metal_Dark",
+   "Pixelcom2": "Metal_Dark",
+   "Pixelcom3": "Metal_Dark",
+   "Pixelcom4": "Metal_Dark"
+  },
+  "mat_default": "Metal_Black",
+  "lens_material": [
+   "optic"
+  ],
+  "magnification": 6.0,
+  "compatible": [
+   "AKM",
+   "HK416",
+   "MK47",
+   "QBZ191",
+   "MK18",
+   "M4A1",
+   "AK12",
+   "M14EBR",
+   "M249",
+   "SVD",
+   "VSS",
+   "AWM",
+   "AXMC"
+  ]
+ },
+ "Optic_HoloRed": {
+  "src": "{WORK}/work/kit_split.blend",
+  "objects": [
+   "kit_optic_5"
+  ],
+  "kind": "optic",
+  "slot": "Optic",
+  "fwd": "+X",
+  "up": "+Z",
+  "scale": 0.12,
+  "mat": {
+   "Basic_mat": "Metal_Black",
+   "Sec_mat": "Metal_Dark",
+   "White_mat": "Metal_Worn",
+   "red_mat": "Polymer_Red",
+   "optic": "Glass_Lens",
+   "Pixelcom": "Metal_Dark",
+   "Pixelcom1": "Metal_Dark",
+   "Pixelcom2": "Metal_Dark",
+   "Pixelcom3": "Metal_Dark",
+   "Pixelcom4": "Metal_Dark"
+  },
+  "mat_default": "Metal_Black",
+  "lens_material": [
+   "optic"
+  ],
+  "compatible": [
+   "AKM",
+   "HK416",
+   "MK47",
+   "QBZ191",
+   "MK18",
+   "HoneyBadger",
+   "Vector",
+   "MPX",
+   "Scorpion",
+   "SR2",
+   "M249",
+   "M4A1",
+   "AK12",
+   "M14EBR",
+   "SVD",
+   "VSS"
+  ]
+ },
+ "Optic_MiniDot": {
+  "src": "{WORK}/work/kit_split.blend",
+  "objects": [
+   "kit_optic_6"
+  ],
+  "kind": "optic",
+  "slot": "Optic",
+  "fwd": "+X",
+  "up": "+Z",
+  "scale": 0.09,
+  "mat": {
+   "Basic_mat": "Metal_Black",
+   "Sec_mat": "Metal_Dark",
+   "White_mat": "Metal_Worn",
+   "red_mat": "Polymer_Red",
+   "optic": "Glass_Lens",
+   "Pixelcom": "Metal_Dark",
+   "Pixelcom1": "Metal_Dark",
+   "Pixelcom2": "Metal_Dark",
+   "Pixelcom3": "Metal_Dark",
+   "Pixelcom4": "Metal_Dark"
+  },
+  "mat_default": "Metal_Black",
+  "lens_material": [
+   "optic"
+  ],
+  "compatible": [
+   "AKM",
+   "HK416",
+   "MK47",
+   "QBZ191",
+   "MK18",
+   "HoneyBadger",
+   "Vector",
+   "MPX",
+   "Scorpion",
+   "SR2",
+   "M249",
+   "M4A1",
+   "AK12",
+   "M14EBR",
+   "SVD",
+   "VSS"
+  ]
+ },
+ "Muzzle_Comp": {
+  "src": "{WORK}/work/kit_split.blend",
+  "objects": [
+   "kit_muzzle_2"
+  ],
+  "kind": "muzzle",
+  "slot": "Muzzle",
+  "fwd": "+X",
+  "up": "+Z",
+  "scale": 0.088,
+  "mat": {
+   "Basic_mat": "Metal_Black",
+   "Sec_mat": "Metal_Dark",
+   "White_mat": "Metal_Worn",
+   "red_mat": "Polymer_Red",
+   "optic": "Glass_Lens",
+   "Pixelcom": "Metal_Dark",
+   "Pixelcom1": "Metal_Dark",
+   "Pixelcom2": "Metal_Dark",
+   "Pixelcom3": "Metal_Dark",
+   "Pixelcom4": "Metal_Dark"
+  },
+  "mat_default": "Metal_Black",
+  "compatible": [
+   "AKM",
+   "HK416",
+   "MK47",
+   "QBZ191",
+   "MK18",
+   "M4A1",
+   "AK12",
+   "M14EBR",
+   "M249"
+  ]
+ },
+ "Muzzle_BrakeHex": {
+  "src": "{WORK}/work/kit_split.blend",
+  "objects": [
+   "kit_muzzle_3"
+  ],
+  "kind": "muzzle",
+  "slot": "Muzzle",
+  "fwd": "+X",
+  "up": "+Z",
+  "scale": 0.088,
+  "mat": {
+   "Basic_mat": "Metal_Black",
+   "Sec_mat": "Metal_Dark",
+   "White_mat": "Metal_Worn",
+   "red_mat": "Polymer_Red",
+   "optic": "Glass_Lens",
+   "Pixelcom": "Metal_Dark",
+   "Pixelcom1": "Metal_Dark",
+   "Pixelcom2": "Metal_Dark",
+   "Pixelcom3": "Metal_Dark",
+   "Pixelcom4": "Metal_Dark"
+  },
+  "mat_default": "Metal_Black",
+  "compatible": [
+   "AKM",
+   "HK416",
+   "MK47",
+   "QBZ191",
+   "MK18",
+   "M4A1",
+   "AK12",
+   "M14EBR",
+   "M249",
+   "SVD",
+   "AWM",
+   "AXMC"
+  ]
+ },
+ "Muzzle_Linear": {
+  "src": "{WORK}/work/kit_split.blend",
+  "objects": [
+   "kit_muzzle_4"
+  ],
+  "kind": "muzzle",
+  "slot": "Muzzle",
+  "fwd": "+X",
+  "up": "+Z",
+  "scale": 0.088,
+  "mat": {
+   "Basic_mat": "Metal_Black",
+   "Sec_mat": "Metal_Dark",
+   "White_mat": "Metal_Worn",
+   "red_mat": "Polymer_Red",
+   "optic": "Glass_Lens",
+   "Pixelcom": "Metal_Dark",
+   "Pixelcom1": "Metal_Dark",
+   "Pixelcom2": "Metal_Dark",
+   "Pixelcom3": "Metal_Dark",
+   "Pixelcom4": "Metal_Dark"
+  },
+  "mat_default": "Metal_Black",
+  "compatible": [
+   "AKM",
+   "HK416",
+   "MK47",
+   "QBZ191",
+   "MK18",
+   "M4A1",
+   "AK12",
+   "M14EBR",
+   "M249"
+  ]
+ },
+ "Suppressor_Long": {
+  "src": "{WORK}/work/kit_split.blend",
+  "objects": [
+   "kit_muzzle_5"
+  ],
+  "kind": "muzzle",
+  "slot": "Muzzle",
+  "fwd": "+X",
+  "up": "+Z",
+  "scale": 0.088,
+  "mat": {
+   "Basic_mat": "Metal_Black",
+   "Sec_mat": "Metal_Dark",
+   "White_mat": "Metal_Worn",
+   "red_mat": "Polymer_Red",
+   "optic": "Glass_Lens",
+   "Pixelcom": "Metal_Dark",
+   "Pixelcom1": "Metal_Dark",
+   "Pixelcom2": "Metal_Dark",
+   "Pixelcom3": "Metal_Dark",
+   "Pixelcom4": "Metal_Dark"
+  },
+  "mat_default": "Metal_Black",
+  "compatible": [
+   "AKM",
+   "HK416",
+   "MK47",
+   "QBZ191",
+   "MK18",
+   "M4A1",
+   "AK12",
+   "M14EBR",
+   "M249",
+   "SVD"
+  ]
+ },
+ "Suppressor_Flow": {
+  "src": "{WORK}/work/kit_split.blend",
+  "objects": [
+   "kit_muzzle_6"
+  ],
+  "kind": "muzzle",
+  "slot": "Muzzle",
+  "fwd": "+X",
+  "up": "+Z",
+  "scale": 0.088,
+  "mat": {
+   "Basic_mat": "Metal_Black",
+   "Sec_mat": "Metal_Dark",
+   "White_mat": "Metal_Worn",
+   "red_mat": "Polymer_Red",
+   "optic": "Glass_Lens",
+   "Pixelcom": "Metal_Dark",
+   "Pixelcom1": "Metal_Dark",
+   "Pixelcom2": "Metal_Dark",
+   "Pixelcom3": "Metal_Dark",
+   "Pixelcom4": "Metal_Dark"
+  },
+  "mat_default": "Metal_Black",
+  "compatible": [
+   "AKM",
+   "HK416",
+   "MK47",
+   "QBZ191",
+   "MK18",
+   "M4A1",
+   "AK12",
+   "M14EBR",
+   "M249"
+  ]
+ },
+ "Grip_Angled_Ergo": {
+  "src": "{WORK}/work/kit_split.blend",
+  "objects": [
+   "kit_fgrip_2"
+  ],
+  "kind": "grip",
+  "slot": "Underbarrel",
+  "fwd": "+X",
+  "up": "+Z",
+  "scale": 0.1,
+  "mat": {
+   "Basic_mat": "Metal_Black",
+   "Sec_mat": "Metal_Dark",
+   "White_mat": "Metal_Worn",
+   "red_mat": "Polymer_Red",
+   "optic": "Glass_Lens",
+   "Pixelcom": "Metal_Dark",
+   "Pixelcom1": "Metal_Dark",
+   "Pixelcom2": "Metal_Dark",
+   "Pixelcom3": "Metal_Dark",
+   "Pixelcom4": "Metal_Dark"
+  },
+  "mat_default": "Metal_Black",
+  "rake": -20,
+  "grip_l": [
+   0.0,
+   -0.035
+  ],
+  "compatible": [
+   "HK416",
+   "MK18",
+   "QBZ191",
+   "MK47",
+   "AKM",
+   "HoneyBadger",
+   "Vector",
+   "MPX",
+   "Scorpion",
+   "SR2",
+   "M249",
+   "M4A1",
+   "AK12",
+   "M14EBR"
+  ]
+ },
+ "Grip_Angled_AFG": {
+  "src": "{WORK}/work/kit_split.blend",
+  "objects": [
+   "kit_fgrip_4"
+  ],
+  "kind": "grip",
+  "slot": "Underbarrel",
+  "fwd": "+X",
+  "up": "+Z",
+  "scale": 0.1,
+  "mat": {
+   "Basic_mat": "Metal_Black",
+   "Sec_mat": "Metal_Dark",
+   "White_mat": "Metal_Worn",
+   "red_mat": "Polymer_Red",
+   "optic": "Glass_Lens",
+   "Pixelcom": "Metal_Dark",
+   "Pixelcom1": "Metal_Dark",
+   "Pixelcom2": "Metal_Dark",
+   "Pixelcom3": "Metal_Dark",
+   "Pixelcom4": "Metal_Dark"
+  },
+  "mat_default": "Metal_Black",
+  "rake": -35,
+  "grip_l": [
+   0.0,
+   -0.02
+  ],
+  "compatible": [
+   "HK416",
+   "MK18",
+   "QBZ191",
+   "MK47",
+   "AKM",
+   "HoneyBadger",
+   "Vector",
+   "MPX",
+   "Scorpion",
+   "SR2",
+   "M249",
+   "M4A1",
+   "AK12",
+   "M14EBR"
+  ]
+ },
+ "Grip_Angled_Stop": {
+  "src": "{WORK}/work/kit_split.blend",
+  "objects": [
+   "kit_fgrip_5"
+  ],
+  "kind": "grip",
+  "slot": "Underbarrel",
+  "fwd": "+X",
+  "up": "+Z",
+  "scale": 0.1,
+  "mat": {
+   "Basic_mat": "Metal_Black",
+   "Sec_mat": "Metal_Dark",
+   "White_mat": "Metal_Worn",
+   "red_mat": "Polymer_Red",
+   "optic": "Glass_Lens",
+   "Pixelcom": "Metal_Dark",
+   "Pixelcom1": "Metal_Dark",
+   "Pixelcom2": "Metal_Dark",
+   "Pixelcom3": "Metal_Dark",
+   "Pixelcom4": "Metal_Dark"
+  },
+  "mat_default": "Metal_Black",
+  "rake": -35,
+  "grip_l": [
+   0.02,
+   -0.015
+  ],
+  "compatible": [
+   "HK416",
+   "MK18",
+   "QBZ191",
+   "MK47",
+   "AKM",
+   "HoneyBadger",
+   "Vector",
+   "MPX",
+   "Scorpion",
+   "SR2",
+   "M249",
+   "M4A1",
+   "AK12",
+   "M14EBR"
+  ]
+ },
+ "Grip_Vertical_Tactical": {
+  "src": "{WORK}/work/kit_split.blend",
+  "objects": [
+   "kit_fgrip_6"
+  ],
+  "kind": "grip",
+  "slot": "Underbarrel",
+  "fwd": "+X",
+  "up": "+Z",
+  "scale": 0.1,
+  "mat": {
+   "Basic_mat": "Metal_Black",
+   "Sec_mat": "Metal_Dark",
+   "White_mat": "Metal_Worn",
+   "red_mat": "Polymer_Red",
+   "optic": "Glass_Lens",
+   "Pixelcom": "Metal_Dark",
+   "Pixelcom1": "Metal_Dark",
+   "Pixelcom2": "Metal_Dark",
+   "Pixelcom3": "Metal_Dark",
+   "Pixelcom4": "Metal_Dark"
+  },
+  "mat_default": "Metal_Black",
+  "grip_l": [
+   0.0,
+   -0.04
+  ],
+  "compatible": [
+   "HK416",
+   "MK18",
+   "QBZ191",
+   "MK47",
+   "AKM",
+   "HoneyBadger",
+   "Vector",
+   "MPX",
+   "Scorpion",
+   "SR2",
+   "M249",
+   "M4A1",
+   "AK12",
+   "M14EBR"
+  ]
+ },
+ "Mag_AR_Drum": {
+  "src": "{WORK}/work/kit_split.blend",
+  "objects": [
+   "kit_mag_0"
+  ],
+  "kind": "mag",
+  "slot": "Magazine",
+  "fwd": "+X",
+  "up": "+Z",
+  "scale": 0.12,
+  "mat": {
+   "Basic_mat": "Metal_Black",
+   "Sec_mat": "Metal_Dark",
+   "White_mat": "Metal_Worn",
+   "red_mat": "Polymer_Red",
+   "optic": "Glass_Lens",
+   "Pixelcom": "Metal_Dark",
+   "Pixelcom1": "Metal_Dark",
+   "Pixelcom2": "Metal_Dark",
+   "Pixelcom3": "Metal_Dark",
+   "Pixelcom4": "Metal_Dark"
+  },
+  "mat_default": "Metal_Black",
+  "capacity": 60,
+  "compatible": [
+   "M4A1",
+   "HK416",
+   "MK18"
+  ]
+ },
+ "Mag_AR_Coupled": {
+  "src": "{WORK}/work/kit_split.blend",
+  "objects": [
+   "kit_mag_6"
+  ],
+  "kind": "mag",
+  "slot": "Magazine",
+  "fwd": "+X",
+  "up": "+Z",
+  "scale": 0.147,
+  "mat": {
+   "Basic_mat": "Metal_Black",
+   "Sec_mat": "Metal_Dark",
+   "White_mat": "Metal_Worn",
+   "red_mat": "Polymer_Red",
+   "optic": "Glass_Lens",
+   "Pixelcom": "Metal_Dark",
+   "Pixelcom1": "Metal_Dark",
+   "Pixelcom2": "Metal_Dark",
+   "Pixelcom3": "Metal_Dark",
+   "Pixelcom4": "Metal_Dark"
+  },
+  "mat_default": "Metal_Black",
+  "capacity": 60,
+  "compatible": [
+   "M4A1",
+   "HK416",
+   "MK18"
+  ]
+ },
+ "Mag_AK_Ext": {
+  "src": "{WORK}/work/kit_split.blend",
+  "objects": [
+   "kit_mag_5"
+  ],
+  "kind": "mag",
+  "slot": "Magazine",
+  "fwd": "+X",
+  "up": "+Z",
+  "scale": 0.147,
+  "mat": {
+   "Basic_mat": "Metal_Black",
+   "Sec_mat": "Metal_Dark",
+   "White_mat": "Metal_Worn",
+   "red_mat": "Polymer_Red",
+   "optic": "Glass_Lens",
+   "Pixelcom": "Metal_Dark",
+   "Pixelcom1": "Metal_Dark",
+   "Pixelcom2": "Metal_Dark",
+   "Pixelcom3": "Metal_Dark",
+   "Pixelcom4": "Metal_Dark"
+  },
+  "mat_default": "Metal_Black",
+  "capacity": 45,
+  "compatible": [
+   "AKM",
+   "MK47"
+  ]
+ },
+ "Optic_ACOG": {
+  "src": "{WORK}/weapons_src/low-poly-acog/low-poly-acog.blend",
+  "objects": [
+   "ACOG"
+  ],
+  "kind": "optic",
+  "slot": "Optic",
+  "fwd": "+Y",
+  "up": "+Z",
+  "scale": 1.0,
+  "lens_auto": {
+   "from_rear": 0.004,
+   "radius": 0.0115
+  },
+  "magnification": 4.0,
+  "mat": {
+   "Gray": "Metal_Black",
+   "Red": "Polymer_Red"
+  },
+  "compatible": [
+   "AKM",
+   "HK416",
+   "MK47",
+   "QBZ191",
+   "MK18",
+   "M4A1",
+   "AK12",
+   "M14EBR",
+   "M249",
+   "SVD",
+   "VSS",
+   "AWM",
+   "AXMC",
+   "HoneyBadger",
+   "MPX",
+   "Scorpion"
+  ]
+ },
+ "Optic_HoloEXPS": {
+  "src": "{WORK}/weapons_src/low-poly-holographic-sight/low-poly-holographic-sight.blend",
+  "objects": [
+   "Sight.001",
+   "Glass.001"
+  ],
+  "lens_objects": [
+   "Glass.001"
+  ],
+  "kind": "optic",
+  "slot": "Optic",
+  "fwd": "+Y",
+  "up": "+Z",
+  "scale": 1.0,
+  "compatible": [
+   "AKM",
+   "HK416",
+   "MK47",
+   "QBZ191",
+   "MK18",
+   "HoneyBadger",
+   "Vector",
+   "MPX",
+   "Scorpion",
+   "SR2",
+   "M249",
+   "M4A1",
+   "AK12",
+   "M14EBR",
+   "SVD",
+   "VSS"
+  ],
+  "mat_default": "Metal_Black"
+ },
+ "Optic_OKP7": {
+  "src": "{WORK}/weapons_src/low-poly-okp-7/low-poly-okp-7.blend",
+  "objects": [
+   "Optic",
+   "Lens"
+  ],
+  "lens_objects": [
+   "Lens"
+  ],
+  "kind": "optic",
+  "slot": "Optic",
+  "fwd": "+X",
+  "up": "+Z",
+  "scale": 0.3,
+  "compatible": [
+   "AKM",
+   "HK416",
+   "MK47",
+   "QBZ191",
+   "MK18",
+   "HoneyBadger",
+   "Vector",
+   "MPX",
+   "Scorpion",
+   "SR2",
+   "M249",
+   "M4A1",
+   "AK12",
+   "M14EBR",
+   "SVD",
+   "VSS"
+  ],
+  "mat": {
+   "Gray": "Metal_Black"
+  },
+  "mirror_lr": true
+ },
+ "Grip_Vertical_RK2": {
+  "src": "{WORK}/weapons_src/low-poly-ak-grips/low-poly-ak-grips.blend",
+  "objects": [
+   "RK-2"
+  ],
+  "kind": "grip",
+  "slot": "Underbarrel",
+  "fwd": "+Y",
+  "up": "+Z",
+  "scale": 1.0,
+  "grip_l": [
+   0.0,
+   -0.05
+  ],
+  "compatible": [
+   "HK416",
+   "MK18",
+   "QBZ191",
+   "MK47",
+   "AKM",
+   "HoneyBadger",
+   "Vector",
+   "MPX",
+   "Scorpion",
+   "SR2",
+   "M249",
+   "M4A1",
+   "AK12",
+   "M14EBR"
+  ],
+  "mat": {
+   "metal": "Polymer_Black",
+   "metal_rough": "Polymer_Black"
+  }
+ },
+ "Grip_Vertical_RK0": {
+  "src": "{WORK}/weapons_src/low-poly-ak-grips/low-poly-ak-grips.blend",
+  "objects": [
+   "RK-0"
+  ],
+  "kind": "grip",
+  "slot": "Underbarrel",
+  "fwd": "+Y",
+  "up": "+Z",
+  "scale": 1.0,
+  "grip_l": [
+   0.0,
+   -0.03
+  ],
+  "compatible": [
+   "HK416",
+   "MK18",
+   "QBZ191",
+   "MK47",
+   "AKM",
+   "HoneyBadger",
+   "Vector",
+   "MPX",
+   "Scorpion",
+   "SR2",
+   "M249",
+   "M4A1",
+   "AK12",
+   "M14EBR"
+  ],
+  "mat": {
+   "metal": "Polymer_Black",
+   "metal_rough": "Polymer_Black"
+  }
+ },
+ "Muzzle_Brake762": {
+  "src": "{WORK}/weapons_src/low-poly-muzzle-device-set/low-poly-muzzle-device-set.blend",
+  "objects": [
+   "mb 7.62mm"
+  ],
+  "kind": "muzzle",
+  "slot": "Muzzle",
+  "fwd": "+X",
+  "up": "+Z",
+  "scale": 0.08,
+  "compatible": [
+   "AKM",
+   "MK47",
+   "AK12",
+   "SVD",
+   "M14EBR",
+   "AWM",
+   "AXMC"
+  ]
+ },
+ "Suppressor_762": {
+  "src": "{WORK}/weapons_src/low-poly-muzzle-device-set/low-poly-muzzle-device-set.blend",
+  "objects": [
+   "sil 7.62mm"
+  ],
+  "kind": "muzzle",
+  "slot": "Muzzle",
+  "fwd": "+X",
+  "up": "+Z",
+  "scale": 0.11,
+  "compatible": [
+   "AKM",
+   "MK47",
+   "SVD",
+   "M14EBR",
+   "AK12"
+  ]
+ },
+ "Suppressor_9mm": {
+  "src": "{WORK}/weapons_src/low-poly-muzzle-device-set/low-poly-muzzle-device-set.blend",
+  "objects": [
+   "sil 9mm"
+  ],
+  "kind": "muzzle",
+  "slot": "Muzzle",
+  "fwd": "+X",
+  "up": "+Z",
+  "scale": 0.075,
+  "compatible": [
+   "MPX",
+   "Scorpion",
+   "Vector",
+   "SR2",
+   "Glock17"
+  ]
+ }
+}

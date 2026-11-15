@@ -20,7 +20,8 @@ namespace FPS
         public static GameMode mode = GameMode.Deathmatch;
     }
 
-    public enum GameMode { Deathmatch, Drones }
+    /// <summary>Appended values only (the mode travels as an int in the network settings).</summary>
+    public enum GameMode { Deathmatch, Drones, TeamDeathmatch, Domination, Bomb, Assault }
 
     public struct KillEvent
     {
@@ -99,7 +100,16 @@ namespace FPS
 
         void Start()
         {
+            // team game: the player (single player, or the host) is on the blue team; clients take theirs from the roster
+            if (PlayerHealth.Local && !Net.IsClient)
+                PlayerHealth.Local.GetComponent<Combatant>().team = Teams.IsTeamMode(MatchSettings.mode) ? 0 : -1;
             MatchHUD.Ensure();
+            // objective modes read the map (sides, points) before anybody spawns
+            if (ObjectiveMode.IsObjective(MatchSettings.mode))
+            {
+                var om = ObjectiveMode.Create(MatchSettings.mode);
+                if (om) om.Init();
+            }
             if (DroneMode.Active) DroneMode.Ensure();
             else AbilitySpawner.Ensure();
             if (PlayerHealth.Local) PlayerHealth.Local.Respawn();
@@ -118,9 +128,12 @@ namespace FPS
             go.name = "Bot_" + Names[i % Names.Length];
             var bot = go.GetComponent<CombatBot>();
             bot.difficulty = MatchSettings.difficulty;
-            // drone war: sidearms only, the drone is the main weapon
-            bot.weaponName = DroneMode.Active ? DroneMode.RandomPistol() : RandomBotWeapon();
             var c = go.GetComponent<Combatant>();
+            // every bot is a soldier of a class with one of its weapons; in a team game it joins the smaller team
+            c.playerClass = ClassDB.RandomForBot();
+            c.team = Teams.IsTeamMode(MatchSettings.mode) ? Teams.SmallerTeam(c) : -1;
+            // drone war: sidearms only, the drone is the main weapon
+            bot.weaponName = DroneMode.Active ? DroneMode.RandomPistol() : ClassDB.RandomPrimary(c.playerClass);
             c.displayName = Names[i % Names.Length];
             c.isPlayer = false;
             c.look = CharacterLook.Random(new System.Random(Random.Range(0, int.MaxValue)), c.displayName);
@@ -136,7 +149,9 @@ namespace FPS
         IEnumerator RespawnLater(CombatBot bot, float delay)
         {
             yield return new WaitForSeconds(delay);
-            if (!bot || Ended) yield break;
+            // (a medic may have brought it back meanwhile; one life per round: the mode brings everybody back itself)
+            if (!bot || Ended || !bot.IsDead) yield break;
+            if (ObjectiveMode.Current && !ObjectiveMode.Current.CanRespawn(bot.combatant)) yield break;
             GetSpawn(bot.combatant, out var p, out var r);
             bot.Spawn(p, r);
         }
@@ -159,6 +174,26 @@ namespace FPS
             return true;
         }
 
+        Vector3 baseA, baseB;
+        bool basesSet;
+
+        /// <summary>Team game: the two spawn points farthest apart are the teams' home sides.</summary>
+        void EnsureTeamBases()
+        {
+            if (basesSet || spawns.Count < 2) return;
+            basesSet = true;
+            float best = -1f;
+            for (int i = 0; i < spawns.Count; i++)
+                for (int j = i + 1; j < spawns.Count; j++)
+                {
+                    float d = (spawns[i].transform.position - spawns[j].transform.position).sqrMagnitude;
+                    if (d > best) { best = d; baseA = spawns[i].transform.position; baseB = spawns[j].transform.position; }
+                }
+        }
+
+        /// <summary>Team game: the winning team (-1 = draw or not a team game), set when the match ends.</summary>
+        public int WinnerTeam { get; private set; } = -1;
+
         /// <summary>Chooses a spawn far from living enemies and out of their sight.</summary>
         public bool GetSpawn(Combatant who, out Vector3 pos, out Quaternion rot)
         {
@@ -171,26 +206,47 @@ namespace FPS
                 return true;
             }
             if (spawns.Count == 0) return false;
+            // objective modes: the start of a round puts each team on its side
+            if (ObjectiveMode.Current && who && ObjectiveMode.Current.ForcedSpawn(who, out pos, out rot)) return true;
+            bool teams = Teams.Active && who && who.team >= 0;
+            if (teams) EnsureTeamBases();
             var scored = new List<(SpawnPoint sp, float score)>();
             foreach (var sp in spawns)
             {
-                float minD = 40f;
+                float minD = 40f, allyD = 999f;
                 bool seen = false;
                 Vector3 p = sp.transform.position + Vector3.up * 1.6f;
                 foreach (var c in Combatant.All)
                 {
                     if (!c || c == who || !c.alive) continue;
                     float d = Vector3.Distance(c.transform.position, sp.transform.position);
+                    // team game: only enemies count as danger; allies nearby are a plus
+                    if (teams && !who.IsEnemyOf(c)) { allyD = Mathf.Min(allyD, d); continue; }
                     minD = Mathf.Min(minD, d);
                     if (d < 45f && Sees(c, p)) seen = true;
                 }
                 float score = minD - (seen ? 25f : 0f) - (minD < 8f ? 100f : 0f) + Random.value * 5f;
+                if (teams && ObjectiveMode.Current)
+                {
+                    if (allyD < 30f) score += 8f;
+                    score += ObjectiveMode.Current.SpawnBias(who, sp.transform.position);
+                }
+                else if (teams)
+                {
+                    if (allyD < 30f) score += 8f;
+                    // the first minute each team starts on its own side of the map
+                    float side = Mathf.Clamp01(1f - (Time.timeSinceLevelLoad - 20f) / 60f);
+                    Vector3 home = who.team == 0 ? baseA : baseB, away = who.team == 0 ? baseB : baseA;
+                    float bias = Vector3.Distance(sp.transform.position, away) - Vector3.Distance(sp.transform.position, home);
+                    score += bias * 0.5f * side;
+                }
                 scored.Add((sp, score));
             }
             scored.Sort((a, b) => b.score.CompareTo(a.score));
             var pick = scored[Random.Range(0, Mathf.Min(3, scored.Count))].sp;
             pos = pick.transform.position;
-            if (NavMesh.SamplePosition(pos, out var nh, 3f, NavMesh.AllAreas)) pos = nh.position;
+            // snap onto the NavMesh only on the spawn's own level (a 3 m search could land on a roof edge or a floor below)
+            if (NavMesh.SamplePosition(pos, out var nh, 1.5f, NavMesh.AllAreas) && Mathf.Abs(nh.position.y - pos.y) < 0.8f) pos = nh.position;
             rot = pick.transform.rotation;
             return true;
         }
@@ -204,9 +260,15 @@ namespace FPS
             var e = new KillEvent { killer = killer, victim = victim, weapon = string.IsNullOrEmpty(weapon) ? "?" : weapon, headshot = headshot, time = Time.unscaledTime };
             Feed.Add(e);
             if (Feed.Count > 30) Feed.RemoveAt(0);
+            KillStreak.OnKill(killer, victim);
             Killed?.Invoke(e);
             NetGame.BroadcastKill(e);
-            if (killer && killer != victim && killer.kills >= MatchSettings.killLimit) EndMatch();
+            if (ObjectiveMode.Current) { } // the objectives end the match, not kills
+            else if (Teams.Active)
+            {
+                if (killer && killer != victim && killer.team >= 0 && Teams.Score(killer.team) >= Teams.KillLimit) EndMatch();
+            }
+            else if (killer && killer != victim && killer.kills >= MatchSettings.killLimit) EndMatch();
         }
 
         /// <summary>Client: a kill the host registered (counts are the host's authoritative values).</summary>
@@ -216,6 +278,7 @@ namespace FPS
             var e = new KillEvent { killer = killer, victim = victim, weapon = string.IsNullOrEmpty(weapon) ? "?" : weapon, headshot = headshot, time = Time.unscaledTime };
             Feed.Add(e);
             if (Feed.Count > 30) Feed.RemoveAt(0);
+            KillStreak.OnKill(killer, victim);
             Killed?.Invoke(e);
         }
 
@@ -246,6 +309,12 @@ namespace FPS
             Ended = true;
             SkyArena.Stop();
             Winner = Leader;
+            if (ObjectiveMode.Current) WinnerTeam = ObjectiveMode.Current.DecideWinner();
+            else if (Teams.Active)
+            {
+                int a = Teams.Score(0), b = Teams.Score(1);
+                WinnerTeam = a > b ? 0 : b > a ? 1 : -1;
+            }
             if (Net.IsHost) NetGame.BroadcastMatchEnd(Winner);
             EndTime = Time.unscaledTime;
             GameInput.Blocked = true;
@@ -270,9 +339,18 @@ namespace FPS
                 if (Time.unscaledTime - EndTime > 25f) Restart();
                 return;
             }
+            // rounds / points: the clock is the mode's timer, and only the mode ends the match
+            if (ObjectiveMode.Current && ObjectiveMode.Current.OwnsClock) { TimeLeft = ObjectiveMode.Current.Clock; return; }
             TimeLeft -= Time.deltaTime;
             if (Net.IsClient) { TimeLeft = Mathf.Max(0f, TimeLeft); return; }
             if (TimeLeft <= 0f) { TimeLeft = 0f; EndMatch(); }
+        }
+
+        /// <summary>An objective mode decided the match (score limit, last round, last half).</summary>
+        public void EndByMode()
+        {
+            if (Net.IsClient) return;
+            EndMatch();
         }
 
         public void Restart()

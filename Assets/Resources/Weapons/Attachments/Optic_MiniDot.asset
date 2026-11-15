@@ -1,0 +1,63 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 964a63dbb02ae074d85a453a22a283be, type: 3}
+  m_Name: Optic_MiniDot
+  m_EditorClassIdentifier: Assembly-CSharp::FPS.AttachmentData
+  id: Optic_MiniDot
+  displayName: "\u041C\u0438\u043D\u0438-\u043A\u043E\u043B\u043B\u0438\u043C\u0430\u0442\u043E\u0440"
+  description: "\u041A\u043E\u043C\u043F\u0430\u043A\u0442\u043D\u0430\u044F \u043A\u0440\u0430\u0441\u043D\u0430\u044F
+    \u0442\u043E\u0447\u043A\u0430 \u043D\u0430 \u0440\u0430\u0439\u0437\u0435\u0440\u0435:
+    \u043B\u0451\u0433\u043A\u0438\u0439, \u043F\u043E\u0447\u0442\u0438 \u043D\u0435
+    \u043C\u0435\u0448\u0430\u0435\u0442 \u043E\u0431\u0437\u043E\u0440\u0443."
+  slot: 0
+  prefab: {fileID: 919132149155446097, guid: aa8637c19acf5da4d855c9fae5a56053, type: 3}
+  compatible:
+  - AKM
+  - HK416
+  - MK47
+  - QBZ191
+  - MK18
+  - HoneyBadger
+  - Vector
+  - MPX
+  - Scorpion
+  - SR2
+  - M249
+  - M4A1
+  - AK12
+  - M14EBR
+  - SVD
+  - VSS
+  recoilMul: 1
+  hipSpreadMul: 1
+  adsSpreadMul: 0.9
+  adsTimeMul: 0.98
+  moveSpeedMul: 1
+  reloadTimeMul: 1
+  rangeMul: 1
+  damageMul: 1
+  magnification: 1
+  adsFov: 0
+  aimDistance: 0
+  scoped: 0
+  opaqueSightLine: 0
+  addReticle: 0
+  reticleMaterial: {fileID: 0}
+  suppressed: 0
+  flashMul: 1
+  volumeMul: 1
+  noiseMul: 1
+  muzzleLength: 0
+  magCapacity: 0
+  laser: 0
+  flashlight: 0
+  foregrip: 0
