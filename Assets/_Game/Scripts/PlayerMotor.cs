@@ -64,6 +64,32 @@ namespace FPS
         [Tooltip("The dash may turn the slide's direction this far toward the movement input (degrees)")]
         public float slideJumpSteer = 45f;
 
+        [Header("Wall run")]
+        [Tooltip("Horizontal speed needed to catch a wall (m/s)")]
+        public float wallRunMinSpeed = 4.2f;
+        [Tooltip("Speed along the wall (at least: a faster entry keeps its speed, up to the max)")]
+        public float wallRunSpeed = 8f;
+        public float wallRunMaxSpeed = 10.5f;
+        [Tooltip("Longest run on one wall (s)")]
+        public float wallRunMaxTime = 2.2f;
+        [Tooltip("Share of the run that keeps its height; after it the feet slowly slip down the wall")]
+        public float wallRunHold = 0.7f;
+        [Tooltip("How fast the feet slip down the wall at the very end of a run (m/s)")]
+        public float wallRunSink = 1.5f;
+        [Tooltip("Share of the vertical speed kept when the feet catch the wall: a jump onto it carries them up a little, a fall into it is stopped")]
+        public float wallRunCatch = 0.4f;
+        [Tooltip("How fast that caught vertical speed levels out (m/s²): after it the run is level")]
+        public float wallRunLevel = 5f;
+        [Tooltip("How far the view may turn from the run's direction (toward the wall or away from it) and keep running (degrees)")]
+        public float wallRunMaxLook = 90f;
+        [Tooltip("Jump off a wall: speed away from it and up (m/s)")]
+        public float wallJumpOut = 6f;
+        public float wallJumpUp = 6.2f;
+        [Tooltip("A jump this soon after coming off a wall still kicks off it (s)")]
+        public float wallJumpCoyote = 0.2f;
+        [Tooltip("Wall runs in a row before the feet touch the ground again")]
+        public int wallRunChain = 4;
+
         [Header("Vault / Mantle")]
         public float minVaultHeight = 0.35f;
         public float maxVaultHeight = 1.45f;
@@ -94,6 +120,13 @@ namespace FPS
         public float SpeedMultiplier { get; set; } = 1f;
         public bool BlockSprint { get; set; }
         public CharacterController Controller => cc;
+        /// <summary>Running along a wall (airborne, feet on it).</summary>
+        public bool IsWallRunning { get; private set; }
+        /// <summary>
+        /// Which side of the view the wall is on while running along it: +1 right, -1 left, in between as the view turns
+        /// toward or away from it (0: straight ahead or behind, or not on a wall).
+        /// </summary>
+        public float WallSide { get; private set; }
 
         /// <summary>When locked (e.g. during an execution) the motor ignores input and something else drives the transform.</summary>
         public bool Locked
@@ -104,7 +137,8 @@ namespace FPS
                 if (locked == value) return;
                 locked = value;
                 velocity = Vector3.zero;
-                IsSliding = false;
+                IsSliding = false; slideQueued = false;
+                IsWallRunning = false; WallSide = 0f;
                 pulling = false;
                 cc.enabled = !value && !noclip;
                 if (!value) ApplyHeight();
@@ -125,7 +159,8 @@ namespace FPS
                 if (noclip == value) return;
                 noclip = value;
                 velocity = Vector3.zero;
-                IsSliding = false;
+                IsSliding = false; slideQueued = false;
+                IsWallRunning = false; WallSide = 0f;
                 if (value) { pulling = false; proneToggled = crouchToggled = false; }
                 cc.enabled = !value && !locked;
                 if (!value) ApplyHeight();
@@ -142,8 +177,9 @@ namespace FPS
             pullTime = maxTime;
             pullStuck = 0f;
             pullDone = done;
-            IsSliding = false;
+            IsSliding = false; slideQueued = false;
             IsVaulting = false;
+            IsWallRunning = false; WallSide = 0f;
             proneToggled = crouchToggled = false;
             if (!cc.enabled) cc.enabled = true;
         }
@@ -158,6 +194,8 @@ namespace FPS
 
         public void AddImpulse(Vector3 v)
         {
+            // a blast or a shove knocks the player off a wall (the run would overwrite the push)
+            if (IsWallRunning && v.sqrMagnitude > 4f) EndWallRun(true, 0f);
             velocity += v;
             if (v.y > 0.5f) { lastGroundedTime = -10f; IsGrounded = false; }
         }
@@ -170,8 +208,19 @@ namespace FPS
         /// <summary>A jump out of a slide launched a dash (raised in the same frame, just before Jumped).</summary>
         public event Action Dashed;
         public event Action ProneStarted;
+        /// <summary>The feet caught a wall (the run starts).</summary>
+        public event Action WallRunStarted;
+        /// <summary>A jump off a wall (raised just before Jumped).</summary>
+        public event Action WallJumped;
 
         enum Stance { Stand, Crouch, Prone }
+
+        // ---- wall run state
+        Vector3 wallNormal, wallAlong, lastWallNormal, lastWallPoint, wallPoint;
+        bool lastWallValid, wallCoyote;
+        float wallTime, wallSpeed, wallVy, wallLeftTime = -10f;
+        int wallRuns;
+        readonly System.Collections.Generic.Dictionary<Collider, bool> wallOk = new System.Collections.Generic.Dictionary<Collider, bool>();
 
         CharacterController cc;
         Vector3 velocity;
@@ -179,6 +228,9 @@ namespace FPS
         bool crouchToggled, proneToggled, locked;
         float lastGroundedTime = -10f, lastJumpPressTime = -10f;
         float slideTimer, slideEndTime = -10f;
+        // crouch pressed in the air: a slide as the feet touch down (see Update)
+        bool slideQueued;
+        float groundedFor, lastAirTime;
         // airborne after a slide jump: the dash keeps its speed above the run cap until it lands
         bool dashAir;
         float stepAccum; int lastStepIndex;
@@ -202,8 +254,9 @@ namespace FPS
             cc.enabled = false;
             transform.position = pos;
             velocity = Vector3.zero;
-            IsSliding = false;
+            IsSliding = false; slideQueued = false;
             IsVaulting = false;
+            IsWallRunning = false; WallSide = 0f; wallRuns = 0; lastWallValid = false; wallCoyote = false;
             proneToggled = crouchToggled = false;
             cc.enabled = was && !locked;
         }
@@ -243,19 +296,21 @@ namespace FPS
             MoveInput = input;
             IsGrounded = cc.isGrounded;
             if (IsGrounded) lastGroundedTime = Time.time;
+            groundedFor = IsGrounded ? groundedFor + dt : 0f;
             if (GameInput.JumpPressed && !InputBlocked) lastJumpPressTime = Time.time;
 
             Vector3 hv = new Vector3(velocity.x, 0f, velocity.z);
             float hSpeed = hv.magnitude;
 
-            // ---- stance input
-            bool crouchPressed = GameInput.CrouchTogglePressed || GameInput.CrouchHoldPressed;
+            // ---- stance input (each crouch key read once a frame)
+            bool togglePressed = GameInput.CrouchTogglePressed;
+            bool crouchPressed = togglePressed || GameInput.CrouchHoldPressed;
             if (GameInput.PronePressed)
             {
                 if (proneToggled) proneToggled = false;
                 else if (IsGrounded && !IsSliding) { proneToggled = true; crouchToggled = false; ProneStarted?.Invoke(); }
             }
-            if (GameInput.CrouchTogglePressed)
+            if (togglePressed)
             {
                 if (proneToggled) { proneToggled = false; crouchToggled = true; }
                 else crouchToggled = !crouchToggled;
@@ -272,22 +327,35 @@ namespace FPS
                 slideCancelled = true;
             }
 
-            // ---- slide start (crouch while sprinting); the speed of a landing dash does not stack into the next slide
-            if (!IsSliding && !slideCancelled && crouchPressed && IsGrounded && IsSprinting && hSpeed > walkSpeed + 0.5f && Time.time - slideEndTime >= slideCooldown)
+            // ---- slide on landing: crouch pressed in the air (a jump, a fall, dropping off a wall) arms a slide for the moment
+            // the feet touch down. Meanwhile the body crouches in the air and the sprint key does not stand it up (it did:
+            // with crouch on a toggle and sprint held, the press in the air was undone the same frame). Letting go of a
+            // hold key keeps it armed; switching a toggled crouch off again disarms it. A press just after touching down
+            // counts too, and an armed slide waits a few frames after it (the slide cooldown may end just then)
+            if (crouchPressed && !IsGrounded) slideQueued = !(togglePressed && !crouchToggled);
+            bool lateLand = crouchPressed && IsGrounded && groundedFor <= 0.15f && lastAirTime >= 0.25f;
+
+            // ---- slide start: crouch while sprinting, or a landing slide with some speed forward (a fall bleeds the run
+            // toward walking speed, so less is asked of it); the speed of a landing dash does not stack into the next slide
+            bool sprintSlide = crouchPressed && IsSprinting && hSpeed > walkSpeed + 0.5f;
+            bool landSlide = (slideQueued || lateLand) && hSpeed > walkSpeed * 0.85f && Vector3.Dot(hv, transform.forward) > -0.2f * hSpeed;
+            if (!IsSliding && !slideCancelled && (sprintSlide || landSlide) && IsGrounded && Time.time - slideEndTime >= slideCooldown)
             {
                 IsSliding = true;
+                slideQueued = false;
                 slideTimer = 0f;
                 crouchToggled = false;
                 Vector3 dir = hSpeed > 0.1f ? hv / hSpeed : transform.forward;
                 hv = dir * Mathf.Max(Mathf.Min(hSpeed, sprintSpeed) + 2.5f, slideStartSpeed);
                 SlideStarted?.Invoke();
             }
+            if (IsGrounded && groundedFor > 0.15f) slideQueued = false;
 
             bool sprintInput = GameInput.SprintHeld && input.y > 0.3f && !BlockSprint && !InputBlocked;
-            if (sprintInput && !IsSliding) { crouchToggled = false; proneToggled = false; }
+            if (sprintInput && !IsSliding && !slideQueued) { crouchToggled = false; proneToggled = false; }
 
             Stance want = proneToggled ? Stance.Prone
-                        : (crouchToggled || GameInput.CrouchHeld || IsSliding) ? Stance.Crouch : Stance.Stand;
+                        : (crouchToggled || GameInput.CrouchHeld || IsSliding || slideQueued) ? Stance.Crouch : Stance.Stand;
             Stance stance = want;
             if (stance == Stance.Stand && !CanFit(standHeight)) stance = Stance.Crouch;
             if (stance == Stance.Crouch && !CanFit(crouchHeight)) stance = Stance.Prone;
@@ -300,6 +368,29 @@ namespace FPS
             bool hasInput = wish.sqrMagnitude > 0.01f;
             float target = IsProne ? proneSpeed : IsCrouching ? crouchSpeed : (IsSprinting ? sprintSpeed : walkSpeed);
             target *= SpeedMultiplier * SkyArena.SpeedScale; // sky arena: everybody runs twice as fast
+
+            // ---- wall run: its own movement while on a wall (like the vault); a landing ends the chain
+            if (IsGrounded) { wallRuns = 0; lastWallValid = false; wallCoyote = false; }
+            if (IsWallRunning)
+            {
+                if (UpdateWallRun(dt, input, wish, hasInput, crouchPressed)) { UpdateHeight(dt, Stance.Stand); return; }
+                hv = new Vector3(velocity.x, 0f, velocity.z); // came off the wall: fly on with the wall's speed
+                hSpeed = hv.magnitude;
+            }
+            else if (TryStartWallRun(input, hv, hSpeed, stance))
+            {
+                if (UpdateWallRun(dt, input, wish, hasInput, false)) { UpdateHeight(dt, Stance.Stand); return; }
+                hv = new Vector3(velocity.x, 0f, velocity.z);
+                hSpeed = hv.magnitude;
+            }
+            // a jump just after coming off a wall still kicks off it
+            if (wallCoyote && !IsGrounded && Time.time - wallLeftTime <= wallJumpCoyote && Time.time - lastJumpPressTime <= jumpBuffer)
+            {
+                WallJump();
+                MoveFree(dt);
+                UpdateHeight(dt, stance);
+                return;
+            }
 
             // ---- jump / vault decisions
             bool jumpPressedBuffered = Time.time - lastJumpPressTime <= jumpBuffer;
@@ -332,10 +423,12 @@ namespace FPS
             }
             else if (hasInput)
             {
-                // limited air steering: turning toward the input never adds speed above the run speed
+                // limited air steering: turning toward the input never adds speed above the run speed. Crouched for a
+                // slide on landing it keeps the speed it has (the crouch speed would brake the slide away)
                 float before = hv.magnitude;
-                hv = Vector3.MoveTowards(hv, wish * target, airControl * dt);
-                float cap = Mathf.Max(before, target);
+                float airTarget = slideQueued ? Mathf.Max(target, before) : target;
+                hv = Vector3.MoveTowards(hv, wish * airTarget, airControl * dt);
+                float cap = Mathf.Max(before, airTarget);
                 if (hv.magnitude > cap) hv = hv.normalized * cap;
             }
             // a landed dash is over: back under the run cap
@@ -364,6 +457,7 @@ namespace FPS
                 if (IsSliding) slideEndTime = Time.time;
                 crouchToggled = false;
                 IsSliding = false;
+                slideQueued = false;
                 velocity.y = Mathf.Sqrt(2f * jumpHeight * -gravity);
                 lastGroundedTime = -10f;
                 lastJumpPressTime = -10f;
@@ -381,6 +475,7 @@ namespace FPS
 
             bool groundedNow = cc.isGrounded;
             if (groundedNow && !wasGrounded && airTime > 0.08f) Landed?.Invoke(-lastVy);
+            if (groundedNow && !wasGrounded) lastAirTime = airTime;
             airTime = groundedNow ? 0f : airTime + dt;
             wasGrounded = groundedNow;
 
@@ -405,6 +500,218 @@ namespace FPS
             Speed01 = Mathf.Clamp01(sp / sprintSpeed);
 
             UpdateHeight(dt, stance);
+        }
+
+        // ------------------------------------------------------------------ wall run
+
+        /// <summary>
+        /// A wall the feet can run on: hit from the body's middle in <paramref name="dir"/> within the capsule radius +
+        /// <paramref name="reach"/>; vertical; a static, visible surface (not a person, a loose prop or the map's invisible
+        /// edge); wide (it goes on 0.45 m to both sides along it) and tall (it is there at head and knee height too).
+        /// </summary>
+        bool ProbeWall(Vector3 dir, float reach, out RaycastHit hit)
+        {
+            Vector3 c = transform.position + Vector3.up * (cc.height * 0.5f);
+            if (!Physics.Raycast(c, dir, out hit, cc.radius + reach, Physics.DefaultRaycastLayers, QTI)) return false;
+            if (Mathf.Abs(hit.normal.y) > 0.3f || !WallSurface(hit.collider)) return false;
+            Vector3 n = new Vector3(hit.normal.x, 0f, hit.normal.z).normalized;
+            Vector3 along = Vector3.Cross(Vector3.up, n);
+            float d = hit.distance + 0.3f;
+            return SameWall(c + along * 0.45f, n, d) && SameWall(c - along * 0.45f, n, d)
+                && SameWall(c + Vector3.up * (cc.height * 0.38f), n, d) && SameWall(c - Vector3.up * (cc.height * 0.25f), n, d);
+        }
+
+        bool SameWall(Vector3 from, Vector3 n, float dist)
+        {
+            if (!Physics.Raycast(from, -n, out var h, dist, Physics.DefaultRaycastLayers, QTI)) return false;
+            Vector3 hn = new Vector3(h.normal.x, 0f, h.normal.z);
+            return Mathf.Abs(h.normal.y) < 0.35f && Vector3.Dot(hn.normalized, n) > 0.85f && WallSurface(h.collider);
+        }
+
+        /// <summary>Static and visible (cached per collider): not a character, not a dynamic body, not an invisible blocker.</summary>
+        bool WallSurface(Collider c)
+        {
+            if (!c) return false;
+            var rb = c.attachedRigidbody;
+            if (rb && !rb.isKinematic) return false;
+            if (wallOk.TryGetValue(c, out bool ok)) return ok;
+            ok = !c.GetComponentInParent<Combatant>() && !c.GetComponent<Hitbox>()
+                 && (c.GetComponent<Renderer>() || c.GetComponentInParent<Renderer>());
+            if (wallOk.Count > 512) wallOk.Clear();
+            wallOk[c] = ok;
+            return ok;
+        }
+
+        bool TryStartWallRun(Vector2 input, Vector3 hv, float hSpeed, Stance stance)
+        {
+            if (IsGrounded || airTime < 0.06f || stance != Stance.Stand || IsSliding || InputBlocked) return false;
+            if (input.y < 0.35f || hSpeed < wallRunMinSpeed * SkyArena.SpeedScale || velocity.y < -12f) return false;
+            if (wallRuns >= wallRunChain || Time.time - wallLeftTime < 0.2f) return false;
+            // the ground right under the feet: a hop beside a wall, not a wall run
+            if (Physics.Raycast(transform.position + Vector3.up * 0.1f, Vector3.down, 0.4f, Physics.DefaultRaycastLayers, QTI)) return false;
+
+            // beside the flight path and diagonally ahead of it (a wall reached at an angle), wherever the view points
+            Vector3 mv = hv / hSpeed, side = Vector3.Cross(Vector3.up, mv), fwd = transform.forward;
+            bool found = false;
+            RaycastHit best = default;
+            for (int i = 0; i < 4; i++)
+            {
+                Vector3 dir = i == 0 ? side : i == 1 ? -side : i == 2 ? (side + mv).normalized : (mv - side).normalized;
+                if (!ProbeWall(dir, 0.4f, out var h)) continue;
+                if (!found || h.distance < best.distance) { best = h; found = true; }
+            }
+            if (!found) return false;
+
+            Vector3 n = new Vector3(best.normal.x, 0f, best.normal.z).normalized;
+            Vector3 along = Vector3.Cross(Vector3.up, n);
+            if (Vector3.Dot(along, hv) < 0f) along = -along;
+            // moving along the wall (head-on into it is a stop or a vault, not a run), the view a little inside the turn
+            // the run allows (UpdateWallRun)
+            if (Vector3.Dot(hv, along) < wallRunMinSpeed * 0.55f || Vector3.Dot(fwd, along) < MaxLookCos + 0.15f) return false;
+            // the same wall again before landing: no climbing one wall by kicking off and catching it again
+            if (lastWallValid && Vector3.Dot(n, lastWallNormal) > 0.9f && Mathf.Abs(Vector3.Dot(best.point - lastWallPoint, n)) < 0.6f) return false;
+
+            IsWallRunning = true;
+            IsSliding = false;
+            slideQueued = false;
+            dashAir = false;
+            wallNormal = n;
+            wallAlong = along;
+            wallPoint = best.point;
+            WallSide = Mathf.Clamp(Vector3.Dot(-n, transform.right), -1f, 1f);
+            wallTime = 0f;
+            wallCoyote = false;
+            wallSpeed = Mathf.Min(Mathf.Max(Vector3.Dot(hv, along), wallRunSpeed * SkyArena.SpeedScale), wallRunMaxSpeed * SkyArena.SpeedScale);
+            // the vertical speed is caught: a share of a jump's rise carries the feet a little up the wall (less on each
+            // wall in a row), a fall into it is stopped; either levels out within a fraction of a second (UpdateWallRun)
+            float riseCap = 2f * Mathf.Max(0.4f, 1f - 0.2f * wallRuns);
+            wallVy = Mathf.Clamp(velocity.y * wallRunCatch, -1f, riseCap);
+            wallRuns++;
+            WallRunStarted?.Invoke();
+            return true;
+        }
+
+        /// <summary>One frame on the wall. False when the run ended this frame (the normal movement goes on).</summary>
+        bool UpdateWallRun(float dt, Vector2 input, Vector3 wish, bool hasInput, bool crouchPressed)
+        {
+            wallTime += dt;
+            // jump: kick off the wall
+            if (Time.time - lastJumpPressTime <= jumpBuffer)
+            {
+                WallJump();
+                MoveFree(dt);
+                return true;
+            }
+            // the view may turn up to wallRunMaxLook from the run's direction — toward the wall or away from it, aiming across
+            // the room — and the run goes on along the wall: forward input (the move key, or input pointing along the run)
+            // keeps it. Turned further round, the move keys let go, a strafe away from the wall, crouch (a slide on landing,
+            // see Update) or prone: off the wall
+            bool onward = input.y > 0.2f || (hasInput && Vector3.Dot(wish, wallAlong) > 0.3f);
+            bool away = Vector3.Dot(transform.right * input.x, wallNormal) > 0.5f;
+            bool turned = Vector3.Dot(transform.forward, wallAlong) < MaxLookCos - 0.02f;
+            if (!onward || away || turned || crouchPressed || GameInput.PronePressed || wallTime > wallRunMaxTime)
+            {
+                EndWallRun(false, away ? 1.6f : 0.8f);
+                return false;
+            }
+            // keep to the wall: follow it as it curves gently; it ended (an outer corner, a doorway): fly on
+            if (!ProbeWall(-wallNormal, 0.55f, out var hit)) { EndWallRun(false, 0.5f); return false; }
+            Vector3 n = new Vector3(hit.normal.x, 0f, hit.normal.z).normalized;
+            if (Vector3.Dot(n, wallNormal) < 0.7f) { EndWallRun(false, 0.5f); return false; }
+            wallNormal = n;
+            wallPoint = hit.point;
+            Vector3 along = Vector3.Cross(Vector3.up, n);
+            if (Vector3.Dot(along, wallAlong) < 0f) along = -along;
+            wallAlong = along;
+            // the side of the view the wall is on (the camera and the body lean off it) follows the turning view
+            WallSide = Mathf.Clamp(Vector3.Dot(-wallNormal, transform.right), -1f, 1f);
+
+            // along: a slow loss. Height: level — what the jump onto the wall carried up or down settles within a fraction
+            // of a second, at a steady rate — and only toward the end do the feet slip down, a little faster each moment
+            wallSpeed = Mathf.Max(wallRunMinSpeed * SkyArena.SpeedScale, wallSpeed - 0.8f * dt);
+            float slip = Mathf.InverseLerp(wallRunMaxTime * wallRunHold, wallRunMaxTime, wallTime);
+            wallVy = Mathf.MoveTowards(wallVy, -wallRunSink * slip, wallRunLevel * dt);
+            // the capsule stays just off the wall (pressed onto it each frame it rattled along it)
+            float gap = hit.distance - (cc.radius + 0.04f);
+            Vector3 stick = -wallNormal * Mathf.Clamp(gap * 12f, -2.5f, 2.5f);
+            velocity = wallAlong * wallSpeed + stick + Vector3.up * wallVy;
+
+            CollisionFlags flags = cc.Move(velocity * dt);
+            if ((flags & CollisionFlags.Above) != 0 && wallVy > 0f) wallVy = 0f;
+            airTime += dt;
+            wasGrounded = false;
+            lastVy = wallVy;
+            IsSprinting = false; // the gun is up on a wall: shoot while running
+
+            // feet on the floor: the run is over (the normal movement lands next frame); blocked ahead (an inner corner,
+            // a crate against the wall): it stops
+            // (this frame has moved already: handled)
+            if (cc.isGrounded) { EndWallRun(false, 0f); return true; }
+            if (wallTime > 0.12f && Vector3.Dot(cc.velocity, wallAlong) < wallSpeed * 0.4f) { EndWallRun(false, 0.6f); return true; }
+
+            // steps along the wall: head bob, footsteps, body animation
+            float sp = wallSpeed;
+            stepAccum += sp * dt / 3.6f;
+            StepPhase = stepAccum;
+            int idx = Mathf.FloorToInt(stepAccum * 2f);
+            if (idx != lastStepIndex) { lastStepIndex = idx; Footstep?.Invoke(); }
+            Speed01 = Mathf.Clamp01(sp / sprintSpeed);
+            return true;
+        }
+
+        /// <summary>cos of the largest turn of the view from the run's direction that keeps a wall run going.</summary>
+        float MaxLookCos => Mathf.Cos(Mathf.Clamp(wallRunMaxLook, 10f, 170f) * Mathf.Deg2Rad);
+
+        /// <summary>
+        /// Off the wall with a jump: away from it and up, keeping most of the run's speed along it; looking away from the
+        /// wall turns the jump toward the look (up to 60°: looking straight off the wall, the kick goes straight off it),
+        /// so the next wall or a ledge can be aimed at.
+        /// </summary>
+        void WallJump()
+        {
+            Vector3 look = cameraRoot ? cameraRoot.forward : transform.forward;
+            look.y = 0f;
+            look = look.sqrMagnitude > 0.001f ? look.normalized : transform.forward;
+            Vector3 h = wallAlong * wallSpeed * 0.9f + wallNormal * wallJumpOut * SkyArena.SpeedScale;
+            if (Vector3.Dot(look, wallNormal) > 0.05f) h = Vector3.RotateTowards(h, look * h.magnitude, 60f * Mathf.Deg2Rad, 0f);
+            float cap = Mathf.Max(wallSpeed, wallRunSpeed * SkyArena.SpeedScale) + 2f;
+            if (h.magnitude > cap) h = h.normalized * cap;
+            float up = wallJumpUp * Mathf.Max(0.6f, 1f - 0.1f * Mathf.Max(0, wallRuns - 1));
+            EndWallRun(true, 0f);
+            velocity = new Vector3(h.x, up, h.z);
+            dashAir = true; // the kick keeps its speed above the run cap until it lands
+            crouchToggled = false; // (a jump just after crouching off the wall) up again, like any jump
+            slideQueued = false;
+            lastJumpPressTime = -10f;
+            lastGroundedTime = -10f;
+            WallJumped?.Invoke();
+            Jumped?.Invoke();
+        }
+
+        void EndWallRun(bool jumped, float push)
+        {
+            if (!IsWallRunning) { wallCoyote = false; return; }
+            IsWallRunning = false;
+            WallSide = 0f;
+            lastWallNormal = wallNormal;
+            lastWallPoint = wallPoint;
+            lastWallValid = true;
+            wallLeftTime = Time.time;
+            wallCoyote = !jumped;
+            // flying on: the run's speed along the wall, its vertical speed, a little away from it
+            if (!jumped) velocity = wallAlong * wallSpeed + Vector3.up * wallVy + wallNormal * push;
+            if (!jumped) dashAir = true;
+        }
+
+        /// <summary>One airborne frame with the current velocity (after a wall jump).</summary>
+        void MoveFree(float dt)
+        {
+            velocity.y += gravity * dt;
+            CollisionFlags flags = cc.Move(velocity * dt);
+            if ((flags & CollisionFlags.Above) != 0 && velocity.y > 0f) velocity.y = 0f;
+            airTime += dt;
+            wasGrounded = cc.isGrounded;
+            lastVy = velocity.y;
         }
 
         // ------------------------------------------------------------------ ability movement modes
@@ -591,6 +898,7 @@ namespace FPS
         void StartVault(Vector3 start, Vector3 end, float topY, Vector3 into, bool over, float height, float hSpeed)
         {
             IsSliding = false;
+            slideQueued = false;
             IsVaulting = true;
             VaultIsMantle = !over;
             VaultT = 0f;

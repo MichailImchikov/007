@@ -182,6 +182,7 @@ namespace FPS
             {
                 anim.localVelocity = s.vel;
                 anim.grounded = s.Has(CharState.Grounded);
+                anim.wallRun = s.Has(CharState.WallRight) ? 1f : s.Has(CharState.WallLeft) ? -1f : 0f;
                 anim.crouch = s.crouch; anim.prone = s.prone; anim.lean = s.lean;
                 anim.aimPitch = s.pitch; anim.aim = s.aim;
                 anim.holdingWeapon = s.Has(CharState.Holding) && s.weapon != 255;

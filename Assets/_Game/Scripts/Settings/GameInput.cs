@@ -197,12 +197,32 @@ namespace FPS
         }
 
         public static bool ReloadPressed => Enabled && (P(BindAction.Reload) || (G != null && G.buttonWest.wasPressedThisFrame));
-        public static bool JumpPressed => Enabled && (P(BindAction.Jump) || (G != null && G.buttonSouth.wasPressedThisFrame));
-        public static bool JumpHeld => Enabled && (H(BindAction.Jump) || (G != null && G.buttonSouth.isPressed));
+        public static bool JumpPressed => ForceJump || (Enabled && (P(BindAction.Jump) || (G != null && G.buttonSouth.wasPressedThisFrame)));
+        public static bool JumpHeld => ForceJump || (Enabled && (H(BindAction.Jump) || (G != null && G.buttonSouth.isPressed)));
+        /// <summary>Tests: the jump key is pressed while this is set (set it for one frame for a single press).</summary>
+        public static bool ForceJump;
         public static bool CrouchHeld => ForceCrouch || (Enabled && !GameSettings.CrouchHoldIsToggle && H(BindAction.CrouchHold));
-        public static bool CrouchHoldPressed => Enabled && !GameSettings.CrouchHoldIsToggle && P(BindAction.CrouchHold);
-        public static bool CrouchTogglePressed => Enabled && (P(BindAction.CrouchToggle) || (GameSettings.CrouchHoldIsToggle && P(BindAction.CrouchHold))
-                                                              || (G != null && G.buttonEast.wasPressedThisFrame));
+        public static bool CrouchHoldPressed
+        {
+            get
+            {
+                if (ForceCrouchPress) { ForceCrouchPress = false; return true; }
+                return Enabled && !GameSettings.CrouchHoldIsToggle && P(BindAction.CrouchHold);
+            }
+        }
+        /// <summary>Tests: one press of the crouch hold key (consumed when read; hold it with ForceCrouch).</summary>
+        public static bool ForceCrouchPress;
+        public static bool CrouchTogglePressed
+        {
+            get
+            {
+                if (ForceCrouchToggle) { ForceCrouchToggle = false; return true; }
+                return Enabled && (P(BindAction.CrouchToggle) || (GameSettings.CrouchHoldIsToggle && P(BindAction.CrouchHold))
+                                   || (G != null && G.buttonEast.wasPressedThisFrame));
+            }
+        }
+        /// <summary>Tests: one press of the crouch toggle (consumed when read; PlayerMotor reads it once a frame).</summary>
+        public static bool ForceCrouchToggle;
         public static bool FireModePressed => Enabled && (P(BindAction.FireMode) || (G != null && G.dpad.up.wasPressedThisFrame));
         public static bool LeanLeftHeld => Enabled && (H(BindAction.LeanLeft) || (G != null && G.dpad.left.isPressed));
         public static bool LeanRightHeld => Enabled && (H(BindAction.LeanRight) || (G != null && G.dpad.right.isPressed));

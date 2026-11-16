@@ -38,6 +38,7 @@ namespace FPS
         public float vault = -1f;          // 0..1 vault / mantle progress, <0 none
         public bool mantle;                // the vault is a climb onto a ledge
         public float verticalSpeed;        // m/s, + = up (jump / fall)
+        public float wallRun;              // running along a wall: +1 wall on the right, -1 on the left (between: the view turned), 0 none
 
         [Header("Ability poses")]
         public float bentOver;             // 0..1 bent over, butt to the enemy (rocket)
@@ -51,6 +52,8 @@ namespace FPS
         readonly Spring3 flinch = new Spring3(180f, 12f);
         Vector3 hipsRest;
         Ragdoll ragdoll;
+        float wallTilt;
+        bool wallTilted, ownerChecked, firstPersonOwner;
 
         /// <summary>The last hit (world direction, time, flinch strength): the death ragdoll takes its push.</summary>
         public Vector3 LastHitDir { get; private set; }
@@ -346,6 +349,24 @@ namespace FPS
                 float hide = Mathf.Max(knife >= 0f ? 1f : 0f, throwT >= 0f ? 1f : 0f, executeAttack >= 0f ? 1f : 0f);
                 rig.weaponSocket.localRotation = E(pitch * 0.4f - 85f * prone + 50f * hide, 30f * hide, 0f);
             }
+            WallTilt(dt);
+        }
+
+        /// <summary>
+        /// Running along a wall (seen from outside): the whole body leans off the wall with its feet on it — the rig's
+        /// root rolls about the feet and shifts toward the wall, the skinned model under it follows. The local player's
+        /// own first-person body stays upright (the camera rolls instead).
+        /// </summary>
+        void WallTilt(float dt)
+        {
+            if (!ownerChecked) { ownerChecked = true; firstPersonOwner = GetComponentInParent<PlayerHealth>(); }
+            wallTilt = Anim.Damp(wallTilt, firstPersonOwner || dead > 0.001f ? 0f : Mathf.Clamp(wallRun, -1f, 1f), 10f, dt);
+            bool tilt = Mathf.Abs(wallTilt) > 0.002f;
+            if (!tilt && !wallTilted) return;
+            wallTilted = tilt;
+            var body = rig.transform;
+            body.localRotation = tilt ? Quaternion.Euler(0f, 0f, wallTilt * 24f) : Quaternion.identity;
+            body.localPosition = tilt ? new Vector3(wallTilt * 0.3f, 0f, 0f) : Vector3.zero;
         }
     }
 }

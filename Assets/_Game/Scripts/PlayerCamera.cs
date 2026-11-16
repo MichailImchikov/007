@@ -84,6 +84,8 @@ namespace FPS
                 motor.SlideStarted += OnSlide;
                 motor.Dashed += OnDash;
                 motor.ProneStarted += OnProne;
+                motor.WallRunStarted += OnWallRun;
+                motor.WallJumped += OnWallJump;
             }
         }
 
@@ -97,6 +99,8 @@ namespace FPS
             motor.SlideStarted -= OnSlide;
             motor.Dashed -= OnDash;
             motor.ProneStarted -= OnProne;
+            motor.WallRunStarted -= OnWallRun;
+            motor.WallJumped -= OnWallJump;
         }
 
         /// <summary>One shot's recoil (degrees): the aim climbs by it over a few frames (recoilSnappiness).</summary>
@@ -172,6 +176,21 @@ namespace FPS
             ProcAudio.Play(Sfx.Prone, 0.6f, 0.06f);
         }
 
+        /// <summary>The feet caught a wall: a scuff and a small rush (the tilt itself is the roll, see Update).</summary>
+        void OnWallRun()
+        {
+            fovKick += 3f;
+            punchRot.Kick(new Vector3(8f, 0f, motor.WallSide * 10f));
+            ProcAudio.Play(Sfx.Vault, 0.45f, 0.1f);
+        }
+
+        /// <summary>A kick off a wall (the jump's own punch comes from Jumped).</summary>
+        void OnWallJump()
+        {
+            fovKick += 4f;
+            ProcAudio.Play(Sfx.Slide, 0.35f, 0.12f);
+        }
+
         void OnFootstep()
         {
             float v = motor.IsProne ? 0.1f : motor.IsCrouching ? 0.12f : (motor.IsSprinting ? 0.38f : 0.25f);
@@ -231,7 +250,7 @@ namespace FPS
             Vector3 shakeRot = new Vector3(Mathf.PerlinNoise(tt, 1.3f) - 0.5f, Mathf.PerlinNoise(2.7f, tt) - 0.5f, Mathf.PerlinNoise(tt, 4.1f) - 0.5f) * (12f * sh);
 
             // ---- head bob (walk) / crawl sway (prone)
-            bool grounded = motor.IsGrounded && !motor.IsSliding && !motor.IsVaulting && !motor.Locked;
+            bool grounded = (motor.IsGrounded || motor.IsWallRunning) && !motor.IsSliding && !motor.IsVaulting && !motor.Locked;
             bobWeight = Anim.Damp(bobWeight, grounded ? Mathf.Clamp01(motor.Speed01 * 1.6f) : 0f, 8f, dt);
             float ph = motor.StepPhase * Mathf.PI * 2f;
             float amp = bobWeight * bobAmount * Mathf.Lerp(1f, 0.2f, AimBlend) * (motor.IsSprinting ? 1.35f : 1f);
@@ -260,7 +279,9 @@ namespace FPS
             // strafe tilt; aimed it nearly goes (a change of direction rocked the whole aimed view)
             float targetRoll = -motor.MoveInput.x * 1.5f * (1f - AimBlend * 0.9f);
             if (motor.IsSliding) targetRoll += 6f;
-            roll = Anim.Damp(roll, targetRoll, 7f, dt);
+            // on a wall the head tilts away from it (less when aiming: the sight stays readable)
+            if (motor.IsWallRunning) targetRoll += motor.WallSide * 12f * (1f - AimBlend * 0.6f);
+            roll = Anim.Damp(roll, targetRoll, motor.IsWallRunning ? 9f : 7f, dt);
 
             Vector3 vaultRot = Vector3.zero, vaultPos = Vector3.zero;
             if (motor.IsVaulting)

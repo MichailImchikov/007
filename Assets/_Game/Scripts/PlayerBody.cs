@@ -65,7 +65,9 @@ namespace FPS
             if (!anim) return;
             if (!health) health = GetComponent<PlayerHealth>();
             anim.localVelocity = transform.InverseTransformDirection(motor.Velocity);
-            anim.grounded = motor.IsGrounded || motor.Locked;
+            // on a wall the legs run (others see the body lean off the wall: wallRun, replicated)
+            anim.grounded = motor.IsGrounded || motor.Locked || motor.IsWallRunning;
+            anim.wallRun = motor.WallSide;
             anim.crouch = motor.CrouchAmount * (1f - motor.ProneAmount);
             anim.prone = motor.ProneAmount;
             anim.lean = playerCam.Lean;
@@ -84,7 +86,7 @@ namespace FPS
             anim.sliding = motor.IsSliding;
             anim.vault = motor.IsVaulting ? motor.VaultT : -1f;
             anim.mantle = motor.IsVaulting && motor.VaultIsMantle;
-            anim.verticalSpeed = motor.IsGrounded ? 0f : motor.Velocity.y;
+            anim.verticalSpeed = motor.IsGrounded || motor.IsWallRunning ? 0f : motor.Velocity.y;
         }
     }
 }

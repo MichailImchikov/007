@@ -11,7 +11,8 @@ namespace FPS
     public struct CharState
     {
         public const ushort Alive = 1, Grounded = 2, Holding = 4, Sword = 8, Invisible = 16, Chicken = 32, Snowman = 64,
-                            Phasing = 128, ButtRocket = 256, DeadForward = 512, BigHead = 1024, Confused = 2048, Protected = 4096;
+                            Phasing = 128, ButtRocket = 256, DeadForward = 512, BigHead = 1024, Confused = 2048, Protected = 4096,
+                            WallLeft = 8192, WallRight = 16384; // running along a wall on that side
 
         public int id;
         public Vector3 pos;
@@ -92,6 +93,9 @@ namespace FPS
                 if (anim.grounded) s.flags |= Grounded;
                 if (anim.holdingWeapon) s.flags |= Holding;
                 if (anim.deadDir > 0f) s.flags |= DeadForward;
+                // (the view may turn on a wall: the lean shows while the wall is mostly to one side)
+                if (anim.wallRun > 0.35f) s.flags |= WallRight;
+                else if (anim.wallRun < -0.35f) s.flags |= WallLeft;
             }
             if (c.alive) s.flags |= Alive;
             var u = c.abilities;
