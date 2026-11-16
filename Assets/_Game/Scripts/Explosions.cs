@@ -24,7 +24,8 @@ namespace FPS
                 if (!c || (ignore && c.transform.IsChildOf(ignore))) continue;
                 var hb = c.GetComponent<Hitbox>();
                 IDamageable d = hb ? hb.Owner : c.GetComponent<IDamageable>();
-                Vector3 cp = c.ClosestPoint(origin);
+                // (ClosestPoint only works on primitives and convex meshes: a map's exact mesh collider uses its bounds)
+                Vector3 cp = c is MeshCollider mc && !mc.convex ? c.bounds.ClosestPoint(origin) : c.ClosestPoint(origin);
                 float dist = Vector3.Distance(origin, cp);
                 if (d != null && !done.Contains(d))
                 {
@@ -56,6 +57,7 @@ namespace FPS
                 ProcAudio.Play(anyKill ? Sfx.Kill : Sfx.Hit, 0.5f);
             }
 
+            Ragdoll.NoteBlast(pos, radius, push); // corpses fly, and so do the bodies it just killed
             ShakeCamera(pos);
         }
 
@@ -72,6 +74,7 @@ namespace FPS
                 var rb = c ? c.attachedRigidbody : null;
                 if (rb && !rb.isKinematic && bodies.Add(rb)) rb.AddExplosionForce(push, pos, radius, 0.8f, ForceMode.VelocityChange);
             }
+            Ragdoll.NoteBlast(pos, radius, push);
             ShakeCamera(pos);
         }
 

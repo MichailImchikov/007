@@ -25,7 +25,8 @@ namespace FPS
 
         public void SetCollidersEnabled(bool on)
         {
-            foreach (var c in GetComponentsInChildren<Collider>(true)) c.enabled = on;
+            // (a death ragdoll's colliders are its own business)
+            foreach (var c in GetComponentsInChildren<Collider>(true)) if (c.gameObject.layer != Ragdoll.Layer) c.enabled = on;
         }
 
         public struct Palette

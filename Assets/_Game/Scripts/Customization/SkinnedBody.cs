@@ -39,6 +39,7 @@ namespace FPS
 
         HumanoidRig rigRef;
         CharacterAnimator ca;
+        Transform handBone;
         // gun kept in the right hand while dead / not holding (pose relative to the hand, captured when it let go)
         bool gunInHand;
         Vector3 gunInHandPos;
@@ -426,8 +427,9 @@ namespace FPS
         const float AdsSwayLimit = 1.2f, AdsSwayLimitOptic = 0.4f, AdsEyeSlack = 0.003f, OpticEyeSlack = 0.12f;
         const float AdsEyeTrail = 0.12f;
         // a magnified eyepiece is seen at this apparent half-angle (degrees): a wide field that fills most of the aimed
-        // view's height (14° was half the view; from the cheek weld the prism's ocular was a 5° hole)
-        const float OpticHalfAngle = 20f;
+        // view's height (14° was half the view; from the cheek weld the prism's ocular was a 5° hole; 20° → 22° shows
+        // ~10% more of the scene inside at the same power)
+        const float OpticHalfAngle = 22f;
         Vector3 adsEye;
         bool adsEyeValid;
         OpticSight fpOptic;
@@ -536,6 +538,7 @@ namespace FPS
         void Update()
         {
             if (!animated || !ResolveCharacterAnimator() || core == null || core.Graph == null) return;
+            if (ca.Ragdolled) return; // a physics ragdoll: the Animator is off, the bones are the physics'
             float dt = Time.deltaTime;
             var g = core.Graph;
             bool dead = ca.dead > 0.001f;
@@ -603,6 +606,15 @@ namespace FPS
             if (!animated) { Sync(); return; }
             if (core == null || !core.Ready || !ResolveCharacterAnimator()) return;
             float dt = Time.deltaTime;
+
+            if (ca.Ragdolled)
+            {
+                // lying as a ragdoll: no animation or IK; the procedural rig (heads, nameplates, aim points) follows the
+                // body and the gun stays in its hand
+                FollowRig();
+                if (!FirstPerson) PlaceSocket();
+                return;
+            }
 
             PlaceRootBone();
             FeedCharData(dt);
@@ -941,7 +953,9 @@ namespace FPS
         {
             var sock = rigRef.weaponSocket;
             if (!sock || !heldGun) return;
-            var hand = an ? an.GetBoneTransform(HumanBodyBones.RightHand) : null;
+            // (cached: under a ragdoll the Animator is switched off)
+            if (!handBone && an && an.enabled) handBone = an.GetBoneTransform(HumanBodyBones.RightHand);
+            var hand = handBone;
             if (hand && (ca.dead > 0.001f || !ca.holdingWeapon))
             {
                 if (!gunInHand)

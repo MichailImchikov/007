@@ -51,9 +51,9 @@ namespace FPS
 
         /// <summary>
         /// The eyepiece zooms less than the optic's nominal power (its name, the menu): the zoom above 1× is scaled by
-        /// this, so 4× magnifies 2.5×, 6× 3.5×, 8× 4.5× (on top of the aimed view's own zoom, AdsFov).
+        /// this, so 4× magnifies 2.2×, 6× 3.0×, 8× 3.8× (on top of the aimed view's own zoom, AdsFov).
         /// </summary>
-        public const float ZoomScale = 0.5f;
+        public const float ZoomScale = 0.4f;
         public static float EffectiveMagnification(float nominal) => 1f + (Mathf.Max(1f, nominal) - 1f) * ZoomScale;
 
         /// <summary>The eyepiece camera while the local player looks through a magnified optic (else null): overlays

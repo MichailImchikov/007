@@ -261,8 +261,19 @@ namespace FPS
                 else crouchToggled = !crouchToggled;
             }
 
+            // ---- slide cancel: the crouch key again during a slide stops it and leaves the player crouched — the toggle key
+            // has just switched crouch on above, the hold key crouches while held. The speed bleeds off by the ground
+            // deceleration; a jump right after still dashes (slideJumpGrace)
+            bool slideCancelled = false;
+            if (IsSliding && crouchPressed && slideTimer > 0.05f)
+            {
+                IsSliding = false;
+                slideEndTime = Time.time;
+                slideCancelled = true;
+            }
+
             // ---- slide start (crouch while sprinting); the speed of a landing dash does not stack into the next slide
-            if (!IsSliding && crouchPressed && IsGrounded && IsSprinting && hSpeed > walkSpeed + 0.5f && Time.time - slideEndTime >= slideCooldown)
+            if (!IsSliding && !slideCancelled && crouchPressed && IsGrounded && IsSprinting && hSpeed > walkSpeed + 0.5f && Time.time - slideEndTime >= slideCooldown)
             {
                 IsSliding = true;
                 slideTimer = 0f;

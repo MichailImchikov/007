@@ -50,16 +50,30 @@ namespace FPS
         float phase, gait;
         readonly Spring3 flinch = new Spring3(180f, 12f);
         Vector3 hipsRest;
+        Ragdoll ragdoll;
+
+        /// <summary>The last hit (world direction, time, flinch strength): the death ragdoll takes its push.</summary>
+        public Vector3 LastHitDir { get; private set; }
+        public float LastHitTime { get; private set; } = -99f;
+        public float LastHitStrength { get; private set; }
+
+        /// <summary>Dead and lying as a physics ragdoll: nothing poses the bones.</summary>
+        public bool Ragdolled => ragdoll && ragdoll.Holds;
 
         void Awake()
         {
             if (!rig) rig = GetComponentInChildren<HumanoidRig>();
             if (rig) hipsRest = rig.hips.localPosition;
+            Ragdoll.Ensure(this);
+            ragdoll = GetComponent<Ragdoll>();
         }
 
         public void Flinch(Vector3 localDir, float strength)
         {
             flinch.Kick(new Vector3(localDir.z * 40f, 0f, -localDir.x * 40f) * strength);
+            LastHitDir = transform.TransformDirection(localDir);
+            LastHitTime = Time.time;
+            LastHitStrength = strength;
         }
 
         static Quaternion E(float x, float y, float z) => Quaternion.Euler(x, y, z);
@@ -67,6 +81,7 @@ namespace FPS
         void LateUpdate()
         {
             if (!rig) return;
+            if (Ragdolled) return; // the physics has the bones
             float dt = Time.deltaTime;
             Vector3 fl = flinch.Step(dt);
 
