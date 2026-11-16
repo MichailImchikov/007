@@ -231,7 +231,6 @@ namespace FPS
             lastHurt = Time.time;
             if (DroneOp) DroneOp.OperatorHurt(); // shot while flying: drops the controller
             bool killed = health <= 0f;
-            if (info.attacker && info.attacker.isPlayer) DamageNumbers.Spawn(info.point, info.amount, info.critical, killed);
             if (anim) anim.Flinch(transform.InverseTransformDirection(info.direction), Mathf.Clamp(info.amount / 30f, 0.4f, 2f));
 
             // turn on whoever hurt us
@@ -294,7 +293,6 @@ namespace FPS
 
         public void ExecutionKilled(Combatant killer)
         {
-            DamageNumbers.Spawn(NeckPoint, 200f, true, true);
             health = 0f;
             combatant.alive = false;
             MatchManager.Report(killer, combatant, "Нож", true);

@@ -50,7 +50,6 @@ namespace FPS
             if (down) return default;
             health -= info.amount;
             bool killed = health <= 0f;
-            DamageNumbers.Spawn(info.point, info.amount, info.critical, killed);
 
             flash = 1f;
             flashColor = killed ? new Color(1f, 0.3f, 0.2f) : info.critical ? new Color(1f, 0.85f, 0.3f) : Color.white;

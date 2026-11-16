@@ -15,7 +15,8 @@ namespace FPS
     ///  • an FPSAnimator runs the layers: Look (aim pitch / lean / head look over the spine), BodyAlign (eyes on the
     ///    aim frame), LegIK (feet on the ground), PoseOffset / Ads / Sway / Slot / Recoil / WeaponCollision (weapon);
     ///  • the hands are bound to the held weapon's grip anchors (GripR / GripL) by the core's grip IK;
-    ///  • third person: the aim frame is a virtual eye (stance height + aim pitch), the gun hangs on rig.weaponSocket;
+    ///  • third person: the aim frame is the body's eyes (aligned to the stance height, pitched by the aim), the gun hangs
+    ///    on rig.weaponSocket and is held like in first person: butt in the shoulder, sight onto the eye line when aiming;
     ///    first person (the local player, EnableFirstPerson): the aim frame is the camera, the player's own
     ///    WeaponControllers hang on the weapon bone and the head renders as a shadow only — true first person;
     ///  • procedural poses (executions, knife, abilities) are blended in per bone group from the procedural rig;
@@ -100,8 +101,20 @@ namespace FPS
         Renderer[] headRenderers = new Renderer[0], bodyRenderers = new Renderer[0];
         int visState = -1;
 
-        // ---- third person: the gun under rig.weaponSocket
+        // ---- third person: the gun under rig.weaponSocket, held the way the first-person body holds the player's own
         Transform heldGun;
+        // the stance's eye height (the body aligns its eyes to it), and where the body's eyes really ended relative to
+        // it (character frame, smoothed): the aim frame rides on the real eyes, like the camera in first person
+        Transform tpEyeTarget;
+        Vector3 tpEye;
+        bool tpEyeValid;
+        // the held gun: pistol, butt in the shoulder, sprint pose; the shoulder (aim) weight and the sprint blend
+        bool tpPistol, tpStock;
+        Vector3 tpSprintPos, tpSprintRot;
+        float tpAim, tpSprint;
+        // third person: above this ground speed (m/s) the gun swings into the sprint pose (players sprint at 7.4, walk
+        // at 4.6; bots run at up to ~5.4)
+        const float TpSprintSpeed = 5.8f;
 
         const float EyeStand = 1.68f, EyeCrouch = 1.0f, EyeProne = 0.4f; // PlayerMotor's eye heights
 
@@ -237,7 +250,7 @@ namespace FPS
             look = core.AddLayer<LookLayer>();
             align = core.AddLayer<BodyAlignLayer>();
             legIK = core.AddLayer<LegIKLayer>();
-            stockMount = core.AddLayer<StockMountLayer>(); // first person only (EnableFirstPerson)
+            stockMount = core.AddLayer<StockMountLayer>(); // on with a stocked gun in the hands (EnableFirstPerson / EquipHeldGun)
             stockMount.enabled = false;
             poseLayer = core.AddLayer<PoseOffsetLayer>();
             ads = core.AddLayer<AdsLayer>();
@@ -271,6 +284,14 @@ namespace FPS
             ads.enabled = sway.enabled = collision.enabled = false;
             core.weaponRoot = rigRef.weaponSocket;
             core.OnWeaponEquipped(new WeaponAnimSettings(), default);
+            // third person: the body aligns its eyes to the stance's eye height; the aim frame (root bone) then sits on
+            // the eyes where they really ended (FollowEyesThirdPerson), so the gun is held from the eyes as in first
+            // person, not from ~10 cm above them (the bent knees keep the eyes under the stance height), which lifted the
+            // arms up to the face. The butt goes into the right shoulder (StockMountLayer), as in first person
+            tpEyeTarget = new GameObject("EyeTarget").transform;
+            tpEyeTarget.SetParent(transform, false);
+            align.target = tpEyeTarget;
+            stockMount.shoulder = an.GetBoneTransform(HumanBodyBones.RightUpperArm);
 
             if (set.reloadRifle)
             {
@@ -404,9 +425,9 @@ namespace FPS
         // leaves the middle of the sight
         const float AdsSwayLimit = 1.2f, AdsSwayLimitOptic = 0.4f, AdsEyeSlack = 0.003f, OpticEyeSlack = 0.12f;
         const float AdsEyeTrail = 0.12f;
-        // a magnified eyepiece is seen at this apparent half-angle (degrees): about half the view, like a real 4x
-        // (from the cheek weld the prism's ocular was a 5° hole)
-        const float OpticHalfAngle = 14f;
+        // a magnified eyepiece is seen at this apparent half-angle (degrees): a wide field that fills most of the aimed
+        // view's height (14° was half the view; from the cheek weld the prism's ocular was a 5° hole)
+        const float OpticHalfAngle = 20f;
         Vector3 adsEye;
         bool adsEyeValid;
         OpticSight fpOptic;
@@ -585,7 +606,7 @@ namespace FPS
 
             PlaceRootBone();
             FeedCharData(dt);
-            if (FirstPerson) UpdateFirstPersonWeapon(dt); else UpdateHeldGun();
+            if (FirstPerson) UpdateFirstPersonWeapon(dt); else UpdateHeldGun(dt);
             core.handIkWeight = gripW;
             core.RightGripWeight = 1f - procW[(int)Group.RArm];
             core.LeftGripWeight = 1f - procW[(int)Group.LArm];
@@ -614,14 +635,17 @@ namespace FPS
             // aiming: cheek onto the stock, or the head a little forward over a pistol (the rest is the eye going to the
             // sight, PlaceEyeCamera)
             float aimW = FirstPerson && fpWeapon ? Anim.Smooth(fpWeapon.AimBlend) : 0f;
-            look.headDrop = (stockMount.hasStock ? AdsHeadDrop * (1f - heldFromEyes) : AdsHeadDropPistol) * aimW;
+            // (third person the head comes down by the held gun's shoulder weight; its stock keeps following the
+            // shoulder briskly: no camera rides on the sight there)
+            float headAim = FirstPerson ? aimW : tpAim;
+            look.headDrop = (stockMount.hasStock ? AdsHeadDrop * (1f - heldFromEyes) : AdsHeadDropPistol) * headAim;
             stockMount.smoothSpeed = Mathf.Lerp(StockFollow, StockFollowAim, aimW);
 
             core.Evaluate(dt);
 
             ApplyOverrides();
             FollowRig();
-            if (!FirstPerson) PlaceSocket();
+            if (!FirstPerson) { PlaceSocket(); FollowEyesThirdPerson(dt); }
             if (modelHead && rigRef.head) modelHead.localScale = Vector3.Scale(modelHeadScale, rigRef.head.localScale);
             if (FirstPerson)
             {
@@ -738,7 +762,24 @@ namespace FPS
             float eye = Mathf.Lerp(Mathf.Lerp(EyeStand, EyeCrouch, Mathf.Clamp01(ca.crouch)), EyeProne, Mathf.Clamp01(ca.prone)) * body.lossyScale.y;
             Vector3 pos = body.position + body.up * eye + body.right * (ca.lean * 0.26f) + body.forward * 0.03f;
             Quaternion rot = body.rotation * Quaternion.Euler(Mathf.Clamp(ca.aimPitch, -80f, 80f), 0f, -ca.lean * 14f);
-            root.SetPositionAndRotation(pos, rot);
+            // the body brings its eyes to the stance's eye height (BodyAlignLayer); the aim frame sits where they really are
+            if (tpEyeTarget) tpEyeTarget.SetPositionAndRotation(pos, rot);
+            root.SetPositionAndRotation(pos + body.rotation * tpEye, rot);
+        }
+
+        /// <summary>
+        /// Third person, like FollowEyes in first person: where the body's eyes ended this frame relative to the stance's
+        /// eye height, for the next frame's aim frame. In the character's frame and smoothed; held while the body leaves
+        /// it (vaults, executions); dead it starts again from the real eyes at the next life.
+        /// </summary>
+        void FollowEyesThirdPerson(float dt)
+        {
+            if (!tpEyeTarget) return;
+            if (ca.dead > 0.001f) { tpEyeValid = false; return; }
+            if (alignW < 0.99f) return;
+            Vector3 target = Vector3.ClampMagnitude(Quaternion.Inverse(body.rotation) * (align.EyePosition - tpEyeTarget.position), MaxEyeOffset);
+            tpEye = tpEyeValid ? Anim.Damp(tpEye, target, EyeFollowSpeed, dt) : target;
+            tpEyeValid = true;
         }
 
         void FeedCharData(float dt)
@@ -790,8 +831,13 @@ namespace FPS
             w.sightPoint != fpSight || (fpGripR is object && !fpGripR) ||
             (fpAttachments && fpAttachments.Signature != fpSignature);
 
-        /// <summary>Third person: the gun under rig.weaponSocket, held at the hip or shouldered by the aim weight.</summary>
-        void UpdateHeldGun()
+        /// <summary>
+        /// Third person (bots, other players): the gun under rig.weaponSocket, held the way the first-person body holds
+        /// the local player's gun (Equip / UpdateFirstPersonWeapon): from the real eyes, the trigger hand just ahead of
+        /// them, the butt in the right shoulder, a bladed stance for long guns. Aiming turns it onto the line of sight
+        /// (AdsLayer) and brings the head down onto the stock; running fast it swings into the weapon's sprint pose.
+        /// </summary>
+        void UpdateHeldGun(float dt)
         {
             var sock = rigRef.weaponSocket;
             Transform gun = null;
@@ -801,22 +847,72 @@ namespace FPS
                     var c = sock.GetChild(i);
                     if (c.gameObject.activeInHierarchy) { gun = c; break; }
                 }
-            if (gun != heldGun)
-            {
-                heldGun = gun;
-                core.weaponTransforms = new WeaponTransforms
-                {
-                    rightHandTarget = gun ? HandGrips.Find(gun, HandGrips.Right) : null,
-                    leftHandTarget = gun ? HandGrips.Find(gun, HandGrips.Left) : null,
-                };
-            }
+            if (gun != heldGun) EquipHeldGun(sock, gun);
             core.weaponRoot = sock;
-            float a = Anim.Smooth(Mathf.Clamp01((ca.aim - 0.3f) / 0.6f));
-            bool pistol = ca.pistolHold > 0.5f;
-            Vector3 hip = pistol ? new Vector3(0.1f, -0.22f, 0.36f) : new Vector3(0.15f, -0.21f, 0.33f);
-            Vector3 shouldered = pistol ? new Vector3(0.0f, -0.07f, 0.42f) : new Vector3(0.025f, -0.085f, 0.25f);
-            core.rig.weaponTransform = new LocRot(Vector3.Lerp(hip, shouldered, a), Quaternion.Euler(Mathf.Lerp(6f, 0f, a), Mathf.Lerp(-8f, 0f, a), 0f));
+
+            // shouldered by the aim weight (bots engaging, players aiming); the gun rises as far as in first person
+            // (a stocked gun only a little: the head comes down onto it, lying / crouched all the way)
+            float a = gun ? Anim.Smooth(Mathf.Clamp01((ca.aim - 0.3f) / 0.6f)) : 0f;
+            tpAim = a;
+            float low = Mathf.Clamp01(Mathf.Max(ca.prone, ca.crouch));
+            ads.positionScale = tpStock ? Mathf.Lerp(AdsGunRise, 1f, low) : AdsGunRisePistol;
+            ads.SetAdsWeight(a);
+
+            // running fast, not aiming: the weapon's own sprint pose (across the chest), like the first-person gun
+            float speed = new Vector2(ca.localVelocity.x, ca.localVelocity.z).magnitude;
+            bool sprint = gun && speed > TpSprintSpeed && a < 0.3f && ca.grounded && low < 0.5f && !ca.reloading && !ca.sliding;
+            tpSprint = Anim.Damp(tpSprint, sprint ? 1f : 0f, 9f, dt);
+            poseLayer.offset = new LocRot(tpSprintPos * tpSprint, Quaternion.Euler(tpSprintRot * tpSprint));
             if (!gun) gripW = 0f;
+        }
+
+        /// <summary>
+        /// Third person: a new gun in the hands (or none). Measured like the first-person Equip: the hip hold puts the
+        /// trigger hand FpRifleGripZ / FpPistolGripZ ahead of the eyes, aiming the sight goes to the eye line at the
+        /// distance the gun's own geometry gives; the butt (StockMountLayer.FindButtTop) rests in the right shoulder.
+        /// The hold data comes from the first-person original (WorldWeapon, Loadout.MakeWorldModel).
+        /// </summary>
+        void EquipHeldGun(Transform sock, Transform gun)
+        {
+            heldGun = gun;
+            var ww = gun ? gun.GetComponent<WorldWeapon>() : null;
+            tpPistol = ww ? ww.pistol : ca.pistolHold > 0.5f;
+            var gripR = gun ? HandGrips.Find(gun, HandGrips.Right) : null;
+            var gripL = gun ? HandGrips.Find(gun, HandGrips.Left) : null;
+            Transform sight = ww ? ww.aimPoint : null;
+            Vector3 hip = ww ? ww.hipPosition : tpPistol ? new Vector3(0.13f, -0.15f, 0.34f) : new Vector3(0.155f, -0.175f, 0.33f);
+            float aimDist = 0.21f;
+            if (gun && sock && gripR)
+            {
+                // in the aim frame's units (the root bone carries the model's scale), as the first-person holder measures it
+                float s = Mathf.Max(0.01f, core.rig.rootBone.lossyScale.x);
+                Quaternion inv = Quaternion.Inverse(sock.rotation);
+                Vector3 g = inv * (gripR.position - sock.position) / s;
+                hip.z = (tpPistol ? FpPistolGripZ : FpRifleGripZ) - g.z;
+                if (tpPistol) hip.y -= FpPistolHipDrop;
+                float aimGripZ = tpPistol ? FpPistolAimGripZ : FpRifleGripZ;
+                if (sight) aimDist = Mathf.Max(0.08f, aimGripZ + ((inv * (sight.position - sock.position)).z / s - g.z));
+            }
+            tpSprintPos = ww ? ww.sprintPos : Vector3.zero;
+            tpSprintRot = ww ? ww.sprintRot : Vector3.zero;
+            if (!gun) tpSprint = 0f;
+            look.stanceYaw = gun && !tpPistol ? FpRifleStanceYaw : 0f;
+            Vector3 butt = Vector3.zero;
+            tpStock = gun && sock && !tpPistol && StockMountLayer.FindButtTop(sock, gun, ww ? ww.muzzle : null, gripR, out butt);
+            stockMount.hasStock = tpStock; // (no stock: the layer idles and forgets its smoothing)
+            stockMount.buttTop = tpStock ? butt : Vector3.zero;
+            stockMount.enabled = true;
+            ads.enabled = gun && sight;
+            aimTarget.localPosition = new Vector3(0f, 0f, aimDist);
+            var settings = new WeaponAnimSettings
+            {
+                weaponBone = new LocRot(hip, Quaternion.identity),
+                aimDistance = aimDist,
+                ads = new AdsData(5f) { changeSightSpeed = 30f, pointAimSpeed = 1f },
+                gripIK = true,
+            };
+            core.OnWeaponEquipped(settings, new WeaponTransforms { aimPoint = sight, rightHandTarget = gripR, leftHandTarget = gripL });
+            ads.ResetSight();
         }
 
         /// <summary>

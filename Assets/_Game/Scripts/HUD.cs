@@ -112,13 +112,16 @@ namespace FPS
             scope.anchorMin = Vector2.zero; scope.anchorMax = Vector2.one; scope.sizeDelta = Vector2.zero;
             scopeGroup = scope.gameObject.AddComponent<CanvasGroup>();
             scopeGroup.alpha = 0f; scopeGroup.blocksRaycasts = false;
-            var lens = Rect("Lens", scope, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1080f, 1080f));
+            // the lens is taller than the screen: its top and bottom go past the edges and the view through it is wide
+            // (the field of view of the scope fills most of the screen width)
+            const float LensSize = 1400f;
+            var lens = Rect("Lens", scope, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(LensSize, LensSize));
             var raw = lens.gameObject.AddComponent<RawImage>();
             raw.texture = ScopeTexture(512);
             raw.raycastTarget = false;
             foreach (int sx in new[] { -1, 1 })
             {
-                var side = Rect("Side", scope, new Vector2(0.5f, 0.5f), new Vector2(sx * (540f + 1000f), 0f), new Vector2(2000f, 1200f));
+                var side = Rect("Side", scope, new Vector2(0.5f, 0.5f), new Vector2(sx * (LensSize * 0.5f + 1000f), 0f), new Vector2(2000f, LensSize + 400f));
                 var im = side.gameObject.AddComponent<Image>(); im.color = Color.black; im.raycastTarget = false;
             }
 
@@ -234,8 +237,8 @@ namespace FPS
                 {
                     float dx = (x + 0.5f - half) / half, dy = (y + 0.5f - half) / half;
                     float r = Mathf.Sqrt(dx * dx + dy * dy);
-                    float a = Mathf.Clamp01((r - 0.9f) / 0.08f);                // black outside the lens
-                    float vign = Mathf.Clamp01((r - 0.65f) / 0.3f) * 0.55f;      // dark lens edge
+                    float a = Mathf.Clamp01((r - 0.94f) / 0.05f);               // black outside the lens
+                    float vign = Mathf.Clamp01((r - 0.78f) / 0.18f) * 0.45f;     // dark lens edge (a narrow ring)
                     float line = 0f;
                     float ax = Mathf.Abs(dx), ay = Mathf.Abs(dy);
                     float thick = ax > 0.55f || ay > 0.55f ? 0.012f : 0.003f;   // thick posts outside, thin crosshair inside
@@ -289,14 +292,14 @@ namespace FPS
             scopeAlpha = Mathf.MoveTowards(scopeAlpha, scopeOn ? 1f : 0f, dt * 12f);
             scopeGroup.alpha = scopeAlpha;
 
-            // crosshair: where the barrel points (bullets fly along it, no random spread), its gap only a shotgun's
-            // pellet pattern
+            // crosshair: fixed in the screen center (hip shots go from the eye through it), its gap the current spread
+            // cone (resting hip spread, movement, the bloom of a burst, a shotgun's pellet pattern). Aimed it fades:
+            // the sights / reticle take over and the bullets follow the barrel
             float sf = Mathf.Max(0.01f, canvas.scaleFactor);
-            float px = Mathf.Tan(weapon.CurrentSpread * Mathf.Deg2Rad) / Mathf.Tan(cam.fieldOfView * 0.5f * Mathf.Deg2Rad) * (Screen.height * 0.5f) / sf;
+            float spread = Mathf.Clamp(weapon.CurrentSpread, 0f, 30f);
+            float px = Mathf.Tan(spread * Mathf.Deg2Rad) / Mathf.Tan(cam.fieldOfView * 0.5f * Mathf.Deg2Rad) * (Screen.height * 0.5f) / sf;
             gap = Anim.Damp(gap, 4f + px, 22f, dt);
-            Vector3 sp = cam.WorldToScreenPoint(weapon.AimPoint());
-            Vector2 target = sp.z > 0.05f ? new Vector2(sp.x - Screen.width * 0.5f, sp.y - Screen.height * 0.5f) / sf : Vector2.zero;
-            crossPos = Vector2.Lerp(crossPos, target, 1f - Mathf.Exp(-30f * dt));
+            crossPos = Vector2.zero;
             crossRoot.anchoredPosition = crossPos;
             bool busy = weapon.IsBusy || (motor && ((motor.IsSprinting && motor.Speed01 > 0.45f) || motor.IsVaulting)) || (melee && melee.Busy) || (loadout && loadout.Throwing);
             float targetAlpha = (1f - weapon.AimBlend) * (busy ? 0.2f : 1f);

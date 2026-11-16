@@ -27,6 +27,9 @@ Shader "FPS/OpticLens"
         _AxisUp ("Axis up (world)", Vector) = (0, 1, 0, 0)
         _AxisRight ("Axis right (world)", Vector) = (1, 0, 0, 0)
         _EyeboxGain ("Eyebox shadow per lens radius of eye offset", Float) = 1
+        // magnified eyepieces mark their pixels (stencil bit 8): the main view's recon x-ray is not drawn over the scope
+        // picture (the eyepiece camera draws its own, magnified)
+        [Enum(UnityEngine.Rendering.StencilOp)] _StencilPass ("Stencil pass op", Float) = 0
     }
 
     SubShader
@@ -40,6 +43,13 @@ Shader "FPS/OpticLens"
             Blend One OneMinusSrcAlpha
             ZWrite Off
             Cull Off
+            Stencil
+            {
+                Ref 8
+                WriteMask 8
+                Comp Always
+                Pass [_StencilPass]
+            }
 
             HLSLPROGRAM
             #pragma vertex vert
@@ -144,9 +154,10 @@ Shader "FPS/OpticLens"
                 // eyebox: the eye off the axis sees the exit pupil slide away, a shadow sweeps in from the far side
                 float3 eo = eye - _LensCenter.xyz;
                 float2 eoff = float2(dot(eo, _AxisRight.xyz), dot(eo, _AxisUp.xyz)) / max(_LensRadius, 1e-4);
-                // (a centred eye sees the whole field to the field stop; the shadow only comes in as the eye slides off)
-                float clear = 1.0 - smoothstep(0.82, 1.05, length(q + eoff * _EyeboxGain));
-                float stop = 1.0 - smoothstep(0.9, 0.96, r);             // the field stop's sharp black edge
+                // (a centred eye sees the whole field to the field stop; the shadow only comes in as the eye slides off.
+                // Wide field: the picture reaches almost to the rim of the glass)
+                float clear = 1.0 - smoothstep(0.9, 1.12, length(q + eoff * _EyeboxGain));
+                float stop = 1.0 - smoothstep(0.95, 0.99, r);            // the field stop's sharp black edge
                 float vis = clear * stop * saturate(_Aim * 1.5) * _PipOn;
                 float3 col = scene * vis;
 

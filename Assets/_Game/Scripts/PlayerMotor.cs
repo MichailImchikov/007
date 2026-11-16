@@ -39,11 +39,30 @@ namespace FPS
         public float crouchLerp = 12f;
         public float proneLerp = 5f;
 
+        // (new names on purpose: the maps carried the old, shorter slide as slideBoost 10 / slideFriction 7 /
+        // slideMaxTime 1.1, which would have overridden these defaults)
         [Header("Slide")]
-        public float slideBoost = 10f;
-        public float slideFriction = 7f;
+        [Tooltip("Speed a slide starts with (m/s): from a sprint it is a burst forward, about 10 m long")]
+        public float slideStartSpeed = 11.5f;
+        [Tooltip("How fast a slide loses speed (m/s²)")]
+        public float slideDecel = 5.5f;
         public float slideMinSpeed = 3.2f;
-        public float slideMaxTime = 1.1f;
+        [Tooltip("Longest slide (s)")]
+        public float slideDuration = 1.25f;
+        [Tooltip("Horizontal speed cap while sliding (the run cap is lower)")]
+        public float slideMaxSpeed = 12f;
+        [Tooltip("A new slide can start this long after the last one ended (s)")]
+        public float slideCooldown = 0.6f;
+
+        [Header("Slide jump (dash)")]
+        [Tooltip("Jumping out of a slide launches forward at least this fast (m/s): a dash")]
+        public float slideJumpSpeed = 11.5f;
+        [Tooltip("Speed cap of a slide jump until it lands")]
+        public float slideJumpMaxSpeed = 13f;
+        [Tooltip("A jump this soon after the slide ended still dashes (s)")]
+        public float slideJumpGrace = 0.2f;
+        [Tooltip("The dash may turn the slide's direction this far toward the movement input (degrees)")]
+        public float slideJumpSteer = 45f;
 
         [Header("Vault / Mantle")]
         public float minVaultHeight = 0.35f;
@@ -148,6 +167,8 @@ namespace FPS
         public event Action<bool> VaultStarted;
         public event Action Footstep;
         public event Action SlideStarted;
+        /// <summary>A jump out of a slide launched a dash (raised in the same frame, just before Jumped).</summary>
+        public event Action Dashed;
         public event Action ProneStarted;
 
         enum Stance { Stand, Crouch, Prone }
@@ -157,7 +178,9 @@ namespace FPS
         float currentHeight;
         bool crouchToggled, proneToggled, locked;
         float lastGroundedTime = -10f, lastJumpPressTime = -10f;
-        float slideTimer;
+        float slideTimer, slideEndTime = -10f;
+        // airborne after a slide jump: the dash keeps its speed above the run cap until it lands
+        bool dashAir;
         float stepAccum; int lastStepIndex;
         float airTime, lastVy;
         bool wasGrounded = true;
@@ -238,14 +261,14 @@ namespace FPS
                 else crouchToggled = !crouchToggled;
             }
 
-            // ---- slide start (crouch while sprinting)
-            if (!IsSliding && crouchPressed && IsGrounded && IsSprinting && hSpeed > walkSpeed + 0.5f)
+            // ---- slide start (crouch while sprinting); the speed of a landing dash does not stack into the next slide
+            if (!IsSliding && crouchPressed && IsGrounded && IsSprinting && hSpeed > walkSpeed + 0.5f && Time.time - slideEndTime >= slideCooldown)
             {
                 IsSliding = true;
                 slideTimer = 0f;
                 crouchToggled = false;
                 Vector3 dir = hSpeed > 0.1f ? hv / hSpeed : transform.forward;
-                hv = dir * Mathf.Max(hSpeed + 2.5f, slideBoost);
+                hv = dir * Mathf.Max(Mathf.Min(hSpeed, sprintSpeed) + 2.5f, slideStartSpeed);
                 SlideStarted?.Invoke();
             }
 
@@ -285,11 +308,11 @@ namespace FPS
             if (IsSliding)
             {
                 slideTimer += dt;
-                float spd = Mathf.Max(0f, hv.magnitude - slideFriction * dt);
+                float spd = Mathf.Max(0f, hv.magnitude - slideDecel * dt);
                 Vector3 dir = hv.sqrMagnitude > 0.0001f ? hv.normalized : transform.forward;
                 if (hasInput) dir = Vector3.RotateTowards(dir, wish.normalized, 0.9f * dt, 0f);
                 hv = dir * spd;
-                if (spd < slideMinSpeed || slideTimer > slideMaxTime || !IsGrounded) IsSliding = false;
+                if (spd < slideMinSpeed || slideTimer > slideDuration || !IsGrounded) { IsSliding = false; slideEndTime = Time.time; }
             }
             else if (IsGrounded && !jumpNow)
             {
@@ -304,13 +327,30 @@ namespace FPS
                 float cap = Mathf.Max(before, target);
                 if (hv.magnitude > cap) hv = hv.normalized * cap;
             }
-            float maxH = maxHorizontalSpeed * SkyArena.SpeedScale;
+            // a landed dash is over: back under the run cap
+            if (IsGrounded && !jumpNow) dashAir = false;
+            float capH = IsSliding ? Mathf.Max(maxHorizontalSpeed, slideMaxSpeed)
+                       : dashAir ? Mathf.Max(maxHorizontalSpeed, slideJumpMaxSpeed) : maxHorizontalSpeed;
+            float maxH = capH * SkyArena.SpeedScale;
             if (hv.magnitude > maxH) hv = hv.normalized * maxH;
 
             if (jumpNow)
             {
-                // a jump never carries more than the current run speed
-                if (hv.magnitude > target) hv = hv.normalized * target;
+                bool dash = (IsSliding || Time.time - slideEndTime <= slideJumpGrace) && hv.sqrMagnitude > 1f;
+                if (dash)
+                {
+                    // jumping out of a slide: a dash forward. The slide's speed carries on, topped up to slideJumpSpeed,
+                    // along the slide (turned a little toward the movement input)
+                    Vector3 dir = hv.normalized;
+                    if (hasInput) dir = Vector3.RotateTowards(dir, wish.normalized, slideJumpSteer * Mathf.Deg2Rad, 0f);
+                    float spd = Mathf.Min(Mathf.Max(hv.magnitude, slideJumpSpeed), slideJumpMaxSpeed) * SkyArena.SpeedScale;
+                    hv = dir * spd;
+                    dashAir = true;
+                    Dashed?.Invoke();
+                }
+                // any other jump never carries more than the current run speed
+                else if (hv.magnitude > target) hv = hv.normalized * target;
+                if (IsSliding) slideEndTime = Time.time;
                 crouchToggled = false;
                 IsSliding = false;
                 velocity.y = Mathf.Sqrt(2f * jumpHeight * -gravity);

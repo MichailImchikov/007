@@ -56,9 +56,9 @@ namespace FPS
         [Tooltip("Bullets fly from the muzzle along the barrel and cross the sight line at this distance (m, the zero)")]
         public float zeroDistance = 50f;
 
-        // Not used by shooting any more (bullets go exactly along the barrel, the only difficulty is the recoil); kept
-        // for the attachment stat multipliers and the weapon tables
-        [Header("Spread (degrees, unused)")]
+        // Hip fire only (half angles of the cone around the screen center, see HipSpread): aimed shots go exactly along
+        // the barrel, their only difficulty is the recoil (adsSpread is kept for the attachment tables)
+        [Header("Spread (degrees, hip fire)")]
         public float hipSpread = 1.3f;
         public float adsSpread = 0.06f;
         public float moveSpreadAdd = 1.8f;
@@ -66,6 +66,14 @@ namespace FPS
         public float bloomPerShot = 0.32f;
         public float maxBloom = 2.6f;
         public float bloomRecovery = 5f;
+        /// <summary>Share of <see cref="hipSpread"/> standing still (the first shot from the hip lands close to the crosshair).</summary>
+        public const float HipRestSpread = 0.45f;
+        /// <summary>Share of <see cref="moveSpreadAdd"/> at walking speed and above.</summary>
+        public const float HipMoveSpread = 0.5f;
+        /// <summary>Share of <see cref="airSpreadAdd"/> while airborne.</summary>
+        public const float HipAirSpread = 0.5f;
+        /// <summary>Aim weight from which a shot is aimed (along the barrel) instead of from the hip (screen center + spread).</summary>
+        public const float AimedShotFrom = 0.5f;
 
         [Header("Recoil")]
         public float recoilUp = 0.85f;
@@ -128,8 +136,32 @@ namespace FPS
         public int Reserve => reserve;
         public bool IsReloading => reloading;
         public float AimBlend => aimEased;
-        /// <summary>Shot spread (degrees): only a shotgun's pellet pattern; single bullets go exactly along the barrel.</summary>
-        public float CurrentSpread => pellets > 1 ? pelletSpread : 0f;
+        /// <summary>
+        /// Shot spread the crosshair shows (degrees, half angle): the hip-fire cone (<see cref="HipSpread"/>) plus a
+        /// shotgun's pellet pattern around it. Aimed shots go along the barrel (the crosshair is hidden then).
+        /// </summary>
+        public float CurrentSpread => HipSpread + (pellets > 1 ? pelletSpread : 0f);
+
+        /// <summary>
+        /// Cone of a hip-fire shot right now (degrees, half angle) around the screen center: a share of the weapon's hip
+        /// spread standing still, more while moving and in the air, less crouched / prone, plus the bloom of the shots
+        /// fired in a row (it grows with every shot and recovers once the trigger rests).
+        /// </summary>
+        public float HipSpread
+        {
+            get
+            {
+                float s = hipSpread * HipRestSpread;
+                if (motor)
+                {
+                    float move = Mathf.Clamp01(motor.HorizontalSpeed / Mathf.Max(0.5f, motor.walkSpeed));
+                    s += moveSpreadAdd * HipMoveSpread * move;
+                    if (!motor.IsGrounded && !motor.IsVaulting) s += airSpreadAdd * HipAirSpread;
+                    s *= motor.IsProne ? 0.65f : motor.IsCrouching && !motor.IsSliding ? 0.8f : 1f;
+                }
+                return Mathf.Max(0f, s + bloom);
+            }
+        }
         public bool FullAuto => fullAuto;
         public bool IsBusy => reloading || pumping || holstering || equipT < 1f;
         public bool IsScoped => scopeOn;
@@ -155,6 +187,8 @@ namespace FPS
         int ammo, reserve;
         bool initialized;
         float nextFire, lastShotTime;
+        // hip-fire spread added by the shots fired in a row (degrees)
+        float bloom;
         int shotIndex, shotsSinceSmoke;
         float recoilSeed;
         // the barrel relative to the eye where the body put it this frame (CacheAimFrame): shots turn it with the view
@@ -216,6 +250,11 @@ namespace FPS
             if (initialized) return;
             initialized = true;
             if (!model && transform.childCount > 0) model = transform.GetChild(0);
+            // the catalog is the source of the stats: weapons baked into the maps take its current values (damage, zoom,
+            // spread... changed since the maps were built). Modular weapons (WeaponData) get it from WeaponAttachments,
+            // under their attachments' modifiers, so they are left alone here
+            if (Application.isPlaying && !GetComponent<WeaponAttachments>() && !WeaponDataDB.Get(weaponName))
+                WeaponCatalog.Get(weaponName)?.Apply(this);
             ImportedWeapons.Apply(this); // imported gun mesh over the procedural one (if the pack is present) / modular model
             HandGrips.Ensure(this);      // palm anchors for the IK hands (first-person arms, third-person bodies)
             ammo = magSize;
@@ -332,6 +371,7 @@ namespace FPS
             holstering = false;
             holsterT = 0f;
             aim = 0f;
+            bloom = 0f;
             lowerBlend = 1f;
             bumpRot.Kick(new Vector3(-30f, 20f, 30f));
             ProcAudio.Play(Sfx.Equip, 0.5f, 0.06f);
@@ -364,7 +404,6 @@ namespace FPS
             owner = motor.GetComponent<Combatant>();
             ProcAudio.Init();
             HUD.Ensure();
-            DamageNumbers.Ensure();
             FX.Ensure().SetPlayer(motor.Controller);
         }
 
@@ -482,6 +521,10 @@ namespace FPS
             }
 
             if (Time.time - lastShotTime > 0.3f) shotIndex = 0;
+            // the hip-fire bloom holds while the trigger keeps working (a little longer than one shot's interval) and
+            // shrinks back once it rests
+            if (bloom > 0f && Time.time - lastShotTime > Mathf.Clamp(60f / Mathf.Max(1f, rpm) * 1.25f, 0.1f, 0.25f))
+                bloom = Mathf.MoveTowards(bloom, 0f, bloomRecovery * dt);
             if (shotsSinceSmoke >= 4 && Time.time - lastShotTime > 0.12f)
             {
                 FX.Ensure().MuzzleSmoke(muzzle.position, muzzle.forward, Mathf.Clamp(shotsSinceSmoke / 3, 2, 6));
@@ -557,10 +600,29 @@ namespace FPS
             dir = (s + r * Vector3.forward * Mathf.Max(1f, zeroDistance) - m).normalized;
         }
 
-        /// <summary>Where a shot fired now would hit (or the end of the range): the crosshair goes there.</summary>
+        /// <summary>A shot fired now is aimed (along the barrel) rather than from the hip (screen center + spread).</summary>
+        public bool IsAimedShot => aimEased >= AimedShotFrom;
+
+        /// <summary>
+        /// A hip-fire shot: from the eye through the fixed crosshair in the screen center; with <paramref name="spread"/>
+        /// anywhere in the current cone (<see cref="HipSpread"/>).
+        /// </summary>
+        public void HipRay(out Vector3 origin, out Vector3 dir, bool spread)
+        {
+            Transform ct = cam ? cam.transform : transform;
+            origin = ct.position;
+            dir = ct.forward;
+            if (!spread) return;
+            Vector2 c = Random.insideUnitCircle * HipSpread;
+            dir = Quaternion.LookRotation(ct.forward, ct.up) * Quaternion.Euler(-c.y, c.x, 0f) * Vector3.forward;
+        }
+
+        /// <summary>Where a shot fired now would go without its spread (or the end of the range).</summary>
         public Vector3 AimPoint()
         {
-            BarrelRay(out Vector3 o, out Vector3 d);
+            Vector3 o, d;
+            if (IsAimedShot) BarrelRay(out o, out d);
+            else HipRay(out o, out d, false);
             return RaycastShot(o, d, out RaycastHit h) ? h.point : o + d * range;
         }
 
@@ -595,8 +657,9 @@ namespace FPS
         }
 
         /// <summary>
-        /// Launcher shot: the loaded rocket leaves the muzzle along the barrel (RocketProjectile: flies straight, explodes on
-        /// impact for <see cref="rocketDamage"/> within <see cref="rocketRadius"/>); copies on the other machines fly it too.
+        /// Launcher shot: the loaded rocket leaves the muzzle (RocketProjectile: flies straight, explodes on impact for
+        /// <see cref="rocketDamage"/> within <see cref="rocketRadius"/>); copies on the other machines fly it too. Aimed it
+        /// flies along the barrel; from the hip toward the point under the crosshair in the screen center.
         /// </summary>
         void FireRocket()
         {
@@ -610,6 +673,14 @@ namespace FPS
             Transform ct = cam.transform;
             HUD.Ensure().RegisterShot();
             BarrelRay(out Vector3 origin, out Vector3 aimDir);
+            if (!IsAimedShot)
+            {
+                HipRay(out Vector3 eye, out Vector3 look, false);
+                Vector3 target = RaycastShot(eye, look, out RaycastHit h) ? h.point : eye + look * range;
+                Vector3 to = target - origin;
+                // (a target closer than the muzzle — a wall in the face — keeps the barrel's direction)
+                if (Vector3.Dot(to, look) > 0.5f) aimDir = to.normalized;
+            }
             Vector3 toMuzzle = origin - ct.position;
             if (RaycastShot(ct.position, toMuzzle, out RaycastHit wall, toMuzzle.magnitude))
                 origin = wall.point - toMuzzle.normalized * 0.2f;
@@ -648,12 +719,20 @@ namespace FPS
             HUD.Ensure().RegisterShot();
             hitAccum.Clear();
             NetGame.ShotEnds.Clear();
-            // the bullets leave the muzzle along the barrel (wherever the recoil and the hands put it), no random spread
-            BarrelRay(out Vector3 origin, out Vector3 aimDir);
-            // a muzzle poking through a wall the eye is behind: the shot starts at the wall
-            Vector3 toMuzzle = origin - ct.position;
-            if (RaycastShot(ct.position, toMuzzle, out RaycastHit wall, toMuzzle.magnitude))
-                origin = wall.point + wall.normal * 0.005f;
+            Vector3 origin, aimDir;
+            if (IsAimedShot)
+            {
+                // aimed: the bullets leave the muzzle along the barrel (wherever the recoil and the hands put it), no
+                // random spread
+                BarrelRay(out origin, out aimDir);
+                // a muzzle poking through a wall the eye is behind: the shot starts at the wall
+                Vector3 toMuzzle = origin - ct.position;
+                if (RaycastShot(ct.position, toMuzzle, out RaycastHit wall, toMuzzle.magnitude))
+                    origin = wall.point + wall.normal * 0.005f;
+            }
+            else HipRay(out origin, out aimDir, true);
+            // shots in a row open the hip-fire cone (the next shot's spread; aimed fire builds less of it)
+            bloom = Mathf.Min(maxBloom, bloom + bloomPerShot * (1f - aimEased));
             Quaternion aimRot = Quaternion.LookRotation(aimDir, ct.up);
             int n = Mathf.Max(1, pellets);
             for (int p = 0; p < n; p++)

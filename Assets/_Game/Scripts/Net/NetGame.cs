@@ -28,6 +28,7 @@ namespace FPS
         DiscoVolley,
         Launcher, Revive,
         ObjState, ObjEvent, ObjAction,
+        TeamChange,
     }
 
     /// <summary>
@@ -48,7 +49,7 @@ namespace FPS
         public static NetGame I { get; private set; }
 
         public const ushort GamePort = 7777;
-        public const int Protocol = 4; // 4: objective modes (ObjState / ObjEvent / ObjAction), internet sessions
+        public const int Protocol = 5; // 4: objective modes (ObjState / ObjEvent / ObjAction), internet sessions; 5: team switch (TeamChange)
         public const int MaxPlayers = 8;
         const float SendInterval = 0.05f;
         const string RelName = "f7r", UnrelName = "f7u";
@@ -244,6 +245,7 @@ namespace FPS
             ClearDrones();
             pendingRoster = null;
             LocalId = 0;
+            Teams.ClearPicks(); // the teams players picked belong to the session that ends
             NetOnline.OnNetShutdown(); // an internet game: leave its session (the host closes it)
         }
 
@@ -891,9 +893,15 @@ namespace FPS
             {
                 if (e.id == LocalId)
                 {
-                    // the host decides the teams: our own player takes the one it was given
+                    // the host decides the teams: our own player takes the one it was given; a switch of sides (ours,
+                    // asked from the pause menu) starts it again on the new side
                     var me = Find(LocalId);
-                    if (me) me.team = e.team;
+                    if (me)
+                    {
+                        bool switched = me.team >= 0 && e.team >= 0 && me.team != e.team;
+                        me.team = e.team;
+                        if (switched && PlayerHealth.Local && PlayerHealth.Local.GetComponent<Combatant>() == me) PlayerHealth.Local.ChangedTeam();
+                    }
                     continue;
                 }
                 keep.Add(e.id);

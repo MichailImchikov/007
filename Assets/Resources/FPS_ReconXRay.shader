@@ -1,5 +1,6 @@
 // Sniper recon: enemies show through walls as a red silhouette with a bright rim (only the hidden parts are drawn:
-// where the body is in plain sight the normal shading stays). Drawn with Graphics.RenderMesh for the player camera.
+// where the body is in plain sight the normal shading stays). Drawn with Graphics.RenderMesh for the player camera and
+// a magnified optic's eyepiece camera (ReconVision).
 Shader "Hidden/FPS/ReconXRay"
 {
     Properties
@@ -17,6 +18,13 @@ Shader "Hidden/FPS/ReconXRay"
             Name "ReconHidden"
             Tags { "LightMode" = "SRPDefaultUnlit" }
             ZWrite Off ZTest Greater Cull Back Blend SrcAlpha One
+            // not over a magnified eyepiece (OpticLens marks it): its camera draws the silhouettes in the scope's picture
+            Stencil
+            {
+                Ref 8
+                ReadMask 8
+                Comp NotEqual
+            }
             HLSLPROGRAM
             #pragma vertex vert
             #pragma fragment frag

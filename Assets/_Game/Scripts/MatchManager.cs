@@ -100,9 +100,10 @@ namespace FPS
 
         void Start()
         {
-            // team game: the player (single player, or the host) is on the blue team; clients take theirs from the roster
+            // team game: the player (single player, or the host) is on the blue team unless it picked the other one this
+            // session (pause menu); clients take theirs from the roster
             if (PlayerHealth.Local && !Net.IsClient)
-                PlayerHealth.Local.GetComponent<Combatant>().team = Teams.IsTeamMode(MatchSettings.mode) ? 0 : -1;
+                PlayerHealth.Local.GetComponent<Combatant>().team = Teams.AssignHuman(Net.IsHost ? NetGame.I.LocalId : 0);
             MatchHUD.Ensure();
             // objective modes read the map (sides, points) before anybody spawns
             if (ObjectiveMode.IsObjective(MatchSettings.mode))
@@ -205,6 +206,8 @@ namespace FPS
                 rot = Quaternion.Euler(0f, yaw, 0f);
                 return true;
             }
+            // a player changed sides: a bot of the bigger team goes over to the smaller one as it (re)spawns
+            if (Teams.BalanceBot(who)) NetGame.TeamsChanged();
             if (spawns.Count == 0) return false;
             // objective modes: the start of a round puts each team on its side
             if (ObjectiveMode.Current && who && ObjectiveMode.Current.ForcedSpawn(who, out pos, out rot)) return true;

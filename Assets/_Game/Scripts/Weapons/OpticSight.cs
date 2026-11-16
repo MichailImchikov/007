@@ -43,11 +43,22 @@ namespace FPS
             pPip = Shader.PropertyToID("_PipTex"), pPipOn = Shader.PropertyToID("_PipOn"), pPipTan = Shader.PropertyToID("_PipTanHalf"),
             pApparent = Shader.PropertyToID("_ApparentTan"), pAim = Shader.PropertyToID("_Aim"), pCenter = Shader.PropertyToID("_LensCenter"),
             pRadius = Shader.PropertyToID("_LensRadius"), pAxis = Shader.PropertyToID("_Axis"), pUp = Shader.PropertyToID("_AxisUp"),
-            pRight = Shader.PropertyToID("_AxisRight");
+            pRight = Shader.PropertyToID("_AxisRight"), pStencilPass = Shader.PropertyToID("_StencilPass");
 
         public bool Magnified => magnification > 1.01f;
         /// <summary>Radius of the rear lens (m).</summary>
         public float LensRadius => lensRadius;
+
+        /// <summary>
+        /// The eyepiece zooms less than the optic's nominal power (its name, the menu): the zoom above 1× is scaled by
+        /// this, so 4× magnifies 2.5×, 6× 3.5×, 8× 4.5× (on top of the aimed view's own zoom, AdsFov).
+        /// </summary>
+        public const float ZoomScale = 0.5f;
+        public static float EffectiveMagnification(float nominal) => 1f + (Mathf.Max(1f, nominal) - 1f) * ZoomScale;
+
+        /// <summary>The eyepiece camera while the local player looks through a magnified optic (else null): overlays
+        /// that must show in the scope's picture (recon) draw for it too.</summary>
+        public static Camera ActivePip => pip && pip.enabled && pipOwner ? pip : null;
 
         /// <summary>
         /// Eye distance behind the sight point (along the weapon's axis) at which the rear lens is seen at the given
@@ -66,9 +77,10 @@ namespace FPS
         {
             weapon = w;
             lens = rearLens;
-            magnification = data ? Mathf.Max(1f, data.magnification) : 1f;
+            float nominal = data ? Mathf.Max(1f, data.magnification) : 1f;
+            magnification = EffectiveMagnification(nominal);
             string n = data ? data.name : "";
-            style = magnification >= 6f ? Style.Duplex : magnification > 1.01f ? Style.Chevron
+            style = nominal >= 6f ? Style.Duplex : nominal > 1.01f ? Style.Chevron
                   : n.Contains("Holo") ? Style.Holo : Style.Dot;
             dotMoa = n.Contains("Pistol") ? 3.5f : 2f;
 
@@ -80,6 +92,9 @@ namespace FPS
             mat.SetFloat(pMag, magnification);
             mat.SetColor(pColor, reticleColor);
             mat.SetFloat(pPipOn, 0f);
+            // a magnified eyepiece marks its pixels in the stencil: the main view's recon x-ray (unmagnified, in the wrong
+            // place for the scope's picture) is not drawn over it, the eyepiece camera draws its own (ReconVision)
+            mat.SetFloat(pStencilPass, Magnified ? (float)StencilOp.Replace : (float)StencilOp.Keep);
             lens.sharedMaterial = mat;
             lens.shadowCastingMode = ShadowCastingMode.Off;
             lens.receiveShadows = false;

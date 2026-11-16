@@ -76,7 +76,7 @@ namespace FPS
                     break;
                 case WeaponArchetype.DMR:
                     w.allowFireModeSwitch = false;
-                    w.hipSpread = 2.6f; w.adsSpread = 0f; w.recoilUp = 2.4f; w.recoilSide = 0.5f; w.adsRecoilMul = 0.7f; w.adsFov = 16f; w.scoped = true;
+                    w.hipSpread = 2.6f; w.adsSpread = 0f; w.recoilUp = 2.4f; w.recoilSide = 0.5f; w.adsRecoilMul = 0.7f; w.adsFov = 22f; w.scoped = true;
                     w.aimDistance = 0.07f; w.aimTime = 0.26f; w.moveSpeedMul = 0.92f; w.falloffStart = 80f; w.falloffEnd = 250f; w.falloffMin = 0.85f;
                     w.reloadTime = 2.4f; w.emptyReloadTime = 2.9f; w.magGripOffset = new Vector3(0f, -0.07f, 0.01f);
                     w.shotVolume = 0.95f; w.kickScale = 1.6f; w.punchScale = 1.8f; w.bloomPerShot = 1f; w.impactForce = 8f;
@@ -105,6 +105,12 @@ namespace FPS
     public static class WeaponCatalog
     {
         public static readonly string[] CategoryNames = { "Автоматы", "Снайперские", "ПП", "Дробовики", "Пистолеты", "Гранатомёты" };
+
+        /// <summary>
+        /// Damage of a bolt-action sniper rifle hit: kills a 100 HP soldier wherever it lands (hands / feet ×0.6 at the
+        /// low random roll ×0.94 still deal ~102), at any range (no falloff on these rifles).
+        /// </summary>
+        public const float BoltActionDamage = 180f;
 
         const string W = "Assets/Weapons_ChamferZone/";
         const string JU = "Assets/Julhiecio TPS Controller/Demos/Demo Prefabs/Items/Weapons/Guns/";
@@ -135,20 +141,21 @@ namespace FPS
                 desc = "Современный «калашников» под 5,45: бьёт сильнее M4A1, отдача ровная. Планки под прицелы, глушитель, рукоятки и магазин на 45." },
 
             // ================= marksman
-            // bolt-action sniper: 88 per hit, no range falloff → body max 88 × 1.06 ≈ 93 (< 100 HP, never a one-shot),
-            // head min 88 × 2.2 × 0.94 ≈ 182 (always a one-shot). Limbs 70.
+            // bolt-action snipers (Hunter 85, M700, AWM, AXMC): one hit kills anywhere, at any range. BoltActionDamage
+            // with no range falloff: hands / feet (×0.6) at the low roll (×0.94) still deal 180 × 0.6 × 0.94 ≈ 102 (> 100 HP).
+            // Self-loading marksman rifles (DMRs: Barrett, M14 EBR, СВД, M16A4, ВСС) keep their multi-hit damage
             new WeaponDef { name = "Hunter 85", kind = "Болтовая снайперская винтовка", category = WeaponCategory.Marksman, archetype = WeaponArchetype.DMR,
-                damage = 88f, rpm = 50f, mag = 5, reserve = 30, fullAuto = false, sfx = Sfx.ShotSniper,
+                damage = BoltActionDamage, rpm = 50f, mag = 5, reserve = 30, fullAuto = false, sfx = Sfx.ShotSniper,
                 setup = w => { w.pumpAction = true; w.boltAction = true; w.pumpTime = 1.05f; w.chTravel = 0.07f;
-                               w.adsFov = 12f; w.aimTime = 0.3f; w.adsSpread = 0f; w.hipSpread = 3.2f; w.recoilUp = 3.2f; w.recoilSide = 0.6f;
+                               w.adsFov = 20f; w.aimTime = 0.3f; w.adsSpread = 0f; w.hipSpread = 3.2f; w.recoilUp = 3.2f; w.recoilSide = 0.6f;
                                w.falloffStart = 1000f; w.falloffEnd = 2000f; w.falloffMin = 1f; w.moveSpeedMul = 0.9f;
                                w.reloadTime = 2.6f; w.emptyReloadTime = 2.6f; w.kickScale = 1.8f; w.punchScale = 2f; w.impactForce = 10f; w.shotVolume = 1f; },
-                uiDamage = 0.95f, uiRate = 0.08f, uiRange = 1f, uiControl = 0.4f, uiMobility = 0.4f,
-                desc = "Болтовая винтовка, оптика 8×. В голову — убивает с одного выстрела на любой дистанции, в тело — нет (88 урона). После выстрела — перезарядка затвора.",
+                uiDamage = 1f, uiRate = 0.08f, uiRange = 1f, uiControl = 0.4f, uiMobility = 0.4f,
+                desc = "Болтовая винтовка с оптикой. Убивает с одного попадания на любой дистанции. После выстрела — перезарядка затвора.",
                 fbx = W + "Hunter85/WPN_Hunter85.FBX", sight = new Vector3(0f, 0.089f, -0.206f) },
             new WeaponDef { name = "Barrett M82", kind = "Крупнокалиберная винтовка", category = WeaponCategory.Marksman, archetype = WeaponArchetype.DMR,
                 damage = 70f, rpm = 150f, mag = 10, reserve = 40, fullAuto = false, sfx = Sfx.ShotSniper,
-                setup = w => { w.adsFov = 14f; w.aimTime = 0.34f; w.hipSpread = 3.6f; w.recoilUp = 3.6f; w.recoilSide = 0.8f; w.moveSpeedMul = 0.85f;
+                setup = w => { w.adsFov = 22f; w.aimTime = 0.34f; w.hipSpread = 3.6f; w.recoilUp = 3.6f; w.recoilSide = 0.8f; w.moveSpeedMul = 0.85f;
                                w.falloffStart = 150f; w.falloffEnd = 400f; w.falloffMin = 0.9f; w.reloadTime = 3f; w.emptyReloadTime = 3.6f;
                                w.kickScale = 2.1f; w.punchScale = 2.3f; w.impactForce = 16f; w.shotVolume = 1f; w.shotPitch = 0.8f; w.bloomPerShot = 1.4f; },
                 uiDamage = 0.85f, uiRate = 0.22f, uiRange = 1f, uiControl = 0.25f, uiMobility = 0.3f,
@@ -171,16 +178,16 @@ namespace FPS
                                w.impactForce = 7f; w.shotVolume = 0.95f; w.shotPitch = 0.9f; },
                 uiDamage = 0.72f, uiRate = 0.38f, uiRange = 0.9f, uiControl = 0.5f, uiMobility = 0.45f,
                 desc = "Самозарядная 7,62 НАТО: три попадания в тело, кучная и дальнобойная. Магазин на 20, призматический прицел 4× в комплекте." },
-            // bolt action like Hunter 85: 90 per hit, body max 90 × 1.06 ≈ 95 (< 100 HP), head always a one-shot
+            // bolt action like Hunter 85: one hit kills
             new WeaponDef { name = "M700", kind = "Болтовая снайперская винтовка", category = WeaponCategory.Marksman, archetype = WeaponArchetype.DMR,
-                damage = 90f, rpm = 45f, mag = 4, reserve = 28, fullAuto = false, sfx = Sfx.ShotSniper,
+                damage = BoltActionDamage, rpm = 45f, mag = 4, reserve = 28, fullAuto = false, sfx = Sfx.ShotSniper,
                 setup = w => { w.pumpAction = true; w.boltAction = true; w.pumpTime = 1.1f;
                                w.reloadStyle = ReloadStyle.PerShell; w.shellInsertTime = 0.55f; w.shellScale = 1.25f;
                                w.aimTime = 0.32f; w.adsSpread = 0f; w.hipSpread = 3.4f; w.recoilUp = 3.4f; w.recoilSide = 0.6f;
                                w.falloffStart = 1000f; w.falloffEnd = 2000f; w.falloffMin = 1f; w.moveSpeedMul = 0.9f;
                                w.kickScale = 1.9f; w.punchScale = 2.1f; w.impactForce = 11f; w.shotVolume = 1f; },
-                uiDamage = 0.97f, uiRate = 0.06f, uiRange = 1f, uiControl = 0.38f, uiMobility = 0.38f,
-                desc = "Классический «Ремингтон» под .308: в голову — наповал на любой дистанции, в тело — 90 урона. Четыре патрона, заряжается по одному, затвор — после каждого выстрела." },
+                uiDamage = 1f, uiRate = 0.06f, uiRange = 1f, uiControl = 0.38f, uiMobility = 0.38f,
+                desc = "Классический «Ремингтон» под .308: убивает с одного попадания на любой дистанции. Четыре патрона, заряжается по одному, затвор — после каждого выстрела." },
 
             // ================= SMGs
             new WeaponDef { name = "SMG-9", kind = "Пистолет-пулемёт", category = WeaponCategory.SMG, archetype = WeaponArchetype.SMG,
@@ -411,28 +418,30 @@ namespace FPS
                 uiDamage = 0.8f, uiRate = 0.3f, uiRange = 0.95f, uiControl = 0.45f, uiMobility = 0.42f,
                 desc = "Драгунов: десять патронов 7,62×54R, два попадания в тело, в голову — наповал. Механика и любая оптика." },
             new WeaponDef { name = "AWM", kind = "Болтовая снайперская винтовка .338", category = WeaponCategory.Marksman, archetype = WeaponArchetype.DMR,
-                damage = 93f, rpm = 42f, mag = 5, reserve = 25, fullAuto = false, sfx = Sfx.ShotSniper,
+                damage = BoltActionDamage, rpm = 42f, mag = 5, reserve = 25, fullAuto = false, sfx = Sfx.ShotSniper,
                 setup = w => { w.pumpAction = true; w.boltAction = true; w.pumpTime = 1.15f; w.chTravel = 0.08f;
                                w.aimTime = 0.33f; w.adsSpread = 0f; w.hipSpread = 3.5f; w.recoilUp = 3.5f; w.recoilSide = 0.6f;
                                w.falloffStart = 1000f; w.falloffEnd = 2000f; w.falloffMin = 1f; w.moveSpeedMul = 0.88f; w.reloadTime = 2.8f; w.emptyReloadTime = 3.2f;
                                w.kickScale = 2f; w.punchScale = 2.2f; w.impactForce = 12f; w.shotVolume = 1f; w.shotPitch = 0.85f; },
-                uiDamage = 0.98f, uiRate = 0.07f, uiRange = 1f, uiControl = 0.35f, uiMobility = 0.34f,
-                desc = "Магнум .338: в голову — наповал на любой дистанции, в тело — 93 урона. Магазин на пять, затвор после каждого выстрела." },
-            // 98 per hit: the only rifle that kills with a chest hit (98 × 1.06 > 100); slow bolt, heavy
+                uiDamage = 1f, uiRate = 0.07f, uiRange = 1f, uiControl = 0.35f, uiMobility = 0.34f,
+                desc = "Магнум .338: убивает с одного попадания на любой дистанции. Магазин на пять, затвор после каждого выстрела." },
+            // one hit kills like every bolt action; the slowest bolt, the heaviest in the hands
             new WeaponDef { name = "AXMC", kind = "Болтовая снайперская винтовка .338", category = WeaponCategory.Marksman, archetype = WeaponArchetype.DMR,
-                damage = 98f, rpm = 36f, mag = 5, reserve = 25, fullAuto = false, sfx = Sfx.ShotSniper,
+                damage = BoltActionDamage, rpm = 36f, mag = 5, reserve = 25, fullAuto = false, sfx = Sfx.ShotSniper,
                 setup = w => { w.pumpAction = true; w.boltAction = true; w.pumpTime = 1.25f; w.chTravel = 0.085f;
                                w.aimTime = 0.36f; w.adsSpread = 0f; w.hipSpread = 3.8f; w.recoilUp = 3.8f; w.recoilSide = 0.7f;
                                w.falloffStart = 1000f; w.falloffEnd = 2000f; w.falloffMin = 1f; w.moveSpeedMul = 0.85f; w.reloadTime = 3f; w.emptyReloadTime = 3.4f;
                                w.kickScale = 2.2f; w.punchScale = 2.4f; w.impactForce = 14f; w.shotVolume = 1f; w.shotPitch = 0.8f; },
                 uiDamage = 1f, uiRate = 0.05f, uiRange = 1f, uiControl = 0.3f, uiMobility = 0.28f,
-                desc = "Самая тяжёлая винтовка: смертелен даже выстрел в грудь. Медленный затвор, тяжёлая в руках." },
+                desc = "Самая тяжёлая винтовка: убивает с одного попадания на любой дистанции. Медленный затвор, тяжёлая в руках." },
+            // four body hits, never three: 3 × 30 × 1.06 ≈ 95 (< 100 HP), 4 × 30 × 0.94 × 0.9 (falloff floor) ≈ 101.5;
+            // the head ×2.2 → two hits
             new WeaponDef { name = "ВСС «Винторез»", kind = "Бесшумная снайперская винтовка", category = WeaponCategory.Marksman, archetype = WeaponArchetype.Rifle,
-                damage = 40f, rpm = 700f, mag = 20, reserve = 120,
+                damage = 30f, rpm = 700f, mag = 20, reserve = 120,
                 setup = w => { w.recoilUp = 0.95f; w.recoilSide = 0.38f; w.adsFov = 44f; w.aimTime = 0.24f; w.moveSpeedMul = 0.97f; w.reloadTime = 2.2f; w.emptyReloadTime = 2.7f;
-                               w.falloffStart = 40f; w.falloffEnd = 130f; w.falloffMin = 0.7f; w.shotVolume = 0.32f; w.noiseRadius = 14f; w.shotPitch = 1.2f; w.kickScale = 0.9f; },
-                uiDamage = 0.68f, uiRate = 0.7f, uiRange = 0.6f, uiControl = 0.62f, uiMobility = 0.55f,
-                desc = "Встроенный глушитель и тяжёлая дозвуковая пуля 9×39: бесшумно, можно очередью. Хуже на дальних дистанциях." },
+                               w.falloffStart = 50f; w.falloffEnd = 150f; w.falloffMin = 0.9f; w.shotVolume = 0.32f; w.noiseRadius = 14f; w.shotPitch = 1.2f; w.kickScale = 0.9f; },
+                uiDamage = 0.55f, uiRate = 0.7f, uiRange = 0.6f, uiControl = 0.62f, uiMobility = 0.55f,
+                desc = "Встроенный глушитель и тяжёлая дозвуковая пуля 9×39: бесшумно, можно очередью. Четыре попадания в тело, два — в голову." },
             new WeaponDef { name = "РПГ-7", kind = "Ручной гранатомёт", category = WeaponCategory.Launcher, archetype = WeaponArchetype.Rifle,
                 damage = 0f, rpm = 30f, mag = 1, reserve = 3, fullAuto = false, sfx = Sfx.RocketLaunch,
                 setup = w => { w.launcher = true; w.rocketSpeed = 75f; w.rocketRadius = 7f; w.rocketDamage = 160f; w.rocketPush = 13f;

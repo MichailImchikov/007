@@ -82,6 +82,7 @@ namespace FPS
                 motor.VaultStarted += OnVault;
                 motor.Footstep += OnFootstep;
                 motor.SlideStarted += OnSlide;
+                motor.Dashed += OnDash;
                 motor.ProneStarted += OnProne;
             }
         }
@@ -94,6 +95,7 @@ namespace FPS
             motor.VaultStarted -= OnVault;
             motor.Footstep -= OnFootstep;
             motor.SlideStarted -= OnSlide;
+            motor.Dashed -= OnDash;
             motor.ProneStarted -= OnProne;
         }
 
@@ -154,6 +156,14 @@ namespace FPS
             fovKick += 4f;
             punchPos.Kick(new Vector3(0f, -1.2f, 0f));
             ProcAudio.Play(Sfx.Slide, 0.55f, 0.08f);
+        }
+
+        /// <summary>A slide jump launched a dash: a kick of the FOV and a rush of air.</summary>
+        void OnDash()
+        {
+            fovKick += 6f;
+            punchRot.Kick(new Vector3(-10f, 0f, 0f));
+            ProcAudio.Play(Sfx.Slide, 0.45f, 0.12f);
         }
 
         void OnProne()

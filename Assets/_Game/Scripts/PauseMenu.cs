@@ -60,6 +60,12 @@ namespace FPS
             Btn(col, "Продолжить", ref y, Resume, UIKit.Style.Primary);
             y += 14f;
             Btn(col, "Снаряжение", ref y, () => LoadoutPanel.Open(transform, MatchManager.Instance, RefreshNote));
+            // team games: go over to the other side (starts again there, no death counted)
+            if (Teams.Active)
+            {
+                teamBtn = Btn(col, "Сменить команду", ref y, SwitchTeam);
+                teamLabel = UIKit.LabelOf(teamBtn);
+            }
             Btn(col, "Настройки", ref y, () => SettingsPanel.Open(transform));
             y += 14f;
             var restart = Btn(col, "Начать заново", ref y, () =>
@@ -89,6 +95,31 @@ namespace FPS
             ((RectTransform)b.transform).SetTop(y, 62f, 90f);
             y += 70f;
             return b;
+        }
+
+        Button teamBtn;
+        Text teamLabel;
+
+        void SwitchTeam()
+        {
+            if (!Teams.RequestSwitch()) { RefreshTeam(); return; }
+            Resume();
+        }
+
+        /// <summary>The team button names the side it leads to (in that team's colour), or how long until it can be used.</summary>
+        void RefreshTeam()
+        {
+            if (!teamBtn || !teamLabel) return;
+            var me = PlayerHealth.Local ? PlayerHealth.Local.GetComponent<Combatant>() : null;
+            bool show = Teams.Active && me && me.team >= 0;
+            teamBtn.gameObject.SetActive(show);
+            if (!show) return;
+            int other = 1 - me.team;
+            string to = "<color=#" + ColorUtility.ToHtmlStringRGB(Teams.ColorOf(other)) + ">" + Teams.Names[other] + "</color>";
+            float wait = Teams.SwitchWait;
+            teamLabel.supportRichText = true;
+            teamLabel.text = wait > 0f ? "Сменить команду (" + Mathf.CeilToInt(wait) + " с)" : "Перейти к команде " + to;
+            teamBtn.interactable = Teams.CanSwitch;
         }
 
         void RefreshNote()
@@ -129,7 +160,7 @@ namespace FPS
             group.blocksRaycasts = o;
             group.interactable = o;
             if (!o) MenuPanel.CloseAll();
-            else { RefreshNote(); if (sub) sub.text = SubLine(); }
+            else { RefreshNote(); RefreshTeam(); if (sub) sub.text = SubLine(); }
             bool matchOver = MatchManager.Instance && MatchManager.Instance.Ended;
             if (!matchOver && !Net.Active) Time.timeScale = o ? 0f : 1f; // a network match never pauses
             Cursor.lockState = o ? CursorLockMode.None : CursorLockMode.Locked;
@@ -141,6 +172,7 @@ namespace FPS
 
         void Update()
         {
+            if (open && teamBtn) RefreshTeam(); // the cooldown counts down while the menu is open
             var kb = UnityEngine.InputSystem.Keyboard.current;
             if (kb != null && kb.escapeKey.wasPressedThisFrame && !MenuPanel.EscUsedThisFrame && !MenuPanel.AnyOpen)
             {

@@ -524,11 +524,14 @@ namespace FPS
                 }
                 if (!c.alive) continue;
                 float since = Time.time - c.lastShotTime;
-                bool spotted = recon > 0f && (c.transform.position - self.transform.position).sqrMagnitude < recon * recon;
+                // recon: where its last ping saw the enemy (a snapshot once a second, like the silhouettes)
+                Vector3 pingPos = default;
+                bool spotted = recon > 0f && ReconVision.TryGetPing(c, out pingPos);
                 if (since >= Shot && !spotted) continue;
                 var col = Teams.Colors[1];
                 if (!spotted) col.a = 1f - (since / Shot) * (since / Shot);
-                markers.Add(new Marker { pos = c.transform.position, color = col, size = 11f });
+                // a shot gives it away where it is now; otherwise the pinged spot
+                markers.Add(new Marker { pos = since < Shot || !spotted ? c.transform.position : pingPos, color = col, size = 11f });
             }
             if (DroneMode.Active)
                 foreach (var rv in DroneMode.Reveals)

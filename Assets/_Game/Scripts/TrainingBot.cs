@@ -104,7 +104,6 @@ namespace FPS
             if (!IsAlive || executing) return default;
             health -= info.amount;
             bool killed = health <= 0f;
-            DamageNumbers.Spawn(info.point, info.amount, info.critical, killed);
             flash = 1f;
             if (anim) anim.Flinch(transform.InverseTransformDirection(info.direction), Mathf.Clamp(info.amount / 30f, 0.4f, 2f));
             if (killed)
@@ -155,7 +154,6 @@ namespace FPS
 
         public void ExecutionKilled(Combatant killer)
         {
-            DamageNumbers.Spawn(NeckPoint, 200f, true, true);
             flash = 1f;
         }
 

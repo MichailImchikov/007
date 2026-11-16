@@ -317,8 +317,6 @@ namespace FPS
             predictedHealth -= info.amount / 100f;
             predictedUntil = Time.unscaledTime + 0.4f;
             bool killed = predictedHealth <= 0f;
-            // numbers over everyone the local player hits: remote bots and other players alike
-            if (info.attacker && info.attacker.isPlayer) DamageNumbers.Spawn(info.point, info.amount, info.critical, killed);
             if (anim) anim.Flinch(transform.InverseTransformDirection(info.direction), Mathf.Clamp(info.amount / 30f, 0.4f, 2f));
             return new DamageResult { applied = true, killed = killed, dealt = info.amount };
         }
@@ -336,7 +334,7 @@ namespace FPS
 
         public void BeginExecution() => NetGame.SendExecution(combatant, PlayerHealth.Local ? PlayerHealth.Local.GetComponent<Combatant>() : null);
         public void SetExecutionProgress(float t) { }
-        public void ExecutionKilled(Combatant killer) { DamageNumbers.Spawn(NeckPoint, 200f, true, true); }
+        public void ExecutionKilled(Combatant killer) { }
         public void EndExecution() { }
     }
 }

@@ -326,6 +326,8 @@ namespace FPS
                 r.enabled = true;
                 r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
             }
+            // how a third-person body holds it like the first-person one does (SkinnedBody): hip hold, sight, muzzle
+            WorldWeapon.Attach(clone, w);
             return clone;
         }
 

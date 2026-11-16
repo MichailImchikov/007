@@ -176,6 +176,31 @@ namespace FPS
             Respawned?.Invoke();
         }
 
+        /// <summary>
+        /// The player went over to the other team (Teams.RequestSwitch): it starts again on the new side as a fresh spawn,
+        /// with no death on the scoreboard and no kill for anybody. In a round with one life (objective modes) it sits the
+        /// rest of the round out instead and comes back with everybody at the next one.
+        /// </summary>
+        public void ChangedTeam()
+        {
+            if (MatchManager.Instance && MatchManager.Instance.Ended) return;
+            if (abilities) abilities.OnDeath(); // running abilities end with the old side
+            if (!ObjectiveMode.Current || ObjectiveMode.Current.CanRespawn(self)) { Respawn(); return; }
+            if (IsDead) return; // already out of this round: the next one brings it back on the new side
+            IsDead = true;
+            Health = 0f;
+            self.alive = false;
+            deathTimer = 0f;
+            deathT = 0f;
+            execT = -1f;
+            LastKiller = null;
+            LastKillerWeapon = null;
+            GameInput.Blocked = true;
+            motor.Locked = true;
+            playerCam.Locked = true;
+            if (loadout && loadout.Active) loadout.Active.ExternalLower = 1f;
+        }
+
         /// <summary>Health back (medic kit, adrenaline), up to the maximum.</summary>
         public void Heal(float amount)
         {
