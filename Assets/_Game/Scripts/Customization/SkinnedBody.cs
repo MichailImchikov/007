@@ -560,7 +560,9 @@ namespace FPS
             // procedural overrides per bone group (smoothed so nothing pops); deaths are clips now
             float full = Mathf.Max(ca.executeVictim >= 0f ? 1f : 0f, ca.slip > 0.01f ? 1f : 0f, ca.bentOver > 0.01f ? 1f : 0f);
             float arms = Mathf.Max(full, ca.executeAttack >= 0f ? 1f : 0f, ca.swordHold ? 1f : 0f, ca.blind > 0.01f ? 1f : 0f);
-            float right = Mathf.Max(arms, ca.knife >= 0f && !FirstPerson ? 1f : 0f, ca.throwT >= 0f && !throwSeq && !FirstPerson ? 1f : 0f);
+            // knife duel: the camera films the player's own body, so the arms play the third-person knife strikes
+            bool filmed = FirstPerson && KnifeDuel.LocalCinematic;
+            float right = Mathf.Max(arms, ca.knife >= 0f && (!FirstPerson || filmed) ? 1f : 0f, ca.throwT >= 0f && !throwSeq && !FirstPerson ? 1f : 0f);
             float coreW = Mathf.Max(full, ca.executeAttack >= 0f ? 1f : 0f);
             float head = Mathf.Max(full, ca.blind > 0.01f ? 1f : 0f);
             const float k = 10f;
@@ -570,7 +572,7 @@ namespace FPS
             procW[(int)Group.RArm] = Anim.Damp(procW[(int)Group.RArm], right, k, dt);
             procW[(int)Group.Legs] = Anim.Damp(procW[(int)Group.Legs], full, k, dt);
 
-            bool fpHolding = !FirstPerson || (fpWeapon && fpWeapon.gameObject.activeInHierarchy && !SkyArena.LocalRunner);
+            bool fpHolding = !FirstPerson || (fpWeapon && fpWeapon.gameObject.activeInHierarchy && !SkyArena.LocalRunner && !filmed);
             // prone included: the arms hold the gun (propped on the elbows) instead of the clip's arms reaching forward
             gripW = Anim.Damp(gripW, holding && fpHolding ? 1f : 0f, 10f, dt);
             bool special = dead || ca.vault >= 0f || full > 0.5f;

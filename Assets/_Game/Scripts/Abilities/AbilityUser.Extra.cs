@@ -15,14 +15,15 @@ namespace FPS
         public bool BigHead => bigHeadT > 0f;
         public bool Confused => confuseT > 0f;
         public bool Building => building;
-        public bool Minesweeping => mineActive || mineBotT > 0f;
+        /// <summary>Sitting at a tic-tac-toe board: frozen and untouchable.</summary>
+        public bool InTicTacToe => TicTacToe.InGame(self);
         public float ScreamT => isPlayer ? screamT : 0f;
         public float BSODLeft => isPlayer ? bsodT : 0f;
         public float BSODDuration => bsodDur;
         public int BuildLeft => buildLeft;
         /// <summary>Extra aim error in degrees for bots (confusion).</summary>
         public float AimPenalty => Confused ? 9f : 0f;
-        bool ExtraBlocksShooting => Minesweeping || bsodT > 0f || launched || building || screamT > 0f;
+        bool ExtraBlocksShooting => InTicTacToe || Lasering || bsodT > 0f || launched || building || screamT > 0f;
 
         const float ShrinkScale = 0.4f, BigHeadScale = 3.2f;
 
@@ -35,10 +36,6 @@ namespace FPS
         bool launched;
         float launchT;
         Vector3 launchVel;
-        bool mineActive;
-        float mineBotT;
-        bool mineBotBoom;
-        Combatant mineCaster;
         bool building;
         float buildT, buildDur = 1f;
         int buildLeft, buildRot;
@@ -48,6 +45,30 @@ namespace FPS
         float spinT, spinDur = 1f;
         const float SpinSpeed = 360f; // degrees per second: one full turn every second
         public bool Spinning => spinT > 0f;
+        float lagT, lagDur = 1f;
+        /// <summary>"Лагалка": this combatant runs at 10 frames per second.</summary>
+        public bool Lagging => lagT > 0f;
+        static bool lagFpsOn;
+        static int savedFps = -1, savedVSync;
+
+        /// <summary>The local player's real frame rate drops to 10 (and comes back).</summary>
+        static void SetLagFps(bool on)
+        {
+            if (on == lagFpsOn) return;
+            lagFpsOn = on;
+            if (on)
+            {
+                savedFps = Application.targetFrameRate;
+                savedVSync = QualitySettings.vSyncCount;
+                QualitySettings.vSyncCount = 0;
+                Application.targetFrameRate = 10;
+            }
+            else
+            {
+                Application.targetFrameRate = savedFps;
+                QualitySettings.vSyncCount = savedVSync;
+            }
+        }
 
         float ExtraFraction(out Color c)
         {
@@ -57,6 +78,10 @@ namespace FPS
             if (Shrunk) { c = AbilityDB.Get(AbilityType.Shrink).color; return shrinkT / shrinkDur; }
             if (Confused) { c = AbilityDB.Get(AbilityType.Confuse).color; return confuseT / confuseDur; }
             if (Spinning) { c = AbilityDB.Get(AbilityType.Spin).color; return spinT / spinDur; }
+            if (Lagging) { c = AbilityDB.Get(AbilityType.Lag).color; return lagT / lagDur; }
+            if (laserT > 0f) { c = AbilityDB.Get(AbilityType.LaserEyes).color; return laserT / laserDur; }
+            if (Hyper) { c = AbilityDB.Get(AbilityType.Hyperspeed).color; return hyperT / hyperDur; }
+            if (isPlayer && loadout && loadout.ForcedSecondary > 0f) { c = AbilityDB.Get(AbilityType.Sidearm).color; return loadout.ForcedSecondary / Mathf.Max(0.1f, AbilityDB.Get(AbilityType.Sidearm).duration); }
             return -1f;
         }
 
@@ -70,10 +95,25 @@ namespace FPS
                 case AbilityType.Screamer:
                 case AbilityType.Confuse:
                 case AbilityType.Launch:
-                case AbilityType.Minesweeper:
                 case AbilityType.BSOD:
                 case AbilityType.Spin:
+                case AbilityType.Sidearm:
+                case AbilityType.Lag:
+                case AbilityType.EmptyMag:
                     return AreaBlast(t, info);
+                case AbilityType.LaserEyes: return StartLaser(info.duration);
+                case AbilityType.Hyperspeed: return StartHyper(info.duration);
+                case AbilityType.TicTacToe:
+                {
+                    if (!TicTacToe.Begin(self, info.radius, out string why))
+                    {
+                        if (isPlayer && why != null) Say("Не с кем играть", why, new Color(1f, 0.4f, 0.4f));
+                        return false;
+                    }
+                    Shockwave.Spawn(transform.position + Vector3.up * 0.1f, 3f, info.color);
+                    if (isPlayer) Say(info.name, "Вы — крестики, ваш ход первый", info.color);
+                    return true;
+                }
             }
             return false;
         }
@@ -101,15 +141,13 @@ namespace FPS
             ProcAudio.PlayAt(Sfx.Warp, c, 0.8f, 0.1f);
             SendEvent(AbilityNetEvent.Area, w => w.Write((byte)t));
             if (isPlayer) Say(info.name, n == 1 ? "Задет 1 враг" : $"Задето врагов: {n}", info.color);
-            // the minesweeper is a double-edged sword: the caster has to defuse one too
-            if (t == AbilityType.Minesweeper) ReceiveArea(t, self, info);
             return true;
         }
 
         /// <summary>An enemy's area ability hit this combatant.</summary>
         public void ReceiveArea(AbilityType t, Combatant caster, AbilityInfo info)
         {
-            if (!self.alive) return;
+            if (!self.alive || KnifeDuel.InDuel(self) || TicTacToe.InGame(self)) return;
             Color col = info.color;
             switch (t)
             {
@@ -160,29 +198,42 @@ namespace FPS
                     }
                     break;
                 }
-                case AbilityType.Minesweeper:
-                    mineCaster = caster;
-                    if (isPlayer)
-                    {
-                        if (mineActive) break;
-                        mineActive = true;
-                        GameInput.ModalUI = true;
-                        AbilityHUD.Ensure().OpenMinesweeper(this);
-                        ProcAudio.Play(Sfx.ErrorTone, 0.6f);
-                    }
-                    else
-                    {
-                        mineBotT = Random.Range(2.5f, 6f);
-                        mineBotBoom = Random.value < 0.3f;
-                        if (puppet != null) puppet.Stun(mineBotT);
-                    }
-                    break;
                 case AbilityType.Spin:
                     spinT = spinDur = info.duration;
                     ProcAudio.PlayAt(Sfx.Warp, transform.position + Vector3.up, 0.6f, 0.3f);
                     if (isPlayer) { Say("Карусель!", "Вас крутит на 360°", col); pcam.Shake(0.3f); }
                     else if (puppet != null) puppet.Stun(info.duration);
                     break;
+                case AbilityType.Sidearm:
+                    if (isPlayer)
+                    {
+                        if (loadout) loadout.ForceSecondary(info.duration);
+                        ProcAudio.Play(Sfx.Switch, 0.8f, 0f);
+                        pcam.Punch(new Vector3(6f, Random.Range(-6f, 6f), Random.Range(-8f, 8f)));
+                        Say("Табельное!", $"Вам насильно выдали пистолет — основное оружие через {info.duration:0} сек.", col);
+                    }
+                    else if (bot) bot.ForceSidearm(info.duration);
+                    break;
+                case AbilityType.Lag:
+                    lagT = lagDur = info.duration;
+                    ProcAudio.PlayAt(Sfx.ErrorTone, transform.position + Vector3.up, 0.4f, 0.2f);
+                    if (isPlayer) { ProcAudio.Play(Sfx.ErrorTone, 0.5f, 0.3f); Say("Лаги!", "10 кадров в секунду. Держитесь.", col); }
+                    break;
+                case AbilityType.EmptyMag:
+                {
+                    Vector3 hand = rig && rig.rHand ? rig.rHand.position : transform.position + Vector3.up * 1.1f;
+                    ProcAudio.PlayAt(Sfx.MagDrop, hand, 0.9f, 0.1f);
+                    FX.Ensure().Chunks(hand, Vector3.down, 8, new Color(0.75f, 0.6f, 0.25f), new Color(0.55f, 0.42f, 0.18f), 2.5f); // the rounds spill out
+                    if (isPlayer)
+                    {
+                        if (loadout && loadout.weapons != null) foreach (var w in loadout.weapons) if (w) w.EmptyMagazine();
+                        ProcAudio.Play(Sfx.MagOut, 0.8f, 0f);
+                        ProcAudio.Play(Sfx.Dry, 0.6f, 0f);
+                        Say("Магазин пуст!", "Все патроны из магазинов высыпались — перезаряжайтесь", col);
+                    }
+                    else if (bot) bot.EmptyMagazine();
+                    break;
+                }
                 case AbilityType.BSOD:
                     bsodT = bsodDur = info.duration;
                     if (isPlayer) ProcAudio.Play(Sfx.ErrorTone, 0.9f, 0f);
@@ -190,26 +241,6 @@ namespace FPS
                     ProcAudio.PlayAt(Sfx.ErrorTone, transform.position + Vector3.up, 0.5f, 0f);
                     break;
             }
-        }
-
-        /// <summary>Minesweeper finished (player). Lose = the mine goes off for real.</summary>
-        public void OnMineResult(bool win)
-        {
-            if (!mineActive) return;
-            mineActive = false;
-            GameInput.ModalUI = false;
-            if (self.alive)
-            {
-                Cursor.lockState = CursorLockMode.Locked;
-                Cursor.visible = false;
-            }
-            if (win)
-            {
-                ProcAudio.Play(Sfx.AbilityReady, 0.7f, 0f);
-                Say("Разминировано!", "Можно двигаться", new Color(0.5f, 1f, 0.5f));
-            }
-            else if (self.alive)
-                Explosions.Detonate(transform.position + Vector3.up * 0.4f, 4f, 250f, 8f, mineCaster ? mineCaster : self, "Сапёр");
         }
 
         // ------------------------------------------------------------------ shrink
@@ -408,13 +439,9 @@ namespace FPS
             if (launched) UpdateLaunch(dt);
 
             if (spinT > 0f) UpdateSpin(dt);
-
-            if (mineBotT > 0f)
-            {
-                mineBotT -= dt;
-                if (mineBotT <= 0f && mineBotBoom && self.alive)
-                    Explosions.Detonate(transform.position + Vector3.up * 0.4f, 4f, 250f, 8f, mineCaster ? mineCaster : self, "Сапёр");
-            }
+            if (lagT > 0f) { lagT -= dt; if (!self.alive) lagT = 0f; }
+            UpdateLaser(dt);
+            UpdateHyper(dt);
 
             UpdateBuild(dt);
         }
@@ -471,16 +498,12 @@ namespace FPS
             confuseT = 0f;
             if (anim && !isPlayer) anim.lookYaw = 0f;
             if (launched) { launched = false; if (puppet != null) puppet.ExternalControl = false; }
-            if (mineActive)
-            {
-                mineActive = false;
-                GameInput.ModalUI = false;
-                if (AbilityHUD.Instance) AbilityHUD.Instance.CloseMinesweeper();
-            }
-            mineBotT = 0f;
             if (building) EndBuild();
             bsodT = 0f;
             spinT = 0f;
+            lagT = 0f;
+            EndLaser();
+            EndHyper();
             if (isPlayer) GameInput.Frozen = false;
         }
 
@@ -499,11 +522,26 @@ namespace FPS
                     return enemies >= 2 && Random.value < 0.25f;
                 }
                 case AbilityType.Build: return vis && dist > 6f && (bot.Health01 < 0.6f || Random.value < 0.15f);
+                case AbilityType.ShadowClones: return !Net.Active && t && (vis || dist < 20f) && Random.value < 0.5f;
+                case AbilityType.Hyperspeed: return t && ((vis && dist > 15f) || bot.Health01 < 0.4f) && Random.value < 0.4f; // close in / run away
+                case AbilityType.LaserEyes: return !Net.Active && t && vis && dist < 40f && Random.value < 0.5f;
+                case AbilityType.TicTacToe: return t && dist < info.radius * 0.9f && Random.value < 0.4f;
+                case AbilityType.Rewind: return !Net.Active && ((vis && bot.Health01 < 0.4f) || Random.value < 0.03f) && Random.value < 0.5f;
+                case AbilityType.EmptyMag: return t && vis && dist < info.radius * 0.8f && Random.value < 0.5f;
+                case AbilityType.Sidearm:
+                {
+                    // worth it against rifles and snipers, not against pistols
+                    var lo = t ? t.GetComponent<Loadout>() : null;
+                    var tb = t ? t.GetComponent<CombatBot>() : null;
+                    bool pistol = lo ? lo.Active && lo.Active == lo.Secondary
+                                     : tb && (WeaponCatalog.Get(tb.weaponName)?.category ?? WeaponCategory.Assault) == WeaponCategory.Pistol;
+                    return t && vis && !pistol && dist < info.radius * 0.8f && Random.value < 0.4f;
+                }
+                case AbilityType.Lag:
                 case AbilityType.BigHeads:
                 case AbilityType.Screamer:
                 case AbilityType.Confuse:
                 case AbilityType.Launch:
-                case AbilityType.Minesweeper:
                 case AbilityType.BSOD:
                 case AbilityType.Spin:
                     return t && dist < info.radius * 0.8f && (vis || dist < info.radius * 0.4f) && Random.value < 0.5f;
@@ -521,7 +559,7 @@ namespace FPS
             if (dir == 0) return;
             int count = System.Enum.GetValues(typeof(AbilityType)).Length;
             int i = (int)(Type == AbilityType.ChickenTrap ? Shown : Type);
-            do { i = (i + dir + count) % count; } while (i == 0 || i == (int)AbilityType.ChickenTrap);
+            do { i = (i + dir + count) % count; } while (i == 0 || i == (int)AbilityType.ChickenTrap || string.IsNullOrEmpty(AbilityDB.Get((AbilityType)i).name));
             Give((AbilityType)i, (AbilityType)i);
         }
     }

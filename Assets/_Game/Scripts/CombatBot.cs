@@ -95,7 +95,10 @@ namespace FPS
         readonly RaycastHit[] hits = new RaycastHit[12];
 
         /// <summary>Movement / reload-time multipliers (class passives, adrenaline): set by <see cref="ClassAbility"/>.</summary>
-        public float SpeedMul { get; set; } = 1f;
+        float speedMul = 1f;
+        public float SpeedMul { get => speedMul * HyperMul; set => speedMul = value; }
+        /// <summary>"Гиперскорость" on top of the class / adrenaline speed (set every frame by AbilityUser).</summary>
+        public float HyperMul { get; set; } = 1f;
         public float ReloadMul { get; set; } = 1f;
         public bool IsDead => dead;
         public float Health => health;
@@ -206,6 +209,8 @@ namespace FPS
             stunTimer = 0f;
             YawOverride = null;
             if (abilities) abilities.OnSpawn();
+            ResetDebuffs();
+            CancelMelee();
             health = maxHealth;
             combatant.alive = true;
             target = null;
@@ -226,7 +231,10 @@ namespace FPS
         {
             if (dead || executing || SkyArena.IsGunner(combatant)) return default;
             if (Teams.Friendly(info.attacker, combatant)) return default; // no friendly fire in team games
+            if (TicTacToe.Protects(combatant)) return default; // tic-tac-toe: both players untouchable
+            if (KnifeDuel.Blocks(info, combatant)) return default; // knife duel: untouchable / the blades just locked
             if (abilities && abilities.TryDeflect(info)) return default;
+            if (abilities) info.amount *= abilities.IncomingDamageScale; // laser eyes: hardly scratched
             health -= info.amount;
             lastHurt = Time.time;
             if (DroneOp) DroneOp.OperatorHurt(); // shot while flying: drops the controller
@@ -268,7 +276,7 @@ namespace FPS
 
         public bool CanBeExecutedBy(Transform attacker)
         {
-            if (dead || executing || external) return false;
+            if (dead || executing || external || KnifeDuel.InDuel(combatant) || TicTacToe.InGame(combatant)) return false;
             Vector3 to = transform.position - attacker.position; to.y = 0f;
             float d = to.magnitude;
             if (d > 1.9f || d < 0.2f) return false;
@@ -354,6 +362,9 @@ namespace FPS
                 }
                 return;
             }
+
+            // "Лагалка": the brain (and the body) run at 10 frames per second
+            if (!DebuffGate(ref dt)) return;
 
             if (Time.time - lastHurt > 4f && health < maxHealth) health = Mathf.Min(maxHealth, health + 12f * dt);
 
@@ -468,7 +479,7 @@ namespace FPS
             Vector3 bestAim = Vector3.zero;
             foreach (var c in Combatant.All)
             {
-                if (!c || !c.alive || !combatant.IsEnemyOf(c)) continue;
+                if (!c || !c.alive || !combatant.IsEnemyOf(c) || KnifeDuel.InDuel(c) || TicTacToe.InGame(c)) continue; // duelists / players can't be hurt
                 Vector3 to = c.Chest - transform.position;
                 float d = to.magnitude;
                 // invisible: only the floating weapon gives them away up close, or their own gunfire
@@ -555,6 +566,9 @@ namespace FPS
                 return;
             }
             if (abilities && abilities.BlocksShooting) return;
+
+            // face to face: the knife (an enemy blade swinging in reach may get answered — and lock into a duel)
+            if (MeleeTick(dt, dist)) return;
 
             // movement: close in / back off to preferred range, strafe while shooting
             strafeTimer -= dt;

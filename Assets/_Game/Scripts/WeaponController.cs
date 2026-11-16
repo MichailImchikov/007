@@ -386,6 +386,25 @@ namespace FPS
             if (launcher && !reloading) magHidden = ammo == 0;
         }
 
+        /// <summary>"Пустой магазин" ability: the rounds in the magazine are gone, the reserve stays.</summary>
+        public void EmptyMagazine()
+        {
+            Init();
+            if (reloading) CancelReload();
+            ammo = 0;
+            magHidden = launcher;
+        }
+
+        /// <summary>Time rewind: magazine and reserve as they were.</summary>
+        public void SetAmmoRewind(int mag, int res)
+        {
+            Init();
+            if (reloading) CancelReload();
+            ammo = Mathf.Clamp(mag, 0, magSize);
+            reserve = Mathf.Max(0, res);
+            magHidden = launcher && ammo == 0;
+        }
+
         public void ResetAmmo()
         {
             Init();
@@ -428,7 +447,7 @@ namespace FPS
             lowerBlend = Anim.Damp(lowerBlend, Mathf.Max(ExternalLower, AbilityLower), 14f, dt);
             float lower = Mathf.Max(lowerBlend, Mathf.Max(1f - Anim.Smooth(equipT), Anim.Smooth(holsterT)));
             // sky arena runner: knife only, the gun is not even in view
-            bool hideNow = SkyArena.LocalRunner;
+            bool hideNow = SkyArena.LocalRunner || KnifeDuel.LocalCinematic; // knife duel: the camera films both fighters
             if (hideNow != arenaHidden)
             {
                 arenaHidden = hideNow;

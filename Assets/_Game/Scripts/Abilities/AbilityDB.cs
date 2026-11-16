@@ -6,7 +6,8 @@ namespace FPS
     public enum AbilityType
     {
         None, Grapple, Parry, ButtRocket, ChickenTrap, Invisibility, Phase, FartBlind, FartSmoke, Swap,
-        Shrink, BigHeads, Screamer, Confuse, Launch, Minesweeper, Build, BSOD, Spin, SkyArena
+        Shrink, BigHeads, Screamer, Confuse, Launch, TicTacToe, Build, BSOD, Spin, SkyArena,
+        Rewind, Sidearm, Lag, EmptyMag, ShadowClones, LaserEyes, Hyperspeed
     }
 
     public struct AbilityInfo
@@ -57,13 +58,8 @@ namespace FPS
             },
             [AbilityType.FartBlind] = new AbilityInfo
             {
-                name = "Громадный пук", glyph = "П", color = new Color(0.55f, 0.78f, 0.16f), cooldown = 15f, weight = 0.6f,
-                desc = "Мощный выброс газов. Что-то произойдёт. Вопрос — что."
-            },
-            [AbilityType.FartSmoke] = new AbilityInfo
-            {
-                name = "Громадный пук", glyph = "П", color = new Color(0.55f, 0.78f, 0.16f), cooldown = 15f, duration = 12f, weight = 0.6f,
-                desc = "Мощный выброс газов. Что-то произойдёт. Вопрос — что."
+                name = "Громадный пук", glyph = "П", color = new Color(0.55f, 0.78f, 0.16f), cooldown = 18f, duration = 10f, radius = 5f, weight = 1f,
+                desc = "Облако газа на 10 сек. Враги в нём получают урон, а вы, стоя внутри, быстро лечитесь."
             },
             [AbilityType.Swap] = new AbilityInfo
             {
@@ -95,10 +91,10 @@ namespace FPS
                 name = "Катапульта", glyph = "↑", color = new Color(0.35f, 0.6f, 1f), cooldown = 16f, radius = 10f, weight = 0.8f,
                 desc = "Враги рядом улетают высоко в небо."
             },
-            [AbilityType.Minesweeper] = new AbilityInfo
+            [AbilityType.TicTacToe] = new AbilityInfo
             {
-                name = "Сапёр", glyph = "#", color = new Color(0.7f, 0.72f, 0.75f), cooldown = 25f, radius = 12f, weight = 0.7f,
-                desc = "Все рядом — и вы тоже! — не сдвинутся, пока не решат сапёра 4×4. Ошибка — взрыв."
+                name = "Крестики-нолики", glyph = "#", color = new Color(0.75f, 0.85f, 1f), cooldown = 25f, radius = 14f, weight = 0.7f,
+                desc = "Ближайший враг (до 14 м) садится с вами за партию. Оба замирают и неуязвимы. Проигравший взрывается, ничья — расходитесь."
             },
             [AbilityType.Build] = new AbilityInfo
             {
@@ -120,10 +116,46 @@ namespace FPS
                 name = "Небесный тир", glyph = "+", color = new Color(0.85f, 0.15f, 1f), cooldown = 1f, duration = 20f, uses = 1, weight = 0.35f,
                 desc = "Одноразовая. Все остальные — на тёмную арену: только бег и ножи, мгновенное воскрешение, скорость ×2. Вы сверху с пулемётом. 20 сек."
             },
+            [AbilityType.Rewind] = new AbilityInfo
+            {
+                name = "Перемотка", glyph = "«", color = new Color(0.25f, 0.85f, 1f), cooldown = 30f, duration = 5f, weight = 0.6f,
+                desc = "Всё поле перематывается на 5 секунд назад: позиции, здоровье, патроны. Даже павшие встают."
+            },
+            [AbilityType.Hyperspeed] = new AbilityInfo
+            {
+                name = "Гиперскорость", glyph = ">>", color = new Color(0.35f, 0.9f, 1f), cooldown = 20f, duration = 7f, weight = 0.8f,
+                desc = "7 сек. вы бегаете в 3.6 раза быстрее — но как по льду: заносит, тормозить приходится заранее."
+            },
+            [AbilityType.LaserEyes] = new AbilityInfo
+            {
+                name = "Лазерный взгляд", glyph = "°°", color = new Color(1f, 0.2f, 0.12f), cooldown = 28f, duration = 8f, weight = 0.6f,
+                desc = "8 сек. вы парите в воздухе и жжёте всё, на что смотрите, лазерами из глаз. Урон по вам — всего 25%."
+            },
+            [AbilityType.ShadowClones] = new AbilityInfo
+            {
+                name = "Теневые клоны", glyph = "x3", color = new Color(1f, 0.6f, 0.15f), cooldown = 26f, duration = 14f, weight = 0.7f,
+                desc = "В облаке дыма появляются 3 ваши точные копии с вашим оружием. Стреляют понарошку — урона не наносят, но враги отвлекаются на них. От любого попадания — пуф! 14 сек."
+            },
+            [AbilityType.Sidearm] = new AbilityInfo
+            {
+                name = "Табельное", glyph = "2", color = new Color(1f, 0.78f, 0.2f), cooldown = 20f, duration = 6f, radius = 40f, weight = 0.8f,
+                desc = "Врагам рядом насильно достаёт пистолет (слот 2). 6 сек. основное оружие не взять."
+            },
+            [AbilityType.Lag] = new AbilityInfo
+            {
+                name = "Лагалка", glyph = "10", color = new Color(0.55f, 1f, 0.35f), cooldown = 22f, duration = 6f, radius = 30f, weight = 0.7f,
+                desc = "У врагов рядом падает FPS до 10 кадров. 6 сек. слайд-шоу."
+            },
+            [AbilityType.EmptyMag] = new AbilityInfo
+            {
+                name = "Пустой магазин", glyph = "0", color = new Color(0.95f, 0.45f, 0.3f), cooldown = 16f, radius = 30f, weight = 0.8f,
+                desc = "Врагам рядом мгновенно опустошает магазины — всем придётся перезаряжаться."
+            },
         };
 
         public static AbilityInfo Get(AbilityType t) => map.TryGetValue(t, out var i) ? i : default;
 
+        /// <summary>FartSmoke is a retired second version: it behaves exactly like FartBlind and never spawns.</summary>
         public static bool IsFart(AbilityType t) => t == AbilityType.FartBlind || t == AbilityType.FartSmoke;
 
         /// <summary>Weighted random ability for a pickup; trap returns a disguise of a real one.</summary>
@@ -148,13 +180,14 @@ namespace FPS
             {
                 AbilityType.Grapple, AbilityType.Parry, AbilityType.ButtRocket, AbilityType.Invisibility, AbilityType.Phase, AbilityType.FartBlind,
                 AbilityType.Swap, AbilityType.Shrink, AbilityType.BigHeads, AbilityType.Screamer,
-                AbilityType.Confuse, AbilityType.Launch, AbilityType.Minesweeper, AbilityType.Build, AbilityType.BSOD, AbilityType.Spin, AbilityType.SkyArena
+                AbilityType.Confuse, AbilityType.Launch, AbilityType.TicTacToe, AbilityType.Build, AbilityType.BSOD, AbilityType.Spin, AbilityType.SkyArena,
+                AbilityType.Rewind, AbilityType.Sidearm, AbilityType.Lag, AbilityType.EmptyMag, AbilityType.ShadowClones, AbilityType.LaserEyes, AbilityType.Hyperspeed
             };
             return real[Random.Range(0, real.Length)];
         }
 
         /// <summary>Weapon names that are not bullets (cannot be parried).</summary>
         public static bool IsBullet(string weapon)
-            => !(weapon == "Граната" || weapon == "Нож" || weapon == "Меч" || weapon == "Ягодичная ракета" || weapon == "Рикошет" || weapon == "Сапёр" || string.IsNullOrEmpty(weapon));
+            => !(weapon == "Граната" || weapon == "Нож" || weapon == "Меч" || weapon == "Ягодичная ракета" || weapon == "Рикошет" || weapon == "Лазерный взгляд" || weapon == "Газ" || weapon == TicTacToe.Weapon || string.IsNullOrEmpty(weapon));
     }
 }

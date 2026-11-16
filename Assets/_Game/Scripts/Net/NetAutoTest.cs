@@ -209,7 +209,7 @@ namespace FPS
                     Log("invisibility activate=" + me.abilities.TryActivate());
                     break;
                 case 4:
-                    me.abilities.Give(AbilityType.FartSmoke, AbilityType.FartSmoke);
+                    me.abilities.Give(AbilityType.FartBlind, AbilityType.FartBlind);
                     Log("fart smoke activate=" + me.abilities.TryActivate());
                     break;
                 case 5:

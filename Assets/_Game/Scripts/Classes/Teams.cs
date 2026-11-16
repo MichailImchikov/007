@@ -22,7 +22,7 @@ namespace FPS
         public static bool IsTeamMode(GameMode m) => m == GameMode.TeamDeathmatch || ObjectiveMode.IsObjective(m);
 
         /// <summary>Same team in a team game (never in free-for-all): no damage between them, a medic can revive.</summary>
-        public static bool Friendly(Combatant a, Combatant b) => a && b && a != b && a.team >= 0 && a.team == b.team;
+        public static bool Friendly(Combatant a, Combatant b) => a && b && a != b && ((a.team >= 0 && a.team == b.team) || a.Root == b.Root);
 
         /// <summary>Host: the team of a human player (host = id 1 → team 0, then alternating by join order).</summary>
         public static int AssignHuman(int netId) => IsTeamMode(MatchSettings.mode) ? Mathf.Max(0, netId - 1) % 2 : -1;
@@ -33,7 +33,7 @@ namespace FPS
             int a = 0, b = 0;
             foreach (var c in Combatant.All)
             {
-                if (!c || c == except) continue;
+                if (!c || c == except || c.IsClone) continue;
                 if (c.team == 0) a++; else if (c.team == 1) b++;
             }
             return b < a ? 1 : 0;

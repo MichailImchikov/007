@@ -23,9 +23,11 @@ namespace FPS
         public float slashTime = 0.55f;
         public float executionTime = 1.9f;
 
-        public bool Busy => state != 0;
+        public bool Busy => state != 0 || KnifeDuel.InDuel(self);
         public IExecutable Candidate { get; private set; }
-        public float SlashProgress => state == 1 ? t : -1f;
+        public float SlashProgress => state == 1 ? t : DuelStrike;
+        /// <summary>Knife strike pose of a running knife duel (KnifeDuel drives it), -1 otherwise.</summary>
+        public float DuelStrike { get; set; } = -1f;
         public float ExecutionProgress => state == 2 ? t : -1f;
 
         int state; // 0 idle, 1 slash, 2 execution
@@ -130,6 +132,14 @@ namespace FPS
             float dt = Time.deltaTime;
             if (dt <= 0f) return;
 
+            // knife duel: KnifeDuel reads the presses and poses the body; the first-person knife stays away
+            if (KnifeDuel.InDuel(self))
+            {
+                Candidate = null;
+                if (state != 0 && state != 2) Finish();
+                return;
+            }
+
             if (state == 0)
             {
                 Candidate = FindCandidate();
@@ -175,6 +185,7 @@ namespace FPS
             state = 1;
             t = 0f;
             hitDone = swung = false;
+            KnifeDuel.NoteSwing(self);
             SetActive(loadout ? loadout.Active : null, 1f);
             if (knifeArm) knifeArm.gameObject.SetActive(true);
         }
@@ -203,6 +214,7 @@ namespace FPS
                 bool crit = false;
                 if (bot && Vector3.Dot(bot.transform.parent ? bot.transform.parent.forward : bot.transform.forward, ct.forward) > 0.5f) { amount *= backstabMultiplier; crit = true; }
                 var res = d.TakeDamage(new DamageInfo { amount = amount, point = hit.point, normal = hit.normal, direction = ct.forward, critical = crit, attacker = self, weapon = VariantName.Length > 0 ? VariantName : "Нож" });
+                if (KnifeDuel.InDuel(self)) { Finish(); return; } // the blades locked: a duel instead of a hit
                 if (res.applied)
                 {
                     HUD.Ensure().ShowHitmarker(res.killed, crit);

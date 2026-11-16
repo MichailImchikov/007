@@ -41,7 +41,13 @@ namespace FPS
         public Vector3 Chest => chestPoint != null ? chestPoint() : transform.position + Vector3.up * 1.3f;
         public Vector3 Head => headPoint != null ? headPoint() : transform.position + Vector3.up * 1.7f;
 
-        public bool IsEnemyOf(Combatant other) => other && other != this && (team < 0 || team != other.team);
+        /// <summary>Shadow clone: the combatant it copies (its kills go to the original; never on the scoreboard).</summary>
+        [NonSerialized] public Combatant cloneOf;
+        public bool IsClone => cloneOf;
+        /// <summary>The real fighter behind this body (itself, or the original of a shadow clone).</summary>
+        public Combatant Root => cloneOf ? cloneOf : this;
+
+        public bool IsEnemyOf(Combatant other) => other && other != this && Root != other.Root && (team < 0 || team != other.team);
 
         void OnEnable() => All.Add(this);
         void OnDisable() => All.Remove(this);

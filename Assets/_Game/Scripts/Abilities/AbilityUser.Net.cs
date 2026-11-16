@@ -151,9 +151,8 @@ namespace FPS
                 }
                 case AbilityNetEvent.Fart:
                 {
-                    bool blind = r.ReadBoolean();
-                    float smoke = r.ReadSingle();
-                    Fart(blind, smoke);
+                    r.ReadBoolean(); // (old format: the "blind" flag)
+                    Fart(r.ReadSingle());
                     break;
                 }
                 case AbilityNetEvent.Swap:

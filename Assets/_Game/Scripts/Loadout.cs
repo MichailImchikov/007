@@ -185,7 +185,13 @@ namespace FPS
             bool meleeBusy = melee && melee.Busy;
             if (ActionsBlocked && throwState == 0) { LookedPickup = null; return; }
 
-            if (!meleeBusy && throwState == 0 && !switching)
+            // "Табельное": an enemy forced the pistol out, the primary stays away for a while
+            if (forcedSecondary > 0f)
+            {
+                forcedSecondary -= dt;
+                if (Secondary && Active != Secondary && !switching && throwState == 0 && !meleeBusy) SwitchTo(Secondary);
+            }
+            if (!meleeBusy && throwState == 0 && !switching && forcedSecondary <= 0f)
             {
                 if (GameInput.Slot1Pressed) SwitchTo(Primary);
                 else if (GameInput.Slot2Pressed) SwitchTo(Secondary);
@@ -195,6 +201,19 @@ namespace FPS
             UpdatePickup();
             UpdateGrenade(dt, meleeBusy);
         }
+
+        float forcedSecondary;
+        /// <summary>Seconds left with the pistol forced into the hands (0 = free choice).</summary>
+        public float ForcedSecondary => Mathf.Max(0f, forcedSecondary);
+
+        /// <summary>"Табельное" ability: draw the secondary now and keep it for <paramref name="seconds"/>.</summary>
+        public void ForceSecondary(float seconds)
+        {
+            forcedSecondary = Mathf.Max(forcedSecondary, seconds);
+            if (Secondary && Active != Secondary && !switching) SwitchTo(Secondary);
+        }
+
+        public void ClearForcedSecondary() => forcedSecondary = 0f;
 
         public void SwitchTo(WeaponController w)
         {

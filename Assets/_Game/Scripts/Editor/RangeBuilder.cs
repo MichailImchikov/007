@@ -64,7 +64,9 @@ namespace FPS.EditorTools
             BuildFXObject();
             var player = BuildPlayer();
             BuildArmory(env);
-            BuildYard(env, new GameObject("Bots").transform);
+            var bots = new GameObject("Bots").transform;
+            BuildYard(env, bots);
+            BuildKnifeRing(env, bots);
 
             EditorSceneManager.SaveScene(scene, ScenePath);
             SetBuildScenes();
@@ -1007,7 +1009,7 @@ namespace FPS.EditorTools
             gear = Lit("Char_BotGear", new Color(0.55f, 0.13f, 0.1f), 0f, 0.3f, true),
         };
 
-        static void MakeBot(Transform parent, Vector3 pos, float yaw, Vector3[] waypoints)
+        static TrainingBot MakeBot(Transform parent, Vector3 pos, float yaw, Vector3[] waypoints)
         {
             var root = new GameObject("TrainingBot");
             root.transform.SetParent(parent, false);
@@ -1030,6 +1032,7 @@ namespace FPS.EditorTools
             Prim(PrimitiveType.Cylinder, "Barrel", gun, new Vector3(0f, 0.03f, 0.38f), new Vector3(0.025f, 0.12f, 0.025f), metal, Quaternion.Euler(90f, 0f, 0f), false);
             Prim(PrimitiveType.Cube, "Sight", gun, new Vector3(0f, 0.08f, 0.05f), new Vector3(0.035f, 0.035f, 0.06f), dark, null, false);
             bot.heldWeapon = gun;
+            return bot;
         }
 
         static void BuildYard(Transform env, Transform bots)

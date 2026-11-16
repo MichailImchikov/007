@@ -205,14 +205,43 @@ namespace FPS
                     Part(PrimitiveType.Cube, root, new Vector3(0.04f, 0.2f, 0f), new Vector3(0.04f, 0.1f, 0.04f), glow, new Vector3(0f, 0f, 45f));
                     Part(PrimitiveType.Cube, root, new Vector3(-0.04f, 0.2f, 0f), new Vector3(0.04f, 0.1f, 0.04f), glow, new Vector3(0f, 0f, -45f));
                     break;
-                case AbilityType.Minesweeper:
-                    for (int x = 0; x < 4; x++)
-                        for (int y = 0; y < 4; y++)
-                            Part(PrimitiveType.Cube, root, new Vector3((x - 1.5f) * 0.085f, (y - 1.5f) * 0.085f, 0f), new Vector3(0.075f, 0.075f, 0.03f),
-                                 (x + y) % 3 == 0 ? Mat(new Color(0.85f, 0.85f, 0.88f), 0.6f) : Mat(new Color(0.55f, 0.57f, 0.6f), 0.4f));
-                    Part(PrimitiveType.Sphere, root, new Vector3(0.04f, 0.04f, 0.04f), Vector3.one * 0.07f, dark);
-                    Part(PrimitiveType.Sphere, root, new Vector3(0.04f, 0.04f, 0.075f), Vector3.one * 0.02f, Mat(new Color(1f, 0.1f, 0.1f), 4f));
+                case AbilityType.Hyperspeed:
+                    // a lightning bolt with speed streaks
+                    Part(PrimitiveType.Cube, root, new Vector3(0.03f, 0.08f, 0f), new Vector3(0.07f, 0.2f, 0.04f), glow, new Vector3(0f, 0f, -25f));
+                    Part(PrimitiveType.Cube, root, new Vector3(-0.02f, -0.07f, 0f), new Vector3(0.07f, 0.2f, 0.04f), glow, new Vector3(0f, 0f, -25f));
+                    Part(PrimitiveType.Cube, root, new Vector3(0f, 0.01f, 0f), new Vector3(0.14f, 0.04f, 0.04f), glow);
+                    for (int k = 0; k < 3; k++)
+                        Part(PrimitiveType.Cube, root, new Vector3(-0.17f, -0.08f + k * 0.08f, -0.02f), new Vector3(0.12f - k * 0.02f, 0.015f, 0.015f), dark);
                     break;
+                case AbilityType.LaserEyes:
+                {
+                    // two glowing eyes with beams
+                    var beam = Mat(new Color(1f, 0.15f, 0.08f), 4f);
+                    for (int k = -1; k <= 1; k += 2)
+                    {
+                        Part(PrimitiveType.Sphere, root, new Vector3(k * 0.07f, 0.05f, 0f), new Vector3(0.09f, 0.06f, 0.05f), Mat(new Color(1f, 0.9f, 0.85f), 3f));
+                        Part(PrimitiveType.Cylinder, root, new Vector3(k * 0.07f, 0.05f, 0.16f), new Vector3(0.02f, 0.16f, 0.02f), beam, new Vector3(90f, 0f, 0f));
+                    }
+                    Part(PrimitiveType.Sphere, root, new Vector3(0f, 0f, -0.04f), new Vector3(0.3f, 0.26f, 0.1f), dark);
+                    break;
+                }
+                case AbilityType.TicTacToe:
+                {
+                    // # grid with an X and an O
+                    var line = Mat(new Color(0.9f, 0.92f, 0.96f), 1.2f);
+                    for (int k = -1; k <= 1; k += 2)
+                    {
+                        Part(PrimitiveType.Cube, root, new Vector3(k * 0.06f, 0f, 0f), new Vector3(0.018f, 0.34f, 0.02f), line);
+                        Part(PrimitiveType.Cube, root, new Vector3(0f, k * 0.06f, 0f), new Vector3(0.34f, 0.018f, 0.02f), line);
+                    }
+                    var xMat = Mat(new Color(1f, 0.3f, 0.25f), 2.5f);
+                    Part(PrimitiveType.Cube, root, new Vector3(-0.12f, 0.12f, 0.01f), new Vector3(0.09f, 0.022f, 0.02f), xMat, new Vector3(0f, 0f, 45f));
+                    Part(PrimitiveType.Cube, root, new Vector3(-0.12f, 0.12f, 0.01f), new Vector3(0.09f, 0.022f, 0.02f), xMat, new Vector3(0f, 0f, -45f));
+                    Part(PrimitiveType.Cylinder, root, new Vector3(0f, 0f, 0.01f), new Vector3(0.08f, 0.012f, 0.08f), Mat(new Color(0.3f, 0.65f, 1f), 2.5f), new Vector3(90f, 0f, 0f));
+                    Part(PrimitiveType.Cube, root, new Vector3(0.12f, -0.12f, 0.01f), new Vector3(0.09f, 0.022f, 0.02f), xMat, new Vector3(0f, 0f, 45f));
+                    Part(PrimitiveType.Cube, root, new Vector3(0.12f, -0.12f, 0.01f), new Vector3(0.09f, 0.022f, 0.02f), xMat, new Vector3(0f, 0f, -45f));
+                    break;
+                }
                 case AbilityType.Build:
                 {
                     var wood = Mat(new Color(0.75f, 0.52f, 0.28f), 0.7f, 0.3f);
@@ -235,6 +264,46 @@ namespace FPS
                         Part(PrimitiveType.Cube, arm, new Vector3(0.2f, 0.05f, 0f), new Vector3(0.05f, 0.12f, 0.04f), glow);
                     }
                     Part(PrimitiveType.Sphere, root, Vector3.zero, Vector3.one * 0.1f, dark);
+                    break;
+                case AbilityType.ShadowClones:
+                    // three little silhouettes, the front one lit
+                    for (int k = -1; k <= 1; k++)
+                    {
+                        var m = k == 0 ? glow : dark;
+                        float z = k == 0 ? 0.03f : -0.02f;
+                        Part(PrimitiveType.Sphere, root, new Vector3(k * 0.11f, 0.1f, z), Vector3.one * 0.07f, m);
+                        Part(PrimitiveType.Capsule, root, new Vector3(k * 0.11f, -0.04f, z), new Vector3(0.08f, 0.09f, 0.05f), m);
+                    }
+                    break;
+                case AbilityType.Rewind:
+                    // ◄◄ : two arrowheads of rotated bars
+                    for (int k = 0; k < 2; k++)
+                    {
+                        float x = -0.08f + k * 0.13f;
+                        Part(PrimitiveType.Cube, root, new Vector3(x, 0.045f, 0f), new Vector3(0.14f, 0.035f, 0.04f), glow, new Vector3(0f, 0f, -35f));
+                        Part(PrimitiveType.Cube, root, new Vector3(x, -0.045f, 0f), new Vector3(0.14f, 0.035f, 0.04f), glow, new Vector3(0f, 0f, 35f));
+                    }
+                    Part(PrimitiveType.Cylinder, root, new Vector3(0f, 0f, -0.03f), new Vector3(0.36f, 0.01f, 0.36f), dark, new Vector3(90f, 0f, 0f));
+                    break;
+                case AbilityType.Sidearm:
+                    Part(PrimitiveType.Cube, root, new Vector3(0.02f, 0.05f, 0f), new Vector3(0.26f, 0.07f, 0.05f), dark);
+                    Part(PrimitiveType.Cube, root, new Vector3(-0.07f, -0.05f, 0f), new Vector3(0.07f, 0.16f, 0.05f), dark, new Vector3(0f, 0f, -12f));
+                    Part(PrimitiveType.Cube, root, new Vector3(0.05f, 0.05f, 0.03f), new Vector3(0.12f, 0.02f, 0.01f), glow);
+                    Part(PrimitiveType.Cube, root, new Vector3(0.12f, -0.1f, 0f), new Vector3(0.05f, 0.1f, 0.03f), glow);
+                    Part(PrimitiveType.Cube, root, new Vector3(0.12f, -0.1f, 0f), new Vector3(0.1f, 0.03f, 0.03f), glow);
+                    break;
+                case AbilityType.Lag:
+                    // a stuttering frame counter: broken bar chart
+                    for (int k = 0; k < 4; k++)
+                        Part(PrimitiveType.Cube, root, new Vector3(-0.12f + k * 0.08f, -0.12f + (k % 2 == 0 ? 0.04f : 0.1f) * 0.5f + k * 0.03f, 0f),
+                             new Vector3(0.05f, 0.06f + (k % 2 == 0 ? 0.04f : 0.1f) + k * 0.06f, 0.04f), k == 3 ? glow : dark);
+                    Part(PrimitiveType.Cube, root, new Vector3(0f, 0.1f, 0.01f), new Vector3(0.3f, 0.025f, 0.02f), glow, new Vector3(0f, 0f, -18f));
+                    break;
+                case AbilityType.EmptyMag:
+                    Part(PrimitiveType.Cube, root, new Vector3(0f, 0f, 0f), new Vector3(0.1f, 0.3f, 0.06f), dark, new Vector3(0f, 0f, 10f));
+                    Part(PrimitiveType.Cube, root, new Vector3(0.012f, 0.13f, 0.035f), new Vector3(0.06f, 0.03f, 0.01f), glow, new Vector3(0f, 0f, 10f));
+                    for (int k = 0; k < 3; k++)
+                        Part(PrimitiveType.Capsule, root, new Vector3(0.1f + k * 0.04f, -0.12f - k * 0.02f, 0f), new Vector3(0.025f, 0.035f, 0.025f), glow, new Vector3(0f, 0f, 70f + k * 25f));
                     break;
                 default:
                     Part(PrimitiveType.Cube, root, Vector3.zero, Vector3.one * 0.25f, glow, new Vector3(45f, 0f, 45f));
