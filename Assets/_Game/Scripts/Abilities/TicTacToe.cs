@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.IO;
 using UnityEngine;
 
 namespace FPS
@@ -8,7 +9,11 @@ namespace FPS
     /// tic-tac-toe. Both freeze where they stand and are untouchable for the whole game; the caster plays X and
     /// moves first. The loser blows up, a draw lets both go. A human clicks the cells (10 s per move, then a random
     /// one is made for him), a bot thinks a moment and plays well or sloppily by its difficulty.
-    /// Local simulation only: combatants living on another machine are never picked.
+    ///
+    /// Online: the caster's machine is the authority (board, turns, AI moves, timers). An opponent simulated on
+    /// another machine gets a mirror game there (TttStart): its owner freezes it, keeps it untouchable and — for a
+    /// human — shows the board (TttBoard updates) and sends the clicks back (TttMove). At the end (TttEnd) every
+    /// owner releases its own fighter and blows it up if it lost.
     /// </summary>
     public class TicTacToe : MonoBehaviour
     {
@@ -24,6 +29,9 @@ namespace FPS
             public TrainingBot dummy;
             public float skill; // chance of the best move for an AI side
             public bool IsLocalHuman => ph && ph == PlayerHealth.Local;
+            public bool Remote => c && c.remote;
+            /// <summary>Moves are computed by the authority (bots, dummies — wherever they live).</summary>
+            public bool AI => c && !c.human;
         }
 
         public Side X { get; private set; }
@@ -38,7 +46,9 @@ namespace FPS
         public float MoveLeft => moveT;
         public float EndT => endT;
 
-        float moveT, thinkT, endT;
+        int id;
+        bool mirror;          // this machine only shows the game; the caster's machine runs it
+        float moveT, thinkT, endT, syncT, mirrorLife;
         bool released;
         static bool allowKill;
 
@@ -66,41 +76,44 @@ namespace FPS
         public Side Other(Side s) => s == X ? O : X;
         public int Mark(Side s) => s == X ? 1 : 2;
 
-        // ------------------------------------------------------------------ start
+        // ------------------------------------------------------------------ start (authority)
 
         public static bool Begin(Combatant caster, float radius, out string why)
         {
             why = null;
-            if (!caster || !caster.alive) return false;
+            if (!caster || !caster.alive || caster.remote) return false;
             Combatant best = null;
             float bestD = radius;
             foreach (var c in Combatant.All)
             {
-                if (!c || !c.alive || c.remote || c.IsClone || !caster.IsEnemyOf(c)) continue;
+                if (!c || !c.alive || c.IsClone || !caster.IsEnemyOf(c)) continue;
                 if (InGame(c) || KnifeDuel.InDuel(c) || SkyArena.IsGunner(c)) continue;
-                if (!c.GetComponent<PlayerHealth>() && !c.GetComponent<CombatBot>() && !c.GetComponent<TrainingBot>()) continue;
+                if (c.remote) { if (!c.abilities || c.netId == 0) continue; } // a fighter of another machine: reachable by messages
+                else if (!c.GetComponent<PlayerHealth>() && !c.GetComponent<CombatBot>() && !c.GetComponent<TrainingBot>()) continue;
                 float d = Vector3.Distance(c.transform.position, caster.transform.position);
                 if (d < bestD) { bestD = d; best = c; }
             }
             if (!best) { why = $"Нет соперника рядом ({radius:0} м)"; return false; }
             var go = new GameObject("TicTacToe");
-            go.AddComponent<TicTacToe>().Init(caster, best);
+            go.AddComponent<TicTacToe>().Init(caster, best, Random.Range(1, int.MaxValue), false);
             return true;
         }
 
         Side MakeSide(Combatant c)
         {
             var s = new Side { c = c, ph = c.GetComponent<PlayerHealth>(), bot = c.GetComponent<CombatBot>(), dummy = c.GetComponent<TrainingBot>() };
-            s.skill = s.bot ? (s.bot.difficulty == 2 ? 0.9f : s.bot.difficulty == 0 ? 0.35f : 0.65f) : 0.55f;
+            s.skill = s.bot ? (s.bot.difficulty == 2 ? 0.9f : s.bot.difficulty == 0 ? 0.35f : 0.65f) : 0.6f;
             return s;
         }
 
-        void Init(Combatant caster, Combatant victim)
+        void Init(Combatant x, Combatant o, int gameId, bool isMirror)
         {
-            X = MakeSide(caster);
-            O = MakeSide(victim);
+            id = gameId;
+            mirror = isMirror;
+            X = MakeSide(x);
+            O = MakeSide(o);
             Active.Add(this);
-            foreach (var s in new[] { X, O }) Freeze(s);
+            foreach (var s in new[] { X, O }) if (!s.Remote) Freeze(s);
             StartTurn();
             foreach (var s in new[] { X, O })
             {
@@ -110,6 +123,14 @@ namespace FPS
                 ProcAudio.PlayAt(Sfx.ErrorTone, p, 0.6f, 0.05f);
             }
             if (X.IsLocalHuman || O.IsLocalHuman) TicTacToeHUD.Ensure().Open(this);
+            // the opponent lives on another machine: its owner freezes it there and shows the board
+            if (!mirror) foreach (var s in new[] { X, O }) if (s.Remote) Send(s.c, AbilityNetEffect.TttStart, w => { w.Write(id); w.Write((short)X.c.netId); w.Write((short)O.c.netId); });
+        }
+
+        void Send(Combatant target, AbilityNetEffect e, System.Action<BinaryWriter> body, Combatant sender = null)
+        {
+            if (!Net.Active || !target || target.netId == 0) return;
+            NetGame.SendAbilityEffect(target, sender ? sender : X.c, e, w => { body(w); });
         }
 
         void Freeze(Side s)
@@ -134,7 +155,7 @@ namespace FPS
 
         void Release(Side s)
         {
-            if (!s.c) return;
+            if (!s.c || s.Remote) return;
             if (s.ph)
             {
                 if (!s.ph.IsDead) s.ph.motor.Locked = false;
@@ -164,6 +185,12 @@ namespace FPS
             if (Result != 0 || released) return false;
             var s = ToMove;
             if (s.c != who || cell < 0 || cell > 8 || board[cell] != 0) return false;
+            if (mirror)
+            {
+                // the caster's machine decides; the board comes back with TttBoard
+                Send(X.c == who ? O.c : X.c, AbilityNetEffect.TttMove, w => { w.Write(id); w.Write((byte)cell); }, who);
+                return true;
+            }
             Play(cell);
             return true;
         }
@@ -179,17 +206,32 @@ namespace FPS
                 WinLine = line;
                 endT = 1.6f;
                 ProcAudio.Play(Sfx.AbilityReady, 0.6f, 0f);
-                return;
             }
-            if (Full(board)) { Result = 3; endT = 1.4f; ProcAudio.Play(Sfx.Dry, 0.6f, 0f); return; }
-            Turn = 3 - Turn;
-            StartTurn();
+            else if (Full(board)) { Result = 3; endT = 1.4f; ProcAudio.Play(Sfx.Dry, 0.6f, 0f); }
+            else { Turn = 3 - Turn; StartTurn(); }
+            SyncBoard();
+        }
+
+        /// <summary>Authority → the remote human's machine: the board, whose move, the clock, the result.</summary>
+        void SyncBoard()
+        {
+            if (mirror || !Net.Active) return;
+            syncT = 1f;
+            foreach (var s in new[] { X, O })
+                if (s.Remote && s.c.human)
+                    Send(s.c, AbilityNetEffect.TttBoard, w =>
+                    {
+                        w.Write(id);
+                        for (int i = 0; i < 9; i++) w.Write((byte)board[i]);
+                        w.Write((byte)Turn); w.Write((byte)Result); w.Write(moveT);
+                    });
         }
 
         void Update()
         {
             float dt = Time.deltaTime;
             if (dt <= 0f || released) return;
+            if (mirror) { MirrorUpdate(dt); return; }
             if (!Valid(X) || !Valid(O) || (MatchManager.Instance && MatchManager.Instance.Ended) || TimeRewind.Playing) { Finish(true); return; }
             KeepFrozen(X); KeepFrozen(O);
 
@@ -199,9 +241,11 @@ namespace FPS
                 if (endT <= 0f) Finish(false);
                 return;
             }
+            syncT -= dt;
+            if (syncT <= 0f) SyncBoard();
             var s = ToMove;
             moveT -= dt;
-            if (s.IsLocalHuman)
+            if (!s.AI)
             {
                 if (moveT <= 0f) Play(RandomFree()); // out of time: a random move
                 return;
@@ -210,10 +254,21 @@ namespace FPS
             if (thinkT <= 0f) Play(Random.value < s.skill ? BestMove(board, Turn) : RandomFree());
         }
 
+        void MirrorUpdate(float dt)
+        {
+            mirrorLife += dt;
+            moveT -= dt;
+            foreach (var s in new[] { X, O }) if (!s.Remote) KeepFrozen(s);
+            if (Result != 0) endT -= dt;
+            // the caster's machine went quiet (left, crashed): let go after a while
+            if (mirrorLife > 120f || !X.c || !O.c) Finish(true);
+        }
+
         bool Valid(Side s) => s.c && s.c.gameObject.activeInHierarchy && s.c.alive;
 
         void KeepFrozen(Side s)
         {
+            if (s.Remote) return;
             if (s.ph)
             {
                 s.ph.motor.Locked = true;
@@ -230,12 +285,20 @@ namespace FPS
             Release(X);
             Release(O);
             Active.Remove(this);
+            Combatant winner = null, loser = null;
             if (!aborted && (Result == 1 || Result == 2))
             {
-                var winner = Result == 1 ? X : O;
-                var loser = Other(winner);
-                if (loser.c && loser.c.alive) Blow(loser.c, winner.c);
+                winner = Result == 1 ? X.c : O.c;
+                loser = Result == 1 ? O.c : X.c;
             }
+            if (!mirror)
+            {
+                // remote sides: their owners release them and blow up their own loser
+                int res = aborted ? 0 : Result;
+                foreach (var s in new[] { X, O })
+                    if (s.Remote) Send(s.c, AbilityNetEffect.TttEnd, w => { w.Write(id); w.Write((byte)res); w.Write((short)(winner ? winner.netId : 0)); });
+            }
+            if (loser && !loser.remote && loser.alive) Blow(loser, winner);
             if (TicTacToeHUD.Instance) TicTacToeHUD.Instance.Closed(this);
             Destroy(gameObject);
         }
@@ -245,6 +308,7 @@ namespace FPS
         {
             Vector3 p = loser.transform.position + Vector3.up * 0.4f;
             Explosions.Visual(p, 4f, 8f, winner);
+            NetGame.SendExplosion(p, 4f, 8f, winner); // the same blast for everybody else (visual only)
             var d = loser.GetComponent<IDamageable>();
             allowKill = true;
             try { d?.TakeDamage(new DamageInfo { amount = 9999f, point = loser.Chest, direction = Vector3.up, attacker = winner, weapon = Weapon, critical = true }); }
@@ -260,6 +324,78 @@ namespace FPS
                 if (X != null) Release(X);
                 if (O != null) Release(O);
                 if (TicTacToeHUD.Instance) TicTacToeHUD.Instance.Closed(this);
+            }
+        }
+
+        // ------------------------------------------------------------------ network
+
+        static TicTacToe ById(int gameId)
+        {
+            foreach (var g in Active) if (g && g.id == gameId && !g.released) return g;
+            return null;
+        }
+
+        /// <summary>Tic-tac-toe effects routed to <paramref name="self"/>'s owner (this machine).</summary>
+        public static void OnNet(AbilityNetEffect e, Combatant self, Combatant sender, BinaryReader r)
+        {
+            int gameId = r.ReadInt32();
+            switch (e)
+            {
+                case AbilityNetEffect.TttStart:
+                {
+                    var x = NetGame.Find(r.ReadInt16());
+                    var o = NetGame.Find(r.ReadInt16());
+                    if (!x || !o || ById(gameId) || InGame(self)) return;
+                    var go = new GameObject("TicTacToe (mirror)");
+                    go.AddComponent<TicTacToe>().Init(x, o, gameId, true);
+                    break;
+                }
+                case AbilityNetEffect.TttBoard:
+                {
+                    var g = ById(gameId);
+                    var b = new int[9];
+                    for (int i = 0; i < 9; i++) b[i] = r.ReadByte();
+                    int turn = r.ReadByte(), res = r.ReadByte();
+                    float left = r.ReadSingle();
+                    if (!g || !g.mirror) return;
+                    bool changed = false;
+                    for (int i = 0; i < 9; i++) { if (g.board[i] != b[i]) changed = true; g.board[i] = b[i]; }
+                    if (changed) ProcAudio.Play(Sfx.Click, 0.7f, 0.05f);
+                    g.Turn = turn;
+                    g.moveT = left;
+                    if (res != 0 && g.Result == 0)
+                    {
+                        g.Result = res;
+                        Winner(g.board, out var line);
+                        g.WinLine = line;
+                        g.endT = 1.6f;
+                        ProcAudio.Play(res == 3 ? Sfx.Dry : Sfx.AbilityReady, 0.6f, 0f);
+                    }
+                    break;
+                }
+                case AbilityNetEffect.TttMove:
+                {
+                    int cell = r.ReadByte();
+                    var g = ById(gameId);
+                    if (!g || g.mirror || g.Result != 0) return;
+                    var s = g.ToMove;
+                    if (s.c != sender || cell < 0 || cell > 8 || g.board[cell] != 0) return;
+                    g.Play(cell);
+                    break;
+                }
+                case AbilityNetEffect.TttEnd:
+                {
+                    int res = r.ReadByte();
+                    var winner = NetGame.Find(r.ReadInt16());
+                    var g = ById(gameId);
+                    if (!g || !g.mirror) return;
+                    if (res != 0 && g.Result == 0) { g.Result = res; Winner(g.board, out var line); g.WinLine = line; }
+                    // the authority's verdict: release ours, and if ours lost it goes off here (its owner)
+                    Combatant loser = res == 1 ? g.O.c : res == 2 ? g.X.c : null;
+                    g.Finish(true);
+                    if (loser && !loser.remote && loser.alive) Blow(loser, winner);
+                    break;
+                }
             }
         }
 

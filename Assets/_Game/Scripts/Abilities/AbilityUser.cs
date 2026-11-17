@@ -138,7 +138,7 @@ namespace FPS
             // drone war: the ability key launches the drone (DroneOperator), no joke abilities
             if (DroneMode.Active) { enabled = false; return; }
             if (isPlayer) AbilityHUD.Ensure().Bind(this);
-            if (isPlayer && !Net.Active) TimeRewind.Ensure(); // records the field for "Перемотка"
+            if (isPlayer) TimeRewind.Ensure(); // records the field for "Перемотка" (online too: every machine its own fighters)
         }
 
         void OnDestroy()
@@ -207,6 +207,7 @@ namespace FPS
                         return false;
                     }
                     if (isPlayer) Say(info.name, "Время идёт назад…", info.color);
+                    SendEvent(AbilityNetEvent.Rewind, null);
                     return true;
                 }
                 case AbilityType.ShadowClones:

@@ -124,7 +124,7 @@ namespace FPS
             [AbilityType.Hyperspeed] = new AbilityInfo
             {
                 name = "Гиперскорость", glyph = ">>", color = new Color(0.35f, 0.9f, 1f), cooldown = 20f, duration = 7f, weight = 0.8f,
-                desc = "7 сек. вы бегаете в 3.6 раза быстрее — но как по льду: заносит, тормозить приходится заранее."
+                desc = $"7 сек. вы бегаете в {AbilityUser.HyperMul:0.#} раза быстрее — но как по льду: заносит, тормозить приходится заранее."
             },
             [AbilityType.LaserEyes] = new AbilityInfo
             {

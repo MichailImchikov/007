@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.IO;
 using UnityEngine;
 
 namespace FPS
@@ -10,8 +11,11 @@ namespace FPS
     /// no damage, but it pushes the slider toward the opponent. Whoever drives it to the end plays the finisher:
     /// disarm, slow-motion stab, the loser drops. While the duel lasts nobody can hurt either of them.
     ///
-    /// Local simulation only: participants simulated on another machine (LAN proxies) never start a duel — their
-    /// knife hits go through as ordinary damage.
+    /// Online: the machine that notices the clash (a knife hit arriving on its own fighter while that fighter's blade
+    /// is on its way) runs the duel — the authority: slider, AI strikes, the verdict. The opponent's owner gets a
+    /// mirror (DuelStart): it places and freezes its own fighter, shows the camera / HUD, sends its F presses
+    /// (DuelHit) and follows the slider (DuelState) and the verdict (DuelEnd). Each machine moves only its own
+    /// fighter and kills only its own loser; the rest arrives through the snapshots.
     /// </summary>
     [DefaultExecutionOrder(900)]
     public class KnifeDuel : MonoBehaviour
@@ -64,8 +68,8 @@ namespace FPS
             if (InDuel(victim)) return true;
             var a = info.attacker;
             if (a && a != victim && InDuel(a)) return true;
-            if (!a || a == victim || info.fromNetwork || !IsKnife(info.weapon)) return false;
-            if (a.remote || victim.remote || !a.alive || !victim.alive || !a.IsEnemyOf(victim)) return false;
+            if (!a || a == victim || !IsKnife(info.weapon)) return false;
+            if (victim.remote || !a.alive || !victim.alive || !a.IsEnemyOf(victim)) return false;
             if (SkyArena.Active || DroneMode.Active || (MatchManager.Instance && MatchManager.Instance.Ended)) return false;
 
             float now = Time.time;
@@ -82,9 +86,17 @@ namespace FPS
             }
             strikes.Remove(a); strikes.Remove(victim);
             swings.Remove(a); swings.Remove(victim);
-            if (refund > 0f) Heal(a, refund);
+            if (refund > 0f && !a.remote) Heal(a, refund);
             Begin(a, victim);
             return true;
+        }
+
+        /// <summary>A knife hit leaving this machine for a fighter simulated elsewhere (NetProxy): remembered so
+        /// that its answer arriving a moment later is recognised as a clash.</summary>
+        public static void NoteStrike(Combatant attacker, Combatant victim, string weapon, float amount)
+        {
+            if (!attacker || !victim || !IsKnife(weapon)) return;
+            strikes[attacker] = new Strike { victim = victim, time = Time.time, amount = amount };
         }
 
         static bool Faces(Combatant c, Combatant other)
@@ -97,7 +109,8 @@ namespace FPS
 
         static bool CanFight(Combatant c)
         {
-            if (!c || !c.alive || c.remote || TicTacToe.InGame(c)) return false;
+            if (!c || !c.alive || TicTacToe.InGame(c) || InDuel(c)) return false;
+            if (c.remote) return c.netId != 0 && c.abilities; // its owner takes the mirror (DuelStart)
             var ph = c.GetComponent<PlayerHealth>();
             if (ph) return !ph.IsDead && !ph.BeingExecuted && !(ph.motor && (ph.motor.IsVaulting || ph.motor.IsPulled))
                            && !(c.abilities && (c.abilities.Phasing || c.abilities.Morphed));
@@ -136,8 +149,10 @@ namespace FPS
             public Loadout loadout;
             public CombatBot bot;
             public TrainingBot dummy;
-            /// <summary>Not a human: strikes on its own at <see cref="botRate"/>.</summary>
-            public bool AI => bot || dummy;
+            /// <summary>Simulated on another machine (a NetProxy): its owner places and animates it.</summary>
+            public bool Remote => c && c.remote;
+            /// <summary>Not a human: strikes on its own at <see cref="botRate"/> (decided by the authority, wherever it lives).</summary>
+            public bool AI => bot || dummy || (Remote && !c.human);
             public CharacterAnimator anim;
             public HumanoidRig rig;
             public Transform knife, hand, forearm;
@@ -151,6 +166,8 @@ namespace FPS
         }
 
         Side a, b;
+        bool mirror;   // online: the other machine runs this duel, here only our own fighter is driven
+        int duelId;
         int phase; // 0 intro, 1 fight, 2 finisher, 3 outro
         float t, fightT;
         /// <summary>-1 … +1: +1 = fighter A wins.</summary>
@@ -222,12 +239,14 @@ namespace FPS
             return s;
         }
 
-        void Init(Combatant ca, Combatant cb)
+        void Init(Combatant ca, Combatant cb, bool isMirror = false, int id = 0, Vector3? c0 = null, Vector3? ax0 = null, float seed = -1f)
         {
             a = MakeSide(ca);
             b = MakeSide(cb);
+            mirror = isMirror;
+            duelId = id != 0 ? id : Random.Range(1, int.MaxValue);
             Active.Add(this);
-            wobbleSeed = Random.value * 10f;
+            wobbleSeed = seed >= 0f ? seed : Random.value * 10f;
 
             Vector3 pa = ca.transform.position, pb = cb.transform.position;
             axis = pb - pa; axis.y = 0f;
@@ -235,8 +254,19 @@ namespace FPS
             axis.y = 0f; axis.Normalize();
             center = (pa + pb) * 0.5f;
             center.y = Mathf.Min(pa.y, pb.y);
+            if (c0.HasValue) center = c0.Value;
+            if (ax0.HasValue && ax0.Value.sqrMagnitude > 0.0001f) axis = ax0.Value.normalized;
 
             foreach (var s in new[] { a, b }) Grab(s);
+            // the opponent lives on another machine: its owner takes over its side
+            if (!mirror)
+                foreach (var s in new[] { a, b })
+                    if (s.Remote)
+                        Send(s.c, AbilityNetEffect.DuelStart, w =>
+                        {
+                            w.Write(duelId); w.Write((short)a.c.netId); w.Write((short)b.c.netId);
+                            w.Write(center.x); w.Write(center.y); w.Write(center.z); w.Write(axis.x); w.Write(axis.z); w.Write(wobbleSeed);
+                        });
             if (HasLocal)
             {
                 var me = a.IsLocal ? a : b;
@@ -260,6 +290,15 @@ namespace FPS
 
         void Grab(Side s)
         {
+            if (s.Remote)
+            {
+                // a proxy: its owner freezes and poses it; here it only gets a knife in the hand
+                s.knife = BuildKnife();
+                PoseKnife(s);
+                s.botRate = 6.1f * Random.Range(0.9f, 1.1f);
+                s.botNext = Random.Range(0.05f, 0.25f);
+                return;
+            }
             if (s.c.abilities) s.c.abilities.ClearStatus();
             if (s.IsPlayer)
             {
@@ -367,6 +406,13 @@ namespace FPS
         {
             fightT += dt;
             if (MatchManager.Instance && MatchManager.Instance.Ended) { Abort(); return; }
+            if (mirror)
+            {
+                // the authority counts; our presses go there, the slider comes back with DuelState
+                foreach (var s in new[] { a, b })
+                    if (s.IsLocal && (GameInput.MeleePressed || GameInput.FirePressed)) PressLocal(s);
+                return;
+            }
             foreach (var s in new[] { a, b })
             {
                 if (s.IsLocal)
@@ -385,17 +431,45 @@ namespace FPS
                         Hit(s);
                     }
                 }
-                else if (s.IsPlayer && Random.value < dt * 6f) Hit(s); // a non-local human (should not happen offline)
+                // a remote human: its presses arrive as DuelHit
             }
             if (Mathf.Abs(progress) >= 1f || fightT >= MaxFight)
             {
-                winner = progress >= 0f ? a : b;
-                loser = winner == a ? b : a;
-                progress = winner == a ? 1f : -1f;
-                phase = 2; t = 0f;
-                ProcAudio.PlayAt(Sfx.KnifeClang, ClashPoint, 1f, 0.02f);
-                if (HasLocal) { ProcAudio.Play(winner.IsLocal ? Sfx.AbilityReady : Sfx.Hurt, 0.7f, 0f); camShake = 0.8f; }
+                Decide(progress >= 0f ? a : b);
+                foreach (var s in new[] { a, b })
+                    if (s.Remote) Send(s.c, AbilityNetEffect.DuelEnd, w => { w.Write(duelId); w.Write((byte)(winner == a ? 1 : 2)); });
             }
+        }
+
+        /// <summary>The local human pressed F: a strike here (authority) or sent to the authority (mirror).</summary>
+        void PressLocal(Side s)
+        {
+            if (!mirror) { Hit(s); return; }
+            s.presses++;
+            s.strikeT = s.strikeT >= 0f && s.strikeT < 0.55f ? 0.28f : 0f;
+            var other = s == a ? b : a;
+            Send(other.c, AbilityNetEffect.DuelHit, w => w.Write(duelId), s.c);
+        }
+
+        /// <summary>Test hook (network autopilot): the same as the local player pressing F in its duel.</summary>
+        public static void TestPress(Combatant c)
+        {
+            var d = Of(c);
+            if (d == null || d.phase != 1) return;
+            var s = d.a.c == c ? d.a : d.b;
+            if (s.IsLocal) d.PressLocal(s);
+        }
+
+        public bool IsMirror => mirror;
+
+        void Decide(Side w)
+        {
+            winner = w;
+            loser = winner == a ? b : a;
+            progress = winner == a ? 1f : -1f;
+            phase = 2; t = 0f;
+            ProcAudio.PlayAt(Sfx.KnifeClang, ClashPoint, 1f, 0.02f);
+            if (HasLocal) { ProcAudio.Play(winner.IsLocal ? Sfx.AbilityReady : Sfx.Hurt, 0.7f, 0f); camShake = 0.8f; }
         }
 
         /// <summary>One strike: the blade swings, meets the other one with sparks, the slider moves.</summary>
@@ -404,6 +478,15 @@ namespace FPS
             s.presses++;
             s.strikeT = s.strikeT >= 0f && s.strikeT < 0.55f ? 0.28f : 0f;
             progress = Mathf.Clamp(progress + (s == a ? Push : -Push), -1f, 1f);
+            if (!mirror)
+                foreach (var r in new[] { a, b })
+                    if (r.Remote) Send(r.c, AbilityNetEffect.DuelState, w => { w.Write(duelId); w.Write(progress); w.Write((byte)(s == a ? 1 : 2)); });
+            StrikeFx(s);
+        }
+
+        /// <summary>Sparks, clang and camera kicks of one strike (also for strikes counted on the authority).</summary>
+        void StrikeFx(Side s)
+        {
             var o = s == a ? b : a;
             o.recoil = Mathf.Min(1f, o.recoil + 0.45f);
             Vector3 cp = ClashPoint + Vector3.Cross(Vector3.up, axis) * Random.Range(-0.15f, 0.15f) + Vector3.up * Random.Range(-0.2f, 0.18f);
@@ -464,6 +547,8 @@ namespace FPS
             if (winner.IsLocal) { ProcAudio.Play(Sfx.Stab, 0.8f); HUD.Ensure().ShowHitmarker(true, true); HUD.Ensure().RegisterHit(true); }
             camShake = 1f;
 
+            // a loser on another machine dies there (its owner runs the same finisher)
+            if (loser.Remote) return;
             // release the loser so its own death code owns the body
             if (loser.bot) loser.bot.ExternalControl = false;
             if (loser.dummy) loser.dummy.ExternalControl = false;
@@ -522,7 +607,7 @@ namespace FPS
         void Place(Side s, Vector3 want, Vector3 facing, float intro, float dt)
         {
             s.recoil = Mathf.MoveTowards(s.recoil, 0f, dt * 3.5f);
-            if (!s.c.alive) return; // its death animation owns it now
+            if (!s.c.alive || s.Remote) return; // its death animation / its owner (snapshots) owns it now
             // every strike is a short lunge of the whole body
             if (s.strikeT >= 0f) want += facing.normalized * 0.11f * Mathf.Sin(Mathf.Clamp01(s.strikeT) * Mathf.PI);
             var tr = s.c.transform;
@@ -554,6 +639,7 @@ namespace FPS
                 if (s.strikeT >= 1f) s.strikeT = -1f;
             }
             bool alive = s.c.alive;
+            if (s.Remote) return; // pose and arm come with the snapshots
             // between strikes the arm stays in the guard (wind-up) pose
             // guard: the knife hand up and ready (most of the wind-up), breathing a little
             float knife = !alive ? -1f : s.strikeT >= 0f ? s.strikeT : 0.3f + 0.03f * Mathf.Sin(wobble * 5f + (s == a ? 0f : 1.7f));
@@ -834,6 +920,7 @@ namespace FPS
             if (s.anim) { s.anim.knife = -1f; s.anim.holdingWeapon = true; }
             if (s.c.abilities) s.c.abilities.RefreshVisibility(); // the gun comes back
             if (s.dummy && s.dummy.sparring && s.dummy.heldWeapon) s.dummy.heldWeapon.gameObject.SetActive(false); // ... except for a sparring partner
+            if (s.Remote) return; // its owner lets it go
             if (s.IsPlayer)
             {
                 if (s.melee) s.melee.DuelStrike = -1f;
@@ -861,10 +948,102 @@ namespace FPS
         }
 
         /// <summary>Match over / a fighter vanished: both walk away.</summary>
-        public void Abort()
+        public void Abort() => Abort(true);
+
+        void Abort(bool tell)
         {
             if (phase < 2) progress = 0f;
+            if (tell && !ended)
+                foreach (var s in new[] { a, b })
+                    if (s != null && s.Remote) Send(s.c, AbilityNetEffect.DuelAbort, w => w.Write(duelId));
             End();
+        }
+
+        // ------------------------------------------------------------------ network
+
+        void Send(Combatant target, AbilityNetEffect e, System.Action<BinaryWriter> body, Combatant sender = null)
+        {
+            if (!Net.Active || !target || target.netId == 0) return;
+            var from = sender ? sender : (a.Remote ? b.c : a.c);
+            NetGame.SendAbilityEffect(target, from, e, w => body(w));
+        }
+
+        static KnifeDuel ById(int id)
+        {
+            foreach (var d in Active) if (d && !d.ended && d.duelId == id) return d;
+            return null;
+        }
+
+        /// <summary>Knife-duel effects routed to <paramref name="self"/>'s owner (this machine).</summary>
+        public static void OnNet(AbilityNetEffect e, Combatant self, Combatant sender, BinaryReader r)
+        {
+            int id = r.ReadInt32();
+            switch (e)
+            {
+                case AbilityNetEffect.DuelStart:
+                {
+                    var ca = NetGame.Find(r.ReadInt16());
+                    var cb = NetGame.Find(r.ReadInt16());
+                    Vector3 c = new Vector3(r.ReadSingle(), r.ReadSingle(), r.ReadSingle());
+                    Vector3 ax = new Vector3(r.ReadSingle(), 0f, r.ReadSingle());
+                    float seed = r.ReadSingle();
+                    if (!ca || !cb || ById(id) != null) return;
+                    // both machines noticed the same clash at once: the authority with the lower id wins
+                    var mine = Of(self);
+                    if (mine != null)
+                    {
+                        var other = mine.a.c == self ? mine.b.c : mine.a.c;
+                        bool samePair = other == ca || other == cb;
+                        if (!samePair || mine.mirror) return;
+                        if (sender && self.netId < sender.netId) return; // ours stands, theirs gets dropped by our DuelStart
+                        mine.duelId = 0;
+                        mine.ended = true;          // drop ours quietly and become their mirror
+                        Active.Remove(mine);
+                        mine.ReleaseCamera();
+                        Destroy(mine.gameObject);
+                    }
+                    if (!ca.alive || !cb.alive) return;
+                    var go = new GameObject("KnifeDuel (mirror)");
+                    go.AddComponent<KnifeDuel>().Init(ca, cb, true, id, c, ax, seed);
+                    break;
+                }
+                case AbilityNetEffect.DuelHit:
+                {
+                    var d = ById(id);
+                    if (d == null || d.mirror || d.phase > 1) return;
+                    var s = d.a.c == sender ? d.a : d.b.c == sender ? d.b : null;
+                    if (s != null && s.Remote) d.Hit(s);
+                    break;
+                }
+                case AbilityNetEffect.DuelState:
+                {
+                    float p = r.ReadSingle();
+                    int who = r.ReadByte();
+                    var d = ById(id);
+                    if (d == null || !d.mirror) return;
+                    d.progress = p;
+                    var s = who == 1 ? d.a : d.b;
+                    // our own human strike was animated at the press; everything else animates now
+                    if (!s.IsLocal) s.strikeT = s.strikeT >= 0f && s.strikeT < 0.55f ? 0.28f : 0f;
+                    if (!s.IsLocal) s.presses++;
+                    d.StrikeFx(s);
+                    break;
+                }
+                case AbilityNetEffect.DuelEnd:
+                {
+                    int w = r.ReadByte();
+                    var d = ById(id);
+                    if (d == null || !d.mirror || d.phase >= 2) return;
+                    d.Decide(w == 1 ? d.a : d.b);
+                    break;
+                }
+                case AbilityNetEffect.DuelAbort:
+                {
+                    var d = ById(id);
+                    if (d != null) d.Abort(false);
+                    break;
+                }
+            }
         }
 
         void OnDestroy()

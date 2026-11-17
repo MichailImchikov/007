@@ -4,10 +4,10 @@ using UnityEngine;
 namespace FPS
 {
     /// <summary>One-shot ability events broadcast by the caster's machine (visuals for everybody else).</summary>
-    public enum AbilityNetEvent : byte { Grapple, Rocket, Fart, Swap, Area, Build, Arena }
+    public enum AbilityNetEvent : byte { Grapple, Rocket, Fart, Swap, Area, Build, Arena, Rewind, Clones, ClonePop }
 
     /// <summary>Effects one combatant's ability has on another one that lives on a different machine.</summary>
-    public enum AbilityNetEffect : byte { Blind, Area, Teleport, Pull, PullEnd }
+    public enum AbilityNetEffect : byte { Blind, Area, Teleport, Pull, PullEnd, ClonePop, TttStart, TttBoard, TttMove, TttEnd, DuelStart, DuelHit, DuelState, DuelEnd, DuelAbort }
 
     /// <summary>
     /// Multiplayer side of the ability system.
@@ -63,6 +63,8 @@ namespace FPS
             remotePhase = ph;
             phaseT = ph ? 1f : 0f;
 
+            remoteLaser = s.Has(CharState.Laser);
+            remoteHyper = s.Has(CharState.Hyper);
             bigHeadT = s.Has(CharState.BigHead) ? 1f : 0f;
             confuseT = s.Has(CharState.Confused) ? 1f : 0f;
             if (!Mathf.Approximately(bodyScale, s.bodyScale) || !Mathf.Approximately(headScale, s.headScale))
@@ -84,9 +86,13 @@ namespace FPS
             ApplyVisibility();
         }
 
+        bool remoteLaser, remoteHyper;
+
         void RemoteUpdate(float dt)
         {
             UpdateHook(dt);
+            RemoteLaser(dt, self && self.alive && remoteLaser);
+            RemoteHyper(self && self.alive && remoteHyper);
             if (chickenT > 0f)
             {
                 cluckT -= dt;
@@ -98,6 +104,9 @@ namespace FPS
         // ------------------------------------------------------------------ sending (caster side)
 
         bool Networked => Net.Active && !Remote && self && self.netId != 0;
+
+        /// <summary>Broadcast a one-shot ability event of this combatant (no-op offline).</summary>
+        public void SendEventPublic(AbilityNetEvent e, System.Action<BinaryWriter> body) => SendEvent(e, body);
 
         void SendEvent(AbilityNetEvent e, System.Action<BinaryWriter> body)
         {
@@ -185,6 +194,16 @@ namespace FPS
                 case AbilityNetEvent.Arena:
                     SkyArena.Begin(self, r.ReadSingle());
                     break;
+                case AbilityNetEvent.Rewind:
+                    // every machine winds back the fighters it simulates; the rest follows through the snapshots
+                    TimeRewind.BeginRemote(self);
+                    break;
+                case AbilityNetEvent.Clones:
+                    ShadowClone.OnNetSpawn(self, r);
+                    break;
+                case AbilityNetEvent.ClonePop:
+                    ShadowClone.OnNetPop(self, r.ReadByte(), false);
+                    break;
             }
         }
 
@@ -230,6 +249,23 @@ namespace FPS
                         netPullT = 0f;
                         puppet.ExternalControl = true;
                     }
+                    break;
+                case AbilityNetEffect.ClonePop:
+                    // somebody popped one of our clones on their machine: pop it here and tell everybody
+                    ShadowClone.OnNetPop(self, r.ReadByte(), true);
+                    break;
+                case AbilityNetEffect.TttStart:
+                case AbilityNetEffect.TttBoard:
+                case AbilityNetEffect.TttMove:
+                case AbilityNetEffect.TttEnd:
+                    TicTacToe.OnNet(e, self, caster, r);
+                    break;
+                case AbilityNetEffect.DuelStart:
+                case AbilityNetEffect.DuelHit:
+                case AbilityNetEffect.DuelState:
+                case AbilityNetEffect.DuelEnd:
+                case AbilityNetEffect.DuelAbort:
+                    KnifeDuel.OnNet(e, self, caster, r);
                     break;
                 case AbilityNetEffect.PullEnd:
                 {

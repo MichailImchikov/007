@@ -6,7 +6,8 @@ namespace FPS
     /// "Лазерный взгляд": the caster rises into the air, hangs there and burns everything it looks at with twin red
     /// beams from the eyes. While it lasts incoming damage is cut to a quarter. The player steers the beams with the
     /// view and drifts with WASD; a bot tracks its nearest visible enemy (with a little lag). Then a soft landing.
-    /// Offline only.
+    /// Online: the flight travels in the snapshots, the beams are drawn elsewhere from the CharState.Laser flag and
+    /// the look direction (RemoteLaser); damage is dealt by the caster's machine in 0.1 s chunks (proxies forward it).
     /// </summary>
     public partial class AbilityUser
     {
@@ -27,12 +28,14 @@ namespace FPS
         static AudioClip humClip;
 
         public bool Lasering => laserT > 0f || laserLandT >= 0f;
+        /// <summary>The beams are firing right now (replicated as CharState.Laser).</summary>
+        public bool LaserBeamOn { get; private set; }
+        float beamDmgT, bounceDmgT;
         /// <summary>Damage hook: what share of incoming damage still lands.</summary>
         public float IncomingDamageScale => Lasering ? LaserDamageScale : 1f;
 
         bool StartLaser(float dur)
         {
-            if (Net.Active) { if (isPlayer) Say("Не сейчас", "Лазерный взгляд не работает по сети", new Color(1f, 0.4f, 0.4f)); return false; }
             if (!isPlayer && !bot) return false;
             laserT = laserDur = dur;
             laserLandT = -1f;
@@ -125,6 +128,7 @@ namespace FPS
 
         void EndLaserFx()
         {
+            LaserBeamOn = false;
             if (laserBeams != null) foreach (var b in laserBeams) if (b) b.gameObject.SetActive(false);
             if (laserBounce) laserBounce.enabled = false;
             if (laserGlow) laserGlow.gameObject.SetActive(false);
@@ -209,6 +213,7 @@ namespace FPS
                 if (anim) { anim.aimPitch = -Mathf.Asin(Mathf.Clamp(dir.y, -1f, 1f)) * Mathf.Rad2Deg; anim.holdingWeapon = false; anim.grounded = false; }
             }
             bool active = rise > 0.6f && laserT > 0f;
+            LaserBeamOn = active;
             Vector3 end = eye + dir * LaserRange;
             bounced = false;
             if (active && RaycastAim(eye, dir, LaserRange, out RaycastHit hit))
@@ -225,10 +230,10 @@ namespace FPS
                     if (RaycastIgnoring(blade, rdir, LaserRange, victim.transform, out RaycastHit rh))
                     {
                         bounceTo = rh.point;
-                        BeamBurn(rh, rdir, victim, dt, "Рикошет");
+                        BeamBurn(rh, rdir, victim, dt, "Рикошет", ref bounceDmgT);
                     }
                 }
-                else BeamBurn(hit, dir, self, dt, "Лазерный взгляд");
+                else BeamBurn(hit, dir, self, dt, "Лазерный взгляд", ref beamDmgT);
             }
 
             // eyes: from the player's own view the beams come in from just under the screen edges
@@ -275,14 +280,17 @@ namespace FPS
         }
 
         /// <summary>One frame of beam on a surface: damage (attributed to <paramref name="by"/>) and burn effects.</summary>
-        void BeamBurn(RaycastHit hit, Vector3 dir, Combatant by, float dt, string weapon)
+        void BeamBurn(RaycastHit hit, Vector3 dir, Combatant by, float dt, string weapon, ref float dmgT)
         {
             var hb = hit.collider.GetComponent<Hitbox>();
             IDamageable d = hb ? hb.Owner : hit.collider.GetComponent<IDamageable>();
-            if (d != null)
+            // damage in 0.1 s chunks: same damage per second, ten network messages a second instead of one per frame
+            dmgT += dt;
+            if (d != null && dmgT >= 0.1f)
             {
                 // a bot's beam is gentler: it never leaves its target
-                float amount = LaserDps * dt * (isPlayer ? 1f : 0.5f);
+                float amount = LaserDps * dmgT * (isPlayer ? 1f : 0.5f);
+                dmgT = 0f;
                 var res = d.TakeDamage(new DamageInfo { amount = amount, point = hit.point, normal = hit.normal, direction = dir, attacker = by, weapon = weapon });
                 bool mine = by && by == (PlayerHealth.Local ? PlayerHealth.Local.GetComponent<Combatant>() : null);
                 if (res.applied && mine && HUD.Instance && res.killed) { HUD.Instance.ShowHitmarker(true, false); HUD.Instance.RegisterHit(true); ProcAudio.Play(Sfx.Kill, 0.5f); }
@@ -337,6 +345,55 @@ namespace FPS
                 if (isPlayer) pcam.Punch(new Vector3(-1.5f, Random.Range(-2f, 2f), Random.Range(-3f, 3f)));
             }
             return true;
+        }
+
+        bool remoteLaserWas;
+
+        /// <summary>Mirror of a combatant on another machine: draw its beams from the head along its look (visual only).</summary>
+        void RemoteLaser(float dt, bool on)
+        {
+            if (!on)
+            {
+                if (remoteLaserWas) { remoteLaserWas = false; EndLaserFx(); }
+                return;
+            }
+            if (!remoteLaserWas) { remoteLaserWas = true; EnsureLaserFx(); }
+            float pitch = anim ? anim.aimPitch : 0f;
+            Vector3 dir = Quaternion.Euler(pitch, transform.eulerAngles.y, 0f) * Vector3.forward;
+            Vector3 eye = rig ? rig.head.position + dir * 0.1f : transform.position + Vector3.up * 1.7f;
+            Vector3 end = eye + dir * LaserRange;
+            bounced = false;
+            if (RaycastAim(eye, dir, LaserRange, out RaycastHit hit))
+            {
+                end = hit.point;
+                var victim = CombatantOf(hit.collider);
+                if (victim && victim.abilities && victim.abilities.ReflectsBeam(dir, out Vector3 blade, out Vector3 rdir))
+                {
+                    end = blade;
+                    bounced = true;
+                    bounceFrom = blade;
+                    bounceTo = RaycastIgnoring(blade, rdir, LaserRange, victim.transform, out RaycastHit rh) ? rh.point : blade + rdir * LaserRange;
+                }
+                laserFxT -= dt;
+                if (laserFxT <= 0f) { laserFxT = 0.08f; FX.Ensure().SparkBurst(hit.point, hit.normal, 5, 6f); }
+            }
+            float flick = 0.7f + 0.3f * Mathf.PerlinNoise(Time.time * 30f, 0.5f);
+            Vector3 right = transform.right;
+            for (int i = 0; i < 2; i++)
+            {
+                var lr = laserBeams[i];
+                lr.enabled = true;
+                lr.SetPosition(0, eye + right * (i == 0 ? -0.035f : 0.035f));
+                lr.SetPosition(1, end + right * (i == 0 ? -0.03f : 0.03f));
+                lr.startWidth = lr.endWidth = 0.045f * flick;
+            }
+            if (laserBounce)
+            {
+                laserBounce.enabled = bounced;
+                if (bounced) { laserBounce.SetPosition(0, bounceFrom); laserBounce.SetPosition(1, bounceTo); laserBounce.startWidth = laserBounce.endWidth = 0.05f * flick; }
+            }
+            if (laserGlow) { laserGlow.intensity = 4f * flick; laserGlow.transform.position = end - dir * 0.3f; }
+            if (laserHum) laserHum.transform.position = eye;
         }
 
         Combatant LaserPickTarget(Vector3 eye)

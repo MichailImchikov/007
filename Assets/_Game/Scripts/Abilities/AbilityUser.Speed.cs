@@ -3,13 +3,17 @@ using UnityEngine;
 namespace FPS
 {
     /// <summary>
-    /// "Гиперскорость": 7 seconds of absurd speed (×3.6). The body becomes slippery — it barely turns, drifts wide
+    /// "Гиперскорость": 7 seconds of absurd speed (×HyperMul). The body becomes slippery — it barely turns, drifts wide
     /// and takes ages to stop — so it is fast but hard to steer: overshooting corners and sliding into walls is part
     /// of the joke. Afterimage trail, wind rush, wide FOV and a shaking view for the player.
     /// </summary>
     public partial class AbilityUser
     {
-        public const float HyperMul = 3.6f;
+        /// <summary>
+        /// How many times faster than normal (player run speed, speed cap, bots' NavMesh speed). THE knob for the
+        /// ability's speed — the description in AbilityDB reads it too. Was 3.6, raised ×4 on request.
+        /// </summary>
+        public const float HyperMul = 14.4f;
 
         float hyperT, hyperDur = 1f, hyperPuffT, hyperFov;
         TrailRenderer hyperTrail;
@@ -21,6 +25,29 @@ namespace FPS
         {
             hyperT = hyperDur = dur;
             var info = AbilityDB.Get(AbilityType.Hyperspeed);
+            EnsureHyperTrail();
+            hyperTrail.Clear();
+            hyperTrail.emitting = true;
+            ProcAudio.PlayAt(Sfx.Warp, transform.position + Vector3.up, 0.9f, 0.05f);
+            ProcAudio.PlayAt(Sfx.Slide, transform.position, 1f, 0.05f);
+            FX.Ensure().DustBurst(transform.position, Vector3.up, 10, new Color(0.6f, 0.57f, 0.52f, 0.6f), new Color(0.5f, 0.47f, 0.43f, 0.45f), 0.9f);
+            if (isPlayer) Say(info.name, "Вы очень быстрый. Слишком быстрый. Тормозить заранее!", info.color);
+            return true;
+        }
+
+        /// <summary>Mirror of a combatant on another machine: the afterimage trail follows the CharState.Hyper flag.</summary>
+        void RemoteHyper(bool on)
+        {
+            if (on) EnsureHyperTrail();
+            if (hyperTrail && hyperTrail.emitting != on)
+            {
+                hyperTrail.emitting = on;
+                if (on) ProcAudio.PlayAt(Sfx.Warp, transform.position + Vector3.up, 0.8f, 0.05f);
+            }
+        }
+
+        void EnsureHyperTrail()
+        {
             if (!hyperTrail)
             {
                 if (!hyperTrailMat) hyperTrailMat = FX.MakeParticleMat("HyperTrail", Texture2D.whiteTexture, true, new Color(0.4f, 0.9f, 1.6f, 0.6f), true);
@@ -40,13 +67,6 @@ namespace FPS
                     alphaKeys = new[] { new GradientAlphaKey(0.55f, 0f), new GradientAlphaKey(0f, 1f) }
                 };
             }
-            hyperTrail.Clear();
-            hyperTrail.emitting = true;
-            ProcAudio.PlayAt(Sfx.Warp, transform.position + Vector3.up, 0.9f, 0.05f);
-            ProcAudio.PlayAt(Sfx.Slide, transform.position, 1f, 0.05f);
-            FX.Ensure().DustBurst(transform.position, Vector3.up, 10, new Color(0.6f, 0.57f, 0.52f, 0.6f), new Color(0.5f, 0.47f, 0.43f, 0.45f), 0.9f);
-            if (isPlayer) Say(info.name, "Вы очень быстрый. Слишком быстрый. Тормозить заранее!", info.color);
-            return true;
         }
 
         void UpdateHyper(float dt)

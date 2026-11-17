@@ -522,11 +522,11 @@ namespace FPS
                     return enemies >= 2 && Random.value < 0.25f;
                 }
                 case AbilityType.Build: return vis && dist > 6f && (bot.Health01 < 0.6f || Random.value < 0.15f);
-                case AbilityType.ShadowClones: return !Net.Active && t && (vis || dist < 20f) && Random.value < 0.5f;
+                case AbilityType.ShadowClones: return t && (vis || dist < 20f) && Random.value < 0.5f;
                 case AbilityType.Hyperspeed: return t && ((vis && dist > 15f) || bot.Health01 < 0.4f) && Random.value < 0.4f; // close in / run away
-                case AbilityType.LaserEyes: return !Net.Active && t && vis && dist < 40f && Random.value < 0.5f;
+                case AbilityType.LaserEyes: return t && vis && dist < 40f && Random.value < 0.5f;
                 case AbilityType.TicTacToe: return t && dist < info.radius * 0.9f && Random.value < 0.4f;
-                case AbilityType.Rewind: return !Net.Active && ((vis && bot.Health01 < 0.4f) || Random.value < 0.03f) && Random.value < 0.5f;
+                case AbilityType.Rewind: return ((vis && bot.Health01 < 0.4f) || Random.value < 0.03f) && Random.value < 0.5f;
                 case AbilityType.EmptyMag: return t && vis && dist < info.radius * 0.8f && Random.value < 0.5f;
                 case AbilityType.Sidearm:
                 {

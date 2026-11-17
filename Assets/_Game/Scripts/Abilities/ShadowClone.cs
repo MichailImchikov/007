@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.IO;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -8,8 +9,9 @@ namespace FPS
     /// "Теневые клоны": in a burst of smoke the caster splits into identical copies — same look, same name, same gun.
     /// Clones scatter, then act on their own (hunt the nearest enemy, strafe, shoot), and enemies can't tell them
     /// apart from the original. Their shots are an illusion: they deal no damage at all — clones are pure decoys. Any hit makes a clone vanish in a puff; they also go when time runs out or the
-    /// original falls. What a clone kills counts for its original; popping a clone is no kill.
-    /// Offline only (clones are simulated locally, not replicated).
+    /// original falls. Popping a clone is no kill.
+    /// Online: clones are harmless decoys, so every machine simulates them itself — the spawn (positions, gun) and
+    /// every pop are synchronized (AbilityNetEvent.Clones / ClonePop), the wandering in between is local.
     /// </summary>
     [DefaultExecutionOrder(20)]
     public class ShadowClone : MonoBehaviour, IDamageable
@@ -34,6 +36,8 @@ namespace FPS
         readonly RaycastHit[] hits = new RaycastHit[12];
 
         public Combatant Owner => owner;
+        /// <summary>Which clone of the set (the same on every machine).</summary>
+        int index;
 
         // ------------------------------------------------------------------ casting
 
@@ -41,29 +45,76 @@ namespace FPS
         public static bool Cast(Combatant caster, int count, out string why)
         {
             why = null;
-            if (Net.Active) { why = "Клоны не работают по сети"; return false; }
             if (ObjectiveMode.Current) { why = "Не в командных раундах"; return false; }
             if (!caster || !caster.alive) return false;
             // a fresh set replaces the old one
-            for (int i = All.Count - 1; i >= 0; i--) if (All[i] && All[i].owner == caster) All[i].Pop();
+            PopAll(caster);
 
             Vector3 f = caster.transform.forward; f.y = 0f;
             if (f.sqrMagnitude < 0.01f) f = Vector3.forward;
             f.Normalize();
             float[] angles = count >= 3 ? new[] { -80f, 80f, 180f } : new[] { -80f, 80f };
             Vector3 chest = caster.Chest;
-            for (int i = 0; i < count && i < angles.Length; i++)
+            int n = Mathf.Min(count, angles.Length);
+            var ps = new Vector3[n];
+            var ds = new Vector3[n];
+            string gun = CurrentWeapon(caster);
+            for (int i = 0; i < n; i++)
             {
                 Vector3 dir = Quaternion.Euler(0f, angles[i], 0f) * f;
                 float dist = 1.6f;
                 if (Physics.SphereCast(chest, 0.3f, dir, out var h, dist + 0.4f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore)
                     && !h.collider.transform.IsChildOf(caster.transform))
                     dist = Mathf.Max(0.3f, h.distance - 0.4f);
-                Vector3 p = caster.transform.position + dir * dist;
-                Spawn(caster, p, Quaternion.LookRotation(f), dir);
+                ps[i] = caster.transform.position + dir * dist;
+                ds[i] = dir;
+                Spawn(caster, ps[i], Quaternion.LookRotation(f), dir, i, gun);
             }
             Poof(caster.transform.position);
+            // everybody else spawns the same set (and simulates it locally)
+            if (caster.abilities)
+                caster.abilities.SendEventPublic(AbilityNetEvent.Clones, w =>
+                {
+                    w.Write(gun ?? "");
+                    w.Write(f.x); w.Write(f.z);
+                    w.Write((byte)n);
+                    for (int i = 0; i < n; i++) { w.Write(ps[i].x); w.Write(ps[i].y); w.Write(ps[i].z); w.Write(ds[i].x); w.Write(ds[i].z); }
+                });
             return true;
+        }
+
+        static void PopAll(Combatant owner)
+        {
+            for (int i = All.Count - 1; i >= 0; i--) if (All[i] && All[i].owner == owner) All[i].Pop(false);
+        }
+
+        /// <summary>Another machine's fighter cast clones: spawn the same set here.</summary>
+        public static void OnNetSpawn(Combatant caster, BinaryReader r)
+        {
+            string gun = r.ReadString();
+            Vector3 f = new Vector3(r.ReadSingle(), 0f, r.ReadSingle());
+            int n = r.ReadByte();
+            if (!caster) return;
+            PopAll(caster);
+            if (f.sqrMagnitude < 0.01f) f = Vector3.forward;
+            for (int i = 0; i < n; i++)
+            {
+                Vector3 p = new Vector3(r.ReadSingle(), r.ReadSingle(), r.ReadSingle());
+                Vector3 d = new Vector3(r.ReadSingle(), 0f, r.ReadSingle());
+                Spawn(caster, p, Quaternion.LookRotation(f.normalized), d, i, gun);
+            }
+            Poof(caster.transform.position);
+        }
+
+        /// <summary>
+        /// A clone was popped on another machine. <paramref name="relay"/>: we own the original — pop it here and
+        /// tell everybody else.
+        /// </summary>
+        public static void OnNetPop(Combatant owner, int index, bool relay)
+        {
+            for (int i = All.Count - 1; i >= 0; i--)
+                if (All[i] && All[i].owner == owner && All[i].index == index) { All[i].Pop(false); break; }
+            if (relay && owner && owner.abilities) owner.abilities.SendEventPublic(AbilityNetEvent.ClonePop, w => w.Write((byte)index));
         }
 
         static void Poof(Vector3 pos)
@@ -87,7 +138,7 @@ namespace FPS
             return palette;
         }
 
-        static void Spawn(Combatant caster, Vector3 pos, Quaternion rot, Vector3 scatter)
+        static void Spawn(Combatant caster, Vector3 pos, Quaternion rot, Vector3 scatter, int index, string gun)
         {
             if (Physics.Raycast(pos + Vector3.up * 1.5f, Vector3.down, out var gh, 4f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore))
                 pos.y = gh.point.y;
@@ -125,7 +176,8 @@ namespace FPS
             sc.rig = rig;
             sc.anim = anim;
             sc.scatterDir = scatter;
-            sc.SetupWeapon(CurrentWeapon(caster));
+            sc.index = index;
+            sc.SetupWeapon(string.IsNullOrEmpty(gun) ? CurrentWeapon(caster) : gun);
             go.SetActive(true);
             Poof(pos);
         }
@@ -198,10 +250,18 @@ namespace FPS
         }
 
         /// <summary>Vanish in a puff of smoke.</summary>
-        public void Pop()
+        public void Pop() => Pop(true);
+
+        /// <summary>Vanish in a puff. <paramref name="sync"/>: popped by a hit here — make it vanish on every machine.</summary>
+        public void Pop(bool sync)
         {
             if (popped) return;
             popped = true;
+            if (sync && Net.Active && owner)
+            {
+                if (!owner.remote) { if (owner.abilities) owner.abilities.SendEventPublic(AbilityNetEvent.ClonePop, w => w.Write((byte)index)); }
+                else NetGame.SendAbilityEffect(owner, PlayerHealth.Local ? PlayerHealth.Local.GetComponent<Combatant>() : null, AbilityNetEffect.ClonePop, w => w.Write((byte)index));
+            }
             self.alive = false;
             Poof(transform.position);
             Destroy(gameObject);
@@ -212,7 +272,7 @@ namespace FPS
             float dt = Time.deltaTime;
             if (dt <= 0f || popped) return;
             life += dt;
-            if (life >= Life || !owner || !owner.alive || (MatchManager.Instance && MatchManager.Instance.Ended) || TimeRewind.Playing) { Pop(); return; }
+            if (life >= Life || !owner || !owner.alive || (MatchManager.Instance && MatchManager.Instance.Ended) || TimeRewind.Playing) { Pop(false); return; }
 
             think -= dt;
             if (think <= 0f) { think = Random.Range(0.12f, 0.2f); Perceive(); Plan(); }

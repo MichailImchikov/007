@@ -11,7 +11,8 @@ namespace FPS
     /// health, ammo, alive) and every loose physics body is recorded 20 times a second; on activation everybody is
     /// frozen and the recording plays backwards on screen (VHS overlay, chromatic smear, tape squeal), then the game
     /// resumes from the state of 5 seconds ago. The fallen get back up, grenades thrown meanwhile are un-thrown.
-    /// Kills already counted stay on the scoreboard. Offline only (one machine owns the timeline).
+    /// Kills already counted stay on the scoreboard. Online every machine rewinds the fighters it simulates
+    /// (AbilityNetEvent.Rewind); everybody else's rewind arrives through the snapshots.
     /// </summary>
     [DefaultExecutionOrder(-40)]
     public class TimeRewind : MonoBehaviour
@@ -206,7 +207,6 @@ namespace FPS
         public static bool Begin(Combatant who, out string why)
         {
             why = null;
-            if (Net.Active) { why = "Время по сети не перематывается"; return false; }
             var r = Ensure();
             if (r.playing) { why = "Плёнка уже мотается"; return false; }
             if (SkyArena.Active) { why = "Не на арене"; return false; }
@@ -215,6 +215,20 @@ namespace FPS
             if (oldest == float.MaxValue || Time.time - oldest < 1f) { why = "Ещё нечего перематывать"; return false; }
             r.Play(who, Mathf.Max(oldest, Time.time - Span));
             return true;
+        }
+
+        /// <summary>
+        /// Online: another machine's fighter rewound time. This machine winds back what it simulates itself (its
+        /// player; the host also its bots) over the same span, with the same tape effect.
+        /// </summary>
+        public static void BeginRemote(Combatant who)
+        {
+            var r = Ensure();
+            if (r.playing) return;
+            float oldest = float.MaxValue;
+            foreach (var tr in r.tracks.Values) if (tr.count > 0) oldest = Mathf.Min(oldest, tr.buf[(tr.head - tr.count + 1 + N) % N].time);
+            if (oldest == float.MaxValue) oldest = Time.time;
+            r.Play(who, Mathf.Max(oldest, Time.time - Span));
         }
 
         void Play(Combatant who, float target)

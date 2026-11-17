@@ -48,7 +48,7 @@ namespace FPS
         public static NetGame I { get; private set; }
 
         public const ushort GamePort = 7777;
-        public const int Protocol = 4; // 4: objective modes (ObjState / ObjEvent / ObjAction), internet sessions
+        public const int Protocol = 5; // 5: new abilities online (rewind, clones, laser / hyper flags, tic-tac-toe, knife duel), single fart
         public const int MaxPlayers = 8;
         const float SendInterval = 0.05f;
         const string RelName = "f7r", UnrelName = "f7u";

@@ -11,7 +11,8 @@ namespace FPS
     public struct CharState
     {
         public const ushort Alive = 1, Grounded = 2, Holding = 4, Sword = 8, Invisible = 16, Chicken = 32, Snowman = 64,
-                            Phasing = 128, ButtRocket = 256, DeadForward = 512, BigHead = 1024, Confused = 2048, Protected = 4096;
+                            Phasing = 128, ButtRocket = 256, DeadForward = 512, BigHead = 1024, Confused = 2048, Protected = 4096,
+                            Laser = 8192, Hyper = 16384;
 
         public int id;
         public Vector3 pos;
@@ -104,9 +105,13 @@ namespace FPS
                 if (u.ButtRocketShown) s.flags |= ButtRocket;
                 if (u.BigHead) s.flags |= BigHead;
                 if (u.Confused) s.flags |= Confused;
+                if (u.LaserBeamOn) s.flags |= Laser;
+                if (u.Hyper) s.flags |= Hyper;
                 s.bodyScale = u.BodyScale;
                 s.headScale = u.HeadScale;
             }
+            // sitting at a tic-tac-toe board / locked in a knife duel: untouchable for everybody else too
+            if (TicTacToe.InGame(c) || KnifeDuel.InDuel(c)) s.flags |= Protected;
             var ph = c.GetComponent<PlayerHealth>();
             if (ph)
             {
