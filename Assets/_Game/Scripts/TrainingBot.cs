@@ -20,6 +20,12 @@ namespace FPS
         public CharacterAnimator anim;
         public Transform heldWeapon;
 
+        [Header("Knife sparring")]
+        [Tooltip("Sparring partner: answers every knife swing of the player in front of it — the blades lock into a KnifeDuel")]
+        public bool sparring;
+        [Tooltip("Strikes per second in a knife duel")] public float duelRate = 6f;
+        public string sparName = "";
+
         public bool IsAlive => health > 0f;
         public bool IsBeingExecuted => executing;
         public Vector3 NeckPoint => rig && rig.neckPoint ? rig.neckPoint.position : transform.position + Vector3.up * 1.6f;
@@ -88,7 +94,7 @@ namespace FPS
             // a Combatant + ability slot so targeted abilities (hook, swap, farts, banana) work on the range
             combatant = GetComponent<Combatant>();
             if (!combatant) combatant = gameObject.AddComponent<Combatant>();
-            combatant.displayName = "Манекен";
+            combatant.displayName = sparring && sparName.Length > 0 ? sparName : "Манекен";
             combatant.isPlayer = false;
             if (rig)
             {
@@ -97,11 +103,14 @@ namespace FPS
             }
             abilities = GetComponent<AbilityUser>();
             if (!abilities) abilities = gameObject.AddComponent<AbilityUser>();
+            if (sparring && heldWeapon) heldWeapon.gameObject.SetActive(false); // bare hands until the knives come out
         }
 
         public DamageResult TakeDamage(DamageInfo info)
         {
             if (!IsAlive || executing) return default;
+            if (TicTacToe.Protects(combatant)) return default; // tic-tac-toe: both players untouchable
+            if (KnifeDuel.Blocks(info, combatant)) return default; // knife duel: untouchable / the blades just locked
             health -= info.amount;
             bool killed = health <= 0f;
             flash = 1f;
@@ -131,7 +140,7 @@ namespace FPS
 
         public bool CanBeExecutedBy(Transform attacker)
         {
-            if (!IsAlive || executing || external) return false;
+            if (!IsAlive || executing || external || sparring || KnifeDuel.InDuel(combatant) || TicTacToe.InGame(combatant)) return false;
             Vector3 to = transform.position - attacker.position; to.y = 0f;
             float dist = to.magnitude;
             if (dist > 1.9f || dist < 0.2f) return false;
@@ -171,6 +180,8 @@ namespace FPS
         {
             float dt = Time.deltaTime;
             if (dt <= 0f) return;
+            // sparring partner: never a gun in the hands (ability visibility refreshes may turn it back on)
+            if (sparring && heldWeapon && heldWeapon.gameObject.activeSelf) heldWeapon.gameObject.SetActive(false);
 
             if (!IsAlive)
             {
@@ -187,7 +198,7 @@ namespace FPS
                 }
             }
             else if (stunTimer > 0f) stunTimer -= dt;
-            else if (!executing && !external) Think(dt);
+            else if (!executing && !external) { if (sparring) Spar(dt); else Think(dt); }
 
             // feed the animator
             Vector3 vel = (transform.position - lastPos) / dt;
@@ -237,6 +248,55 @@ namespace FPS
             {
                 transform.rotation = Quaternion.RotateTowards(transform.rotation, Quaternion.Euler(0f, guardYaw, 0f), 90f * dt);
                 LookAround(dt);
+            }
+        }
+
+        // ------------------------------------------------------------------ knife sparring
+
+        float sparT = -1f, seenSwing = -99f;
+
+        /// <summary>Faces a player who comes close and answers each knife swing with its own: two blades → a duel.</summary>
+        void Spar(float dt)
+        {
+            var ph = PlayerHealth.Local;
+            var pc = ph && !ph.IsDead ? ph.GetComponent<Combatant>() : null;
+            float wantYaw = guardYaw;
+            float dist = 99f;
+            if (pc)
+            {
+                Vector3 to = pc.transform.position - transform.position; to.y = 0f;
+                dist = to.magnitude;
+                if (dist < 5f && dist > 0.05f) wantYaw = Quaternion.LookRotation(to).eulerAngles.y;
+                float sw = KnifeDuel.SwingTime(pc);
+                bool facing = dist > 0.05f && Vector3.Angle(transform.forward, to) < 60f;
+                if (sw > seenSwing && Time.time - sw < 0.3f && dist < 2.4f && facing && sparT < 0f)
+                {
+                    seenSwing = sw;
+                    sparT = 0f;
+                    KnifeDuel.NoteSwing(combatant);
+                    ProcAudio.PlayAt(Sfx.KnifeSwing, transform.position + Vector3.up * 1.3f, 0.8f, 0.1f);
+                }
+            }
+            // pushed around by a duel: walk back to the mark while nobody is close
+            Vector3 home = spawnPos - transform.position; home.y = 0f;
+            if (dist > 3.5f && home.magnitude > 0.2f)
+            {
+                wantYaw = Quaternion.LookRotation(home).eulerAngles.y;
+                transform.position += home.normalized * Mathf.Min(walkSpeed * dt, home.magnitude);
+            }
+            transform.rotation = Quaternion.RotateTowards(transform.rotation, Quaternion.Euler(0f, wantYaw, 0f), 400f * dt);
+            if (sparT >= 0f)
+            {
+                sparT += dt / 0.5f;
+                if (sparT >= 1f) sparT = -1f;
+            }
+            if (anim)
+            {
+                // ready stance while somebody is close, a counter swing when the player strikes
+                anim.knife = sparT >= 0f ? sparT : -1f;
+                anim.holdingWeapon = false;
+                anim.lookYaw = Anim.Damp(anim.lookYaw, 0f, 4f, dt);
+                anim.crouch = Anim.Damp(anim.crouch, dist < 5f ? 0.15f : 0f, 4f, dt);
             }
         }
 

@@ -313,6 +313,8 @@ namespace FPS
         {
             if (!combatant.alive || latest.Has(CharState.Protected) || latest.execV >= 0f) return default;
             if (Teams.Friendly(info.attacker, combatant)) return default; // no friendly fire in team games
+            if (KnifeDuel.InDuel(combatant) || TicTacToe.InGame(combatant)) return default; // untouchable right now
+            KnifeDuel.NoteStrike(info.attacker, combatant, info.weapon, info.amount);
             NetGame.SendDamage(combatant, info);
             // predict the result for hitmarkers / kill sounds; corrected by the next snapshots
             predictedHealth -= info.amount / 100f;

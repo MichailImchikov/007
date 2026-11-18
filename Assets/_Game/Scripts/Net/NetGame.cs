@@ -49,7 +49,7 @@ namespace FPS
         public static NetGame I { get; private set; }
 
         public const ushort GamePort = 7777;
-        public const int Protocol = 5; // 4: objective modes (ObjState / ObjEvent / ObjAction), internet sessions; 5: team switch (TeamChange)
+        public const int Protocol = 6; // 4: objective modes, internet sessions; 5: team switch (TeamChange) / newer abilities online; 6: both merged, 32-bit CharState flags
         public const int MaxPlayers = 8;
         const float SendInterval = 0.05f;
         const string RelName = "f7r", UnrelName = "f7u";

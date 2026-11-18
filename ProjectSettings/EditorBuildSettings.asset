@@ -27,29 +27,32 @@ EditorBuildSettings:
     path: Assets/Scenes/Map_Village.unity
     guid: 1273d66872291dd419617bf95117e905
   - enabled: 1
+    path: Assets/Scenes/Map_Flooded.unity
+    guid: f45514e53fed290449888e637df50759
+  - enabled: 1
     path: Assets/Scenes/Map_Disco.unity
     guid: cf50412cb3f9b754bbd258b901f5d36d
   - enabled: 1
     path: Assets/Scenes/Map_Downtown.unity
-    guid: 95eedf622e7dbde4995f6558bce5be40
+    guid: 5abfd1e678ad3ba4aa9c967e998d36a9
   - enabled: 1
     path: Assets/Scenes/Map_Bazaar.unity
-    guid: 9a8fe303e2919674bbd0dffa914845df
+    guid: f45226bf3c183db4ea3975bb7f44f702
   - enabled: 1
     path: Assets/Scenes/Map_Suburb.unity
-    guid: 805eeb020a5452146bd84bc039ab1138
+    guid: df91f39c425900640b7098a0fdef3176
   - enabled: 1
     path: Assets/Scenes/Map_Depot.unity
-    guid: 75751c6732f9e0e49b2503acb28f9eb6
+    guid: 37bc304cd8829e94282a391b7b92246c
   - enabled: 1
     path: Assets/Scenes/Map_Station.unity
-    guid: 82e46b632fd10f444b3cdbc295fbe794
+    guid: f4c9ea3cc1eee3f48a034733e169bf11
   - enabled: 1
     path: Assets/Scenes/Map_Construction.unity
-    guid: c49df299eeb1dec43a1cf8ee6cf1d41e
+    guid: 3ba46d17a79828144a49f11da0eee5e0
   - enabled: 1
     path: Assets/Scenes/Map_DesertBase.unity
-    guid: 1c6d2727ccb26b5469180f2e266ce61a
+    guid: a70825166804c3c4cab50f721e078feb
   - enabled: 1
     path: Assets/Scenes/Map_Factory.unity
     guid: c37eceacec5af5f489ffbc0cca8d8ec6

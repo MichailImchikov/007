@@ -4,25 +4,13 @@ using UnityEngine.UI;
 
 namespace FPS
 {
-    /// <summary>Full-screen effects of enemy area abilities: screamer face, blue screen of death, minesweeper 4×4.</summary>
+    /// <summary>Full-screen effects of enemy area abilities: screamer face, blue screen of death (tic-tac-toe has its own TicTacToeHUD).</summary>
     public partial class AbilityHUD
     {
         Image screamImg;
         RectTransform screamRt;
         CanvasGroup bsodGroup;
         Text bsodPercent;
-
-        // minesweeper
-        const int MS = 4, Mines = 3;
-        CanvasGroup msGroup;
-        RectTransform[] cellRt = new RectTransform[MS * MS];
-        Image[] cellImg = new Image[MS * MS];
-        Text[] cellTxt = new Text[MS * MS];
-        Text msStatus;
-        readonly bool[] mine = new bool[MS * MS], open = new bool[MS * MS], flag = new bool[MS * MS];
-        bool msActive, msGenerated, msDone, msWin;
-        float msEndT;
-        AbilityUser msUser;
 
         void BuildExtra()
         {
@@ -50,26 +38,6 @@ namespace FPS
             foreach (var sh in b.GetComponentsInChildren<Shadow>()) sh.enabled = false;
             bsodGroup.alpha = 0f;
 
-            // ---- minesweeper
-            var ms = Rect("Minesweeper", transform, new Vector2(0.5f, 0.5f), new Vector2(0f, 0f), new Vector2(460f, 560f));
-            msGroup = ms.gameObject.AddComponent<CanvasGroup>();
-            Img(ms, new Color(0.12f, 0.13f, 0.15f, 0.95f));
-            var title = Txt(Rect("Title", ms, new Vector2(0.5f, 1f), new Vector2(0f, -36f), new Vector2(440f, 40f)), 30, TextAnchor.MiddleCenter, new Color(1f, 0.85f, 0.3f), true);
-            title.text = "САПЁР";
-            var sub = Txt(Rect("Sub", ms, new Vector2(0.5f, 1f), new Vector2(0f, -72f), new Vector2(440f, 30f)), 18, TextAnchor.MiddleCenter, new Color(1f, 1f, 1f, 0.8f));
-            sub.text = "Решите, чтобы снова двигаться. Мин: " + Mines;
-            msStatus = Txt(Rect("Status", ms, new Vector2(0.5f, 0f), new Vector2(0f, 34f), new Vector2(440f, 30f)), 18, TextAnchor.MiddleCenter, new Color(1f, 1f, 1f, 0.75f));
-            const float cs = 92f, gap = 6f;
-            for (int y = 0; y < MS; y++)
-                for (int x = 0; x < MS; x++)
-                {
-                    int i = y * MS + x;
-                    var rt = Rect("Cell" + i, ms, new Vector2(0.5f, 0.5f), new Vector2((x - 1.5f) * (cs + gap), (1.5f - y) * (cs + gap) - 10f), new Vector2(cs, cs));
-                    cellRt[i] = rt;
-                    cellImg[i] = Img(rt, Color.gray);
-                    cellTxt[i] = Txt(Rect("T", rt, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(cs, cs)), 50, TextAnchor.MiddleCenter, Color.white, true);
-                }
-            msGroup.alpha = 0f;
         }
 
         RectTransform TL(RectTransform parent, string name, float x, float y, float w, float h)
@@ -110,153 +78,6 @@ namespace FPS
                 bsodPercent.text = Mathf.FloorToInt(Mathf.Pow(p, 0.6f) * 100f) + "% завершено";
             }
 
-            UpdateMinesweeper(dt);
-        }
-
-        // ------------------------------------------------------------------ minesweeper
-
-        public void OpenMinesweeper(AbilityUser u)
-        {
-            msUser = u;
-            msActive = true;
-            msGenerated = false;
-            msDone = false;
-            for (int i = 0; i < mine.Length; i++) { mine[i] = open[i] = flag[i] = false; }
-            msStatus.text = "ЛКМ — открыть клетку,  ПКМ — флажок";
-            RefreshCells();
-            msGroup.alpha = 1f;
-        }
-
-        public void CloseMinesweeper()
-        {
-            msActive = false;
-            msGroup.alpha = 0f;
-        }
-
-        void UpdateMinesweeper(float dt)
-        {
-            if (!msActive) return;
-            if (!msUser || !msUser.Minesweeping) { CloseMinesweeper(); return; }
-            if (msDone)
-            {
-                msEndT -= Time.unscaledDeltaTime;
-                if (msEndT <= 0f)
-                {
-                    CloseMinesweeper();
-                    msUser.OnMineResult(msWin);
-                }
-                return;
-            }
-            var m = Mouse.current;
-            if (m == null || PauseMenu.IsOpen) return;
-            bool l = m.leftButton.wasPressedThisFrame, r = m.rightButton.wasPressedThisFrame;
-            if (!l && !r) return;
-            Vector2 pos = m.position.ReadValue();
-            for (int i = 0; i < cellRt.Length; i++)
-            {
-                if (!RectTransformUtility.RectangleContainsScreenPoint(cellRt[i], pos, null)) continue;
-                if (open[i]) break;
-                if (r) { flag[i] = !flag[i]; ProcAudio.Play(Sfx.Click, 0.5f); }
-                else if (!flag[i]) Reveal(i);
-                RefreshCells();
-                break;
-            }
-        }
-
-        void Reveal(int i)
-        {
-            if (!msGenerated) Generate(i);
-            ProcAudio.Play(Sfx.Click, 0.6f);
-            if (mine[i])
-            {
-                for (int k = 0; k < mine.Length; k++) if (mine[k]) open[k] = true;
-                msDone = true; msWin = false; msEndT = 0.7f;
-                msStatus.text = "<color=#ff5040>БУМ!</color>";
-                msStatus.supportRichText = true;
-                ProcAudio.Play(Sfx.ErrorTone, 0.8f);
-                return;
-            }
-            Flood(i);
-            int closed = 0;
-            for (int k = 0; k < open.Length; k++) if (!open[k]) closed++;
-            if (closed == Mines)
-            {
-                msDone = true; msWin = true; msEndT = 0.45f;
-                msStatus.text = "<color=#60ff70>Готово!</color>";
-                msStatus.supportRichText = true;
-            }
-        }
-
-        void Generate(int safe)
-        {
-            msGenerated = true;
-            int sx = safe % MS, sy = safe / MS;
-            int placed = 0, guard = 0;
-            while (placed < Mines && guard++ < 500)
-            {
-                int k = Random.Range(0, MS * MS);
-                int kx = k % MS, ky = k / MS;
-                if (mine[k] || (Mathf.Abs(kx - sx) <= 1 && Mathf.Abs(ky - sy) <= 1)) continue; // first click opens an area
-                mine[k] = true;
-                placed++;
-            }
-        }
-
-        int Adjacent(int i)
-        {
-            int x = i % MS, y = i / MS, n = 0;
-            for (int dy = -1; dy <= 1; dy++)
-                for (int dx = -1; dx <= 1; dx++)
-                {
-                    int nx = x + dx, ny = y + dy;
-                    if ((dx != 0 || dy != 0) && nx >= 0 && ny >= 0 && nx < MS && ny < MS && mine[ny * MS + nx]) n++;
-                }
-            return n;
-        }
-
-        void Flood(int i)
-        {
-            if (open[i] || mine[i]) return;
-            open[i] = true;
-            flag[i] = false;
-            if (Adjacent(i) > 0) return;
-            int x = i % MS, y = i / MS;
-            for (int dy = -1; dy <= 1; dy++)
-                for (int dx = -1; dx <= 1; dx++)
-                {
-                    int nx = x + dx, ny = y + dy;
-                    if (nx >= 0 && ny >= 0 && nx < MS && ny < MS) Flood(ny * MS + nx);
-                }
-        }
-
-        static readonly Color[] NumColors =
-        {
-            Color.white, new Color(0.35f, 0.55f, 1f), new Color(0.3f, 0.85f, 0.35f), new Color(1f, 0.35f, 0.3f),
-            new Color(0.6f, 0.4f, 1f), new Color(1f, 0.6f, 0.2f), Color.cyan, Color.white, Color.gray
-        };
-
-        void RefreshCells()
-        {
-            for (int i = 0; i < cellImg.Length; i++)
-            {
-                if (open[i])
-                {
-                    if (mine[i]) { cellImg[i].color = new Color(0.75f, 0.12f, 0.1f); cellTxt[i].text = "●"; cellTxt[i].color = Color.black; }
-                    else
-                    {
-                        int n = Adjacent(i);
-                        cellImg[i].color = new Color(0.32f, 0.34f, 0.38f);
-                        cellTxt[i].text = n > 0 ? n.ToString() : "";
-                        cellTxt[i].color = NumColors[n];
-                    }
-                }
-                else
-                {
-                    cellImg[i].color = new Color(0.68f, 0.7f, 0.74f);
-                    cellTxt[i].text = flag[i] ? "F" : "";
-                    cellTxt[i].color = new Color(0.9f, 0.15f, 0.1f);
-                }
-            }
         }
 
         // ------------------------------------------------------------------ textures

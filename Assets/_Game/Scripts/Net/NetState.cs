@@ -10,19 +10,20 @@ namespace FPS
     /// </summary>
     public struct CharState
     {
-        public const ushort Alive = 1, Grounded = 2, Holding = 4, Sword = 8, Invisible = 16, Chicken = 32, Snowman = 64,
+        public const uint Alive = 1, Grounded = 2, Holding = 4, Sword = 8, Invisible = 16, Chicken = 32, Snowman = 64,
                             Phasing = 128, ButtRocket = 256, DeadForward = 512, BigHead = 1024, Confused = 2048, Protected = 4096,
-                            WallLeft = 8192, WallRight = 16384; // running along a wall on that side
+                            WallLeft = 8192, WallRight = 16384, // running along a wall on that side
+                            Laser = 32768, Hyper = 65536;       // laser eyes firing / hyper speed trail
 
         public int id;
         public Vector3 pos;
         public float yaw, pitch;
         public Vector3 vel;     // local space, m/s
-        public ushort flags;
+        public uint flags; // 32 bits: the 16 of a ushort ran out (wall run + laser + hyper)
         public float crouch, prone, lean, aim, pistol, knife, throwT, execA, execV, dead, bent, parry, slip, blind, lookYaw, bodyScale, headScale, health;
         public byte parryVariant, weapon;
 
-        public bool Has(ushort f) => (flags & f) != 0;
+        public bool Has(uint f) => (flags & f) != 0;
 
         public static readonly string[] Weapons = WeaponNames();
 
@@ -70,7 +71,7 @@ namespace FPS
             s.yaw = r.ReadUInt16() / 65535f * 360f;
             s.pitch = r.ReadSByte();
             s.vel = new Vector3(r.ReadInt16() / 100f, r.ReadInt16() / 100f, r.ReadInt16() / 100f);
-            s.flags = r.ReadUInt16();
+            s.flags = r.ReadUInt32();
             s.crouch = U(r.ReadByte()); s.prone = U(r.ReadByte()); s.lean = S(r.ReadByte()); s.aim = U(r.ReadByte()); s.pistol = U(r.ReadByte());
             s.knife = O(r.ReadByte()); s.throwT = O(r.ReadByte()); s.execA = O(r.ReadByte()); s.execV = O(r.ReadByte());
             s.dead = U(r.ReadByte()); s.bent = U(r.ReadByte()); s.parry = O(r.ReadByte()); s.parryVariant = r.ReadByte(); s.slip = U(r.ReadByte()); s.blind = U(r.ReadByte());
@@ -108,9 +109,13 @@ namespace FPS
                 if (u.ButtRocketShown) s.flags |= ButtRocket;
                 if (u.BigHead) s.flags |= BigHead;
                 if (u.Confused) s.flags |= Confused;
+                if (u.LaserBeamOn) s.flags |= Laser;
+                if (u.Hyper) s.flags |= Hyper;
                 s.bodyScale = u.BodyScale;
                 s.headScale = u.HeadScale;
             }
+            // sitting at a tic-tac-toe board / locked in a knife duel: untouchable for everybody else too
+            if (TicTacToe.InGame(c) || KnifeDuel.InDuel(c)) s.flags |= Protected;
             var ph = c.GetComponent<PlayerHealth>();
             if (ph)
             {

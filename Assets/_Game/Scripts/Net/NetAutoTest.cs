@@ -12,10 +12,11 @@ namespace FPS
     ///   007.exe -onlinehost Map_Port [-netmode Bomb] -uprofile a        internet game (Unity Relay), the code is logged
     ///   007.exe -onlinejoin CODE -uprofile b [-nettest]                  join an internet game by its code
     ///   007.exe -onlinejoinfirst -uprofile b                             join the first game in the internet list
-    /// -nettest makes the local player act on its own (hits, grenade, cover, abilities, execution)
+    /// -nettest makes the local player act on its own (hits, grenade, cover, abilities, execution);
+    /// add -netabil for the newer abilities (see NetAutoTest.Abilities.cs)
     /// and logs the replicated state every 2 s with the "[NetTest]" prefix.
     /// </summary>
-    public class NetAutoTest : MonoBehaviour
+    public partial class NetAutoTest : MonoBehaviour
     {
         static string hostScene, joinAddr, onlineHost, onlineCode;
         static bool test, onlineFirst;
@@ -30,6 +31,7 @@ namespace FPS
         static void Boot()
         {
             var args = Environment.GetCommandLineArgs();
+            ParseAbil(args);
             for (int i = 0; i < args.Length; i++)
             {
                 string a = args[i];
@@ -133,6 +135,7 @@ namespace FPS
             var ph = PlayerHealth.Local;
             // bomb mode: the autopilot plays the objective instead (plant when carrying, defuse when it ticks)
             if (ObjectiveMode.Current is BombMode bm) { BombPilot(ph, bm); return; }
+            if (AbilityPilot(ph, dt)) return; // -netabil: the newer abilities, client → host
             if (ph.IsDead) return;
             cycleT += dt;
             if (cycleT < 2.5f) return;
@@ -209,7 +212,7 @@ namespace FPS
                     Log("invisibility activate=" + me.abilities.TryActivate());
                     break;
                 case 4:
-                    me.abilities.Give(AbilityType.FartSmoke, AbilityType.FartSmoke);
+                    me.abilities.Give(AbilityType.FartBlind, AbilityType.FartBlind);
                     Log("fart smoke activate=" + me.abilities.TryActivate());
                     break;
                 case 5:

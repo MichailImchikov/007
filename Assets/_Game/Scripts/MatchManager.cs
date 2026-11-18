@@ -70,6 +70,9 @@ namespace FPS
 
         public static void Report(Combatant killer, Combatant victim, string weapon, bool headshot)
         {
+            // shadow clones: popping one is no kill, and what a clone kills counts for its original
+            if (victim && victim.IsClone) return;
+            if (killer) killer = killer.Root;
             // clients only report their own deaths; the host keeps the score and broadcasts the kill feed
             if (Net.IsClient) { NetGame.SendKill(killer, victim, weapon, headshot); return; }
             if (Instance) Instance.ReportKill(killer, victim, weapon, headshot);
@@ -301,7 +304,7 @@ namespace FPS
             get
             {
                 Combatant best = null;
-                foreach (var c in Combatant.All) if (c && (!best || c.kills > best.kills || (c.kills == best.kills && c.deaths < best.deaths))) best = c;
+                foreach (var c in Combatant.All) if (c && !c.IsClone && (!best || c.kills > best.kills || (c.kills == best.kills && c.deaths < best.deaths))) best = c;
                 return best;
             }
         }

@@ -329,7 +329,7 @@ namespace FPS
                 // team game: the teams one after the other (own team first), each by kills
                 var me = ph ? ph.GetComponent<Combatant>() : null;
                 int myTeam = me ? me.team : 0;
-                var rows = Combatant.All.Where(x => x).OrderBy(x => teams ? (x.team == myTeam ? 0 : 1) : 0).ThenByDescending(x => x.kills).ThenBy(x => x.deaths).ToList();
+                var rows = Combatant.All.Where(x => x && !x.IsClone).OrderBy(x => teams ? (x.team == myTeam ? 0 : 1) : 0).ThenByDescending(x => x.kills).ThenBy(x => x.deaths).ToList();
                 var sn = new System.Text.StringBuilder("<color=#999999>Игрок</color>\n");
                 var sk = new System.Text.StringBuilder("<color=#999999>Убийства</color>\n");
                 var sd = new System.Text.StringBuilder("<color=#999999>Смерти</color>\n");

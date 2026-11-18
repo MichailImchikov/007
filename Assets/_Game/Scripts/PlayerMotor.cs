@@ -118,6 +118,9 @@ namespace FPS
         public float Speed01 { get; private set; }
         public Vector2 MoveInput { get; private set; }
         public float SpeedMultiplier { get; set; } = 1f;
+        /// <summary>"Гиперскорость": >1 multiplies the run speed and the speed cap, and makes the body slippery
+        /// (slow to pick up a new direction, slow to stop) — hard to control on purpose.</summary>
+        public float HyperSpeed { get; set; } = 1f;
         public bool BlockSprint { get; set; }
         public CharacterController Controller => cc;
         /// <summary>Running along a wall (airborne, feet on it).</summary>
@@ -367,7 +370,7 @@ namespace FPS
             if (wish.sqrMagnitude > 1f) wish.Normalize();
             bool hasInput = wish.sqrMagnitude > 0.01f;
             float target = IsProne ? proneSpeed : IsCrouching ? crouchSpeed : (IsSprinting ? sprintSpeed : walkSpeed);
-            target *= SpeedMultiplier * SkyArena.SpeedScale; // sky arena: everybody runs twice as fast
+            target *= SpeedMultiplier * SkyArena.SpeedScale * HyperSpeed; // sky arena: everybody runs twice as fast
 
             // ---- wall run: its own movement while on a wall (like the vault); a landing ends the chain
             if (IsGrounded) { wallRuns = 0; lastWallValid = false; wallCoyote = false; }
@@ -419,6 +422,8 @@ namespace FPS
             else if (IsGrounded && !jumpNow)
             {
                 float accel = hasInput ? groundAccel : groundDecel;
+                // hyper speed: like running on ice — turns drift wide, stops slide on
+                if (HyperSpeed > 1.01f) accel *= hasInput ? 0.16f : 0.07f;
                 hv = Vector3.Lerp(hv, wish * target, 1f - Mathf.Exp(-accel * dt));
             }
             else if (hasInput)
@@ -435,7 +440,7 @@ namespace FPS
             if (IsGrounded && !jumpNow) dashAir = false;
             float capH = IsSliding ? Mathf.Max(maxHorizontalSpeed, slideMaxSpeed)
                        : dashAir ? Mathf.Max(maxHorizontalSpeed, slideJumpMaxSpeed) : maxHorizontalSpeed;
-            float maxH = capH * SkyArena.SpeedScale;
+            float maxH = capH * SkyArena.SpeedScale * HyperSpeed; // "Гиперскорость" lifts the cap too
             if (hv.magnitude > maxH) hv = hv.normalized * maxH;
 
             if (jumpNow)

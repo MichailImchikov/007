@@ -76,8 +76,10 @@ namespace FPS
         {
             if (IsDead || protectTimer > 0f || execT >= 0f || SkyArena.IsGunner(self)) return default;
             if (Teams.Friendly(info.attacker, self)) return default; // no friendly fire in team games
+            if (TicTacToe.Protects(self)) return default; // tic-tac-toe: both players untouchable
+            if (KnifeDuel.Blocks(info, self)) return default; // knife duel: untouchable / the blades just locked
             if (abilities && abilities.TryDeflect(info)) return default;
-            float amount = info.amount;
+            float amount = info.amount * (abilities ? abilities.IncomingDamageScale : 1f); // laser eyes: hardly scratched
             if (info.attacker == self) amount *= 0.6f; // own grenade hurts less
             Health -= amount;
             lastHit = Time.time;
@@ -199,6 +201,14 @@ namespace FPS
             motor.Locked = true;
             playerCam.Locked = true;
             if (loadout && loadout.Active) loadout.Active.ExternalLower = 1f;
+        }
+
+        /// <summary>Time rewind: health as it was (a living player only).</summary>
+        public void SetHealthRewind(float h)
+        {
+            if (IsDead) return;
+            Health = Mathf.Clamp(h, 1f, maxHealth);
+            protectTimer = Mathf.Max(protectTimer, 0.6f);
         }
 
         /// <summary>Health back (medic kit, adrenaline), up to the maximum.</summary>

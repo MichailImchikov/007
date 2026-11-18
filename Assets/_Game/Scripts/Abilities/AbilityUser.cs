@@ -41,7 +41,7 @@ namespace FPS
         public float BlindAmount => blindT <= 0f ? 0f : Mathf.Clamp01(blindT / Mathf.Max(0.01f, blindTotal * 0.5f));
         public bool Morphed => IsChicken;
         public bool BlocksShooting => Morphed || Parrying || rocketT >= 0f || slipT > 0f || ExtraBlocksShooting;
-        public bool Busy => Morphed || Parrying || Phasing || hookState != 0 || rocketT >= 0f || Building || Minesweeping || rocketAim;
+        public bool Busy => Morphed || Parrying || Phasing || hookState != 0 || rocketT >= 0f || Building || InTicTacToe || Lasering || rocketAim;
         /// <summary>Player holds V with the launcher: zoomed in, bent over, charge sticking out of the butt.</summary>
         public bool RocketAiming => rocketAim;
         public float SlipAmount => slipAmt;
@@ -138,11 +138,12 @@ namespace FPS
             // drone war: the ability key launches the drone (DroneOperator), no joke abilities
             if (DroneMode.Active) { enabled = false; return; }
             if (isPlayer) AbilityHUD.Ensure().Bind(this);
+            if (isPlayer) TimeRewind.Ensure(); // records the field for "Перемотка" (online too: every machine its own fighters)
         }
 
         void OnDestroy()
         {
-            if (isPlayer) { GameInput.Inverted = false; GameInput.Frozen = false; GameInput.ModalUI = false; WeaponController.AbilityLower = 0f; }
+            if (isPlayer) { GameInput.Inverted = false; GameInput.Frozen = false; GameInput.ModalUI = false; WeaponController.AbilityLower = 0f; SetLagFps(false); }
             CleanupHook();
             if (mountedRocket) Destroy(mountedRocket.gameObject);
         }
@@ -168,7 +169,7 @@ namespace FPS
         public bool TryActivate()
         {
             if (Type == AbilityType.None || !self || !self.alive) return false;
-            bool blocked = Cooldown > 0f || Busy || slipT > 0f || SkyArena.Active;
+            bool blocked = Cooldown > 0f || Busy || slipT > 0f || SkyArena.Active || KnifeDuel.InDuel(self) || TicTacToe.InGame(self) || TimeRewind.Playing;
             if (isPlayer && (motor.Locked || (loadout && (loadout.Throwing || loadout.Switching)) || (melee && melee.Busy))) blocked = true;
             if (blocked)
             {
@@ -195,9 +196,30 @@ namespace FPS
                 case AbilityType.ChickenTrap: StartChicken(info.duration); return true;
                 case AbilityType.Invisibility: StartInvisibility(info.duration); return true;
                 case AbilityType.Phase: StartPhase(info.duration); return true;
-                case AbilityType.FartBlind: Fart(true, 0f); return true;
-                case AbilityType.FartSmoke: Fart(false, info.duration); return true;
+                case AbilityType.FartBlind:
+                case AbilityType.FartSmoke: Fart(AbilityDB.Get(AbilityType.FartBlind).duration); return true;
                 case AbilityType.Swap: return StartSwap();
+                case AbilityType.Rewind:
+                {
+                    if (!TimeRewind.Begin(self, out string why))
+                    {
+                        if (isPlayer) Say("Не сейчас", why, new Color(1f, 0.4f, 0.4f));
+                        return false;
+                    }
+                    if (isPlayer) Say(info.name, "Время идёт назад…", info.color);
+                    SendEvent(AbilityNetEvent.Rewind, null);
+                    return true;
+                }
+                case AbilityType.ShadowClones:
+                {
+                    if (!ShadowClone.Cast(self, isPlayer ? 3 : 2, out string cwhy))
+                    {
+                        if (isPlayer && cwhy != null) Say("Не сейчас", cwhy, new Color(1f, 0.4f, 0.4f));
+                        return false;
+                    }
+                    if (isPlayer) { Say(info.name, "Кто из вас настоящий?", info.color); ProcAudio.Play(Sfx.Warp, 0.6f, 0.1f); }
+                    return true;
+                }
                 case AbilityType.SkyArena:
                 {
                     if (!SkyArena.TryBegin(self, info.duration))
@@ -325,20 +347,21 @@ namespace FPS
             }
 
             if (rocketAim && !self.alive) CancelRocketAim();
-            bool lowerAll = Morphed || Parrying || Building || Minesweeping || rocketAim || SkyArena.LocalRunner;
+            bool lowerAll = Morphed || Parrying || Building || InTicTacToe || Lasering || rocketAim || SkyArena.LocalRunner;
             if (rocketAim) { motor.SpeedMultiplier *= 0.5f; motor.BlockSprint = true; }
             WeaponController.AbilityLower = lowerAll ? 1f : 0f;
             if (loadout) loadout.ActionsBlocked = lowerAll;
             GameInput.Inverted = IsChicken || Confused;
-            GameInput.Frozen = bsodT > 0f;
-            motor.InputBlocked = slipT > 0f || Minesweeping;
+            GameInput.Frozen = bsodT > 0f || TimeRewind.Playing;
+            SetLagFps(lagT > 0f && self.alive);
+            motor.InputBlocked = slipT > 0f || InTicTacToe;
             if (IsChicken) motor.SpeedMultiplier *= 1.25f;
             if (Shrunk) motor.SpeedMultiplier *= 1.1f;
             tpBlend = Mathf.MoveTowards(tpBlend, Morphed ? 1f : 0f, dt * 3f);
             pcam.ThirdPerson = tpBlend;
             pcam.SlipAmount = slipAmt;
             fovAdd = Anim.Damp(fovAdd, phaseT > 0f ? 12f : rocketAim ? -22f * rocketAimGrow : 0f, 6f, dt);
-            pcam.FovAdd = fovAdd;
+            pcam.FovAdd = fovAdd + hyperFov; // hyper speed widens the view
         }
 
         void ApplyVisibility()
@@ -393,6 +416,8 @@ namespace FPS
                 pcam.ThirdPerson = 0f; pcam.SlipAmount = 0f; pcam.FovAdd = 0f;
                 motor.InputBlocked = false;
                 if (motor.IsPulled) motor.StopPull();
+                if (loadout) loadout.ClearForcedSecondary();
+                SetLagFps(false);
             }
             visKey = -1;
             ApplyVisibility();
@@ -405,14 +430,14 @@ namespace FPS
 
         public void Blind(float t)
         {
-            if (!self.alive) return;
+            if (!self.alive || KnifeDuel.InDuel(self) || TicTacToe.InGame(self)) return;
             if (t > blindT) { blindT = t; blindTotal = t; }
             if (isPlayer) { ProcAudio.Play(Sfx.Hurt, 0.5f); pcam.Shake(0.4f); Say("Вас ослепило!", "Чем-то очень вонючим...", new Color(0.7f, 0.9f, 0.3f)); }
         }
 
         public void Slip()
         {
-            if (!self.alive || slipT > 0f || Phasing) return;
+            if (!self.alive || slipT > 0f || Phasing || KnifeDuel.InDuel(self) || TicTacToe.InGame(self)) return;
             slipT = 2.4f;
             ProcAudio.PlayAt(Sfx.Slip, transform.position, 1f, 0.06f);
             if (isPlayer)
@@ -846,7 +871,11 @@ namespace FPS
 
         // ------------------------------------------------------------------ farts
 
-        void Fart(bool blind, float smokeTime)
+        /// <summary>
+        /// The one and only fart: a gas cloud at the butt. Enemies inside take damage, the farter standing in it heals
+        /// fast (GasCloud, simulated on the caster's machine; everybody else gets the same cloud as a visual).
+        /// </summary>
+        void Fart(float cloudTime)
         {
             Vector3 o = ButtPoint;
             Vector3 back = -transform.forward;
@@ -854,28 +883,15 @@ namespace FPS
             if (isPlayer) { ProcAudio.Play(Sfx.Fart, 0.55f, 0.12f); pcam.Shake(0.25f); }
             AIEvents.Emit(o, 30f, self);
 
-            // identical puff for both kinds — you only find out which one it was afterwards
             Color a = new Color(0.55f, 0.62f, 0.2f, 0.75f), b = new Color(0.5f, 0.42f, 0.2f, 0.65f);
             FX.Ensure().Puff(o, back, 18, 0.55f, new Vector2(1.5f, 5f), new Vector2(0.8f, 1.8f), new Vector2(1.2f, 2.4f), a, b);
             FX.Ensure().Puff(o, Vector3.up, 8, 0.9f, new Vector2(0.3f, 1.5f), new Vector2(1.2f, 2.4f), new Vector2(1.4f, 2.6f), a, b);
 
-            SendEvent(AbilityNetEvent.Fart, w => { w.Write(blind); w.Write(smokeTime); });
-            if (blind && Remote) return; // the caster's machine decides who got blinded
-            if (blind)
-            {
-                foreach (var c in Combatant.All)
-                {
-                    if (!c || !c.alive || c == self || !self.IsEnemyOf(c) || !c.abilities) continue;
-                    float d = Vector3.Distance(c.Head, o);
-                    if (d > 7.5f) continue;
-                    Vector3 to = c.Head - (o + Vector3.up * 0.3f);
-                    if (RaycastAim(o + Vector3.up * 0.3f, to.normalized, to.magnitude, out RaycastHit h) && !h.collider.transform.IsChildOf(c.transform)) continue;
-                    float bt = Mathf.Lerp(5.5f, 3f, d / 7.5f);
-                    var cc = c;
-                    EffectOn(c, AbilityNetEffect.Blind, w => w.Write(bt), () => cc.abilities.Blind(bt));
-                }
-            }
-            else SmokeCloud.Spawn(o, 6f, Mathf.Max(6f, smokeTime));
+            SendEvent(AbilityNetEvent.Fart, w => { w.Write(false); w.Write(cloudTime); });
+            var info = AbilityDB.Get(AbilityType.FartBlind);
+            var cloud = SmokeCloud.Spawn(transform.position, info.radius, Mathf.Max(4f, cloudTime));
+            if (!Remote) GasCloud.Attach(cloud, self, info.radius); // the caster's machine applies the gas
+            if (isPlayer) Say(info.name, "Стойте в облаке — лечитесь. Врагам в нём — больно.", info.color);
         }
 
         // ------------------------------------------------------------------ swap
@@ -888,7 +904,7 @@ namespace FPS
             else if (!BotAim(out dir, 1f)) return false;
             Combatant victim = null;
             if (RaycastAim(o, dir, 70f, out RaycastHit hit)) victim = CombatantOf(hit.collider);
-            if (!victim || victim == self || !victim.alive || (victim.abilities && victim.abilities.Phasing))
+            if (!victim || victim == self || !victim.alive || (victim.abilities && victim.abilities.Phasing) || KnifeDuel.InDuel(victim) || TicTacToe.InGame(victim))
             {
                 if (isPlayer) Say("Нет цели", "Наведите прицел на врага", new Color(1f, 0.4f, 0.4f));
                 return false;
@@ -940,7 +956,7 @@ namespace FPS
                 hookEnd = hit.point;
                 hookHasHit = true;
                 var c = CombatantOf(hit.collider);
-                if (c && c != self && c.alive && !(c.abilities && c.abilities.Phasing)) hookVictim = c;
+                if (c && c != self && c.alive && !(c.abilities && c.abilities.Phasing) && !KnifeDuel.InDuel(c) && !TicTacToe.InGame(c)) hookVictim = c;
             }
             else hookEnd = o + dir * 45f;
 
@@ -1162,7 +1178,7 @@ namespace FPS
                 case AbilityType.Invisibility: use = vis ? Random.value < 0.25f : Random.value < 0.08f; break;
                 case AbilityType.Phase: use = t && !vis && bot.IsSearching && dist < 25f && Random.value < 0.5f; break;
                 case AbilityType.FartBlind:
-                case AbilityType.FartSmoke: use = vis && (dist < 6.5f || (bot.Health01 < 0.4f && Random.value < 0.3f)); break;
+                case AbilityType.FartSmoke: use = (vis && dist < 6f) || (bot.Health01 < 0.45f && Random.value < 0.5f); break; // also a heal
                 case AbilityType.Swap: use = vis && dist > 12f && Random.value < 0.25f; break;
             }
             if (logic == AbilityType.ChickenTrap) use = vis && Random.value < 0.3f;
